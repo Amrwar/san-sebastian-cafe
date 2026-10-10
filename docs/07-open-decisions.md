@@ -1,0 +1,46 @@
+# 07 — Open Decisions & Owner-Supplied Information
+
+Nothing below will be invented. Until answered, the system uses the **dev default** shown (clearly labelled placeholder) and the item stays open.
+
+## A. Blocking decisions (needed before the phase noted)
+
+| ID | Question | Needed by | Dev default |
+|---|---|---|---|
+| **D1** | Which POS does the café use today (Square, Clover, Lightspeed, Maitre'D, Veloce, other)? Is it Revenu Québec WEB-SRM certified? Does it have an API for importing online orders? | Phase 6 (provider), Phase 12 | `pos: none` |
+| **D2** | Payment processor preference or existing merchant account (and negotiated rates)? | Phase 6 | Fake provider + Stripe test mode |
+| D3 | Production hosting and database region: Canadian residency required? Budget? | Phase 15 (earlier is better) | Local Docker Postgres |
+| D4 | Domain name, and transactional email sender address | Phase 7 | Mailpit (local) |
+
+## B. Business rules
+
+| ID | Question | Dev default |
+|---|---|---|
+| D5 | Which items are "qualifying drinks"? (All drinks? Exclude water and bottled drinks? Any minimum size?) | `is_drink && loyalty_qualifying` flag per product, set in admin |
+| D6 | Is the free drink any size? Does it include paid modifiers (oat milk, extra shot)? Is there a value cap? | Any eligible drink, base and size included, extras charged, no cap |
+| D7 | Are stamps earned at payment or at pickup? | At payment (reversed on refund/cancel) |
+| D8 | Do drinks bought with promo codes earn stamps? Can rewards be combined with promos? | Earn if paid amount > $0; rewards and promos are not combinable |
+| D9 | Do in-store purchases earn stamps (requires POS integration or QR scan-to-earn)? | Online only |
+| D10 | Reward or stamp expiry? (Québec limits time-based expiry. See [08](08-compliance-notes.md).) | No expiry |
+| D11 | Can guests claim stamps by creating an account afterward? Within how many days? | Yes, 14 days, matched by verified email |
+| D12 | Is delivery wanted? Own drivers or third-party? Zones and fees? | Disabled |
+| D13 | Tipping on online orders: yes or no? Which presets? | Enabled, 10/15/18 % on pre-tax, plus custom and none |
+| D14 | Scheduled order window (how far ahead), slot length, slot capacity, prep time | 7 days, 10-min slots, 8 orders/slot, 10-min prep |
+| D15 | Auto-accept paid orders, or does staff accept manually? | Auto-accept |
+| D16 | Cancellation and refund policy for customers | Customer can cancel until `accepted`; afterwards staff only |
+| D17 | Gift cards, referrals, promotions: priority and terms | Later phases |
+| D18 | Social login (Google/Apple) wanted? | Email OTP only |
+| D19 | SMS notifications (cost per message)? | Off |
+
+## C. Content and assets (owner must supply)
+
+- Legal business name, address, phone, **GST and QST registration numbers**, small-supplier status
+- Complete menu: categories, items, sizes, prices, modifiers and price deltas, FR **and** EN names and descriptions, allergens, dietary tags, availability windows
+- Opening hours and holiday closures
+- Logo, wordmark, any existing brand guidelines and fonts. Professional product photography (or approval for a shoot).
+- Privacy officer name and contact (Law 25), privacy policy, terms of sale (lawyer-reviewed, French first)
+- Staff list and roles
+
+## D. Design inputs received
+
+- Palette (2026-10-10): Warm Ivory `#F6F0E6`, Espresso Brown `#38251F`, Deep Burgundy `#772F3B`, Golden Crema. The second message listed Golden Crema as `#38251F`, which duplicates Espresso. **Assumed `#D7B77A` per the original brief. Please confirm.**
+- Two third-party mobile UI concepts (one credited to @jmdesignz) as mood references. See [09](09-design-direction.md).
