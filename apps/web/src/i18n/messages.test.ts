@@ -1,3 +1,4 @@
+import { parse, TYPE, type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
 import { describe, expect, it } from "vitest";
 import en from "../../messages/en.json";
 import fr from "../../messages/fr.json";
@@ -13,10 +14,21 @@ function flatten(obj: Record<string, unknown>, prefix = ""): Record<string, stri
   return out;
 }
 
-// ICU argument names: `{name}` or `{name, plural|select, …}`. Branch text such as `{No options}`
-// is not an argument, so require `}` or `,` right after the name.
-const placeholders = (s: string) =>
-  [...new Set([...s.matchAll(/\{(\w+)\s*[,}]/g)].map((m) => m[1]))].sort();
+/** Argument names used by an ICU message (parsed properly, including plural/select branches). */
+function placeholders(message: string): string[] {
+  const names = new Set<string>();
+  const walk = (elements: MessageFormatElement[]) => {
+    for (const el of elements) {
+      if ("value" in el && el.type !== TYPE.literal) names.add(el.value);
+      if ("options" in el) {
+        for (const option of Object.values(el.options)) walk(option.value);
+      }
+      if ("children" in el) walk(el.children);
+    }
+  };
+  walk(parse(message));
+  return [...names].sort();
+}
 
 describe("message catalogs", () => {
   const frFlat = flatten(fr);

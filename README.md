@@ -2,9 +2,10 @@
 
 Customer PWA, staff/owner console, and backend for San Sebastian Café (Montréal, QC).
 
-**Status:** Phase 1 (foundation) complete — see the [Phase 1 report](docs/10-phase-1-report.md).
-Online ordering, payments and loyalty are **not** implemented yet. All menu items, prices and accounts
-in a development database are clearly labelled demonstration data.
+**Status:** Phase 2 (customer experience) complete — see the [Phase 2 report](docs/11-phase-2-report.md).
+Customers can browse, customize, build a server-priced cart and review checkout, but **orders cannot be
+placed and nothing is charged yet** (payments are Phase 6). All menu items, prices, hours and accounts in
+development databases are clearly labelled demonstration data.
 
 ## Requirements
 
@@ -122,6 +123,7 @@ docs/               planning and phase documentation
 | [08 Compliance notes](docs/08-compliance-notes.md)           | Québec/Canada obligations (requires professional confirmation)     |
 | [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                             |
 | [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                |
+| [11 Phase 2 report](docs/11-phase-2-report.md)               | Customer experience: pages, contracts, states, tests, limitations  |
 
 ## Deployment (Vercel demo)
 

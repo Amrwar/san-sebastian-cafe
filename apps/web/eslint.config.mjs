@@ -11,6 +11,7 @@ export default [
       "playwright-report/**",
       "test-results/**",
       ".dev-mail/**",
+      "public/sw.js",
     ],
   },
   ...base,
@@ -24,24 +25,19 @@ export default [
     },
   },
   {
-    // Module boundaries: browser code must never import server-only modules or the database.
-    files: ["src/components/**", "src/lib/**", "src/app/**/*.tsx"],
-    ignores: [
-      "src/app/**/page.tsx",
-      "src/app/**/layout.tsx",
-      "src/app/**/not-found.tsx",
-      "src/components/SiteHeader.tsx",
-      "src/components/SiteFooter.tsx",
-      "src/components/Forbidden.tsx",
-    ],
+    // Module boundary. Convention: browser code lives in `*.client.tsx` files and `src/lib/**`.
+    // It may import server TYPES (erased at build time) but never server values or the database.
+    files: ["src/lib/**", "**/*.client.tsx", "src/app/**/error.tsx"],
     rules: {
-      "no-restricted-imports": [
+      "@typescript-eslint/no-restricted-imports": [
         "error",
         {
           patterns: [
             {
               group: ["@/server/*", "@ssc/db", "@ssc/db/*", "@ssc/env"],
-              message: "Client components must not import server modules.",
+              message:
+                "Client code must not import server modules (type-only imports are allowed).",
+              allowTypeImports: true,
             },
           ],
         },

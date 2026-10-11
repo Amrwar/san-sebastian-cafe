@@ -1,10 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { expectNoSeriousA11yViolations, signIn } from "./helpers";
 
-const DEMO = "demo.san-sebastian.invalid";
-
-test.describe("passwordless sign-in and account", () => {
-  test("a new customer signs in with an emailed code, edits preferences and signs out", async ({
+test.describe("passwordless sign-up, onboarding and account", () => {
+  test("a new customer signs up with an emailed code, completes onboarding and manages preferences", async ({
     page,
   }) => {
     const email = `new.customer.${Date.now()}@example.test`;
@@ -14,35 +12,47 @@ test.describe("passwordless sign-in and account", () => {
     await expect(page).toHaveURL(/\/fr\/sign-in\?next=%2Ffr%2Faccount$/);
 
     await signIn(page, email, "fr", "/fr/account");
-    await expect(page).toHaveURL(/\/fr\/account$/);
-    await expect(page.getByText(`Connecté en tant que ${email}`)).toBeVisible();
-    await expectNoSeriousA11yViolations(page);
-
+    // First sign-in → onboarding (name, language, communications), then back to the target.
+    await expect(page).toHaveURL(/\/fr\/onboarding/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Faisons connaissance" }),
+    ).toBeVisible();
     // Marketing consent is off by default (privacy by default).
-    const marketing = page.getByLabel(/J’accepte de recevoir des offres/);
-    await expect(marketing).not.toBeChecked();
-
+    await expect(page.getByLabel(/J’accepte de recevoir des offres/)).not.toBeChecked();
+    await expectNoSeriousA11yViolations(page);
     await page.getByLabel("Nom").fill("Marie Tremblay");
-    await page.getByLabel("Langue de communication").selectOption("en-CA");
-    await marketing.check();
-    await page.getByRole("button", { name: "Enregistrer" }).click();
-    await expect(page.getByText("Vos préférences ont été enregistrées.")).toBeVisible();
+    await page.getByRole("button", { name: "Terminer" }).click();
 
-    await page.reload();
+    await expect(page).toHaveURL(/\/fr\/account$/);
     await expect(
       page.getByRole("heading", { level: 1, name: "Bonjour, Marie Tremblay" }),
     ).toBeVisible();
-    await expect(page.getByLabel("Langue de communication")).toHaveValue("en-CA");
-    await expect(page.getByLabel(/J’accepte de recevoir des offres/)).toBeChecked();
+    await expect(page.getByText(`Connecté en tant que ${email}`)).toBeVisible();
 
-    // The same data is available through the versioned API with the session cookie.
+    // Profile page: language only (communications live on their own page).
+    await page.getByLabel("Langue de communication").selectOption("en-CA");
+    await page.getByRole("button", { name: "Enregistrer" }).click();
+    await expect(page.getByText("Vos préférences ont été enregistrées.")).toBeVisible();
+
+    await page.getByRole("link", { name: "Communications" }).click();
+    await expect(page).toHaveURL(/\/fr\/account\/notifications$/);
+    await page.getByLabel(/J’accepte de recevoir des offres/).check();
+    await page.getByRole("button", { name: "Enregistrer" }).click();
+    await expect(page.getByText("Vos préférences ont été enregistrées.")).toBeVisible();
+    // Channels that don't exist yet are labelled, not faked.
+    await expect(page.getByText("Pas encore offert", { exact: true })).toHaveCount(2);
+    await expectNoSeriousA11yViolations(page);
+
     const api = await page.request.get("/api/v1/me/settings");
-    expect(api.status()).toBe(200);
-    expect(await api.json()).toMatchObject({ name: "Marie Tremblay", marketingEmail: true });
+    expect(await api.json()).toMatchObject({
+      name: "Marie Tremblay",
+      preferredLocale: "en-CA",
+      marketingEmail: true,
+    });
 
+    await page.goto("/fr/account");
     await page.getByRole("button", { name: "Se déconnecter" }).click();
     await expect(page).toHaveURL(/\/fr$/);
-    await expect(page.getByRole("link", { name: "Se connecter", exact: true })).toBeVisible();
   });
 
   test("a wrong code is rejected with a clear message", async ({ page }) => {
@@ -54,36 +64,48 @@ test.describe("passwordless sign-in and account", () => {
     await expect(page.getByText("That code is invalid or has expired.")).toBeVisible();
   });
 
-  test("the sign-in page refuses to redirect off-site after login", async ({ page }) => {
-    await page.goto("/en/sign-in?next=https://evil.example/");
-    // The form renders normally; the unsafe target was replaced server-side (verified by unit tests).
-    await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+  test("registration wording and account recovery help are available", async ({ page }) => {
+    await page.goto("/fr/sign-in?mode=register");
+    await expect(page.getByRole("heading", { level: 1, name: "Créer un compte" })).toBeVisible();
+    await page.getByRole("link", { name: "Problème pour vous connecter?" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Récupérer l’accès à votre compte" }),
+    ).toBeVisible();
+    await page.getByText("Je n’ai plus accès à mon courriel").click();
+    await expect(page.getByText(/Présentez-vous au comptoir/)).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
   });
 });
 
 test.describe("role-based access", () => {
-  test("customers cannot open the staff console", async ({ page }) => {
-    await signIn(page, `customer@${DEMO}`, "en");
-    await page.goto("/en/staff");
-    await expect(page.getByRole("heading", { level: 1, name: "Restricted area" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Staff" })).toHaveCount(0);
+  test.describe("customer", () => {
+    test.use({ storageState: "e2e/.auth/customer.json" });
+    test("cannot open the staff console", async ({ page }) => {
+      await page.goto("/en/staff");
+      await expect(page.getByRole("heading", { level: 1, name: "Restricted area" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Staff", exact: true })).toHaveCount(0);
+    });
   });
 
-  test("staff see the staff console but not administration", async ({ page }) => {
-    await signIn(page, `staff@${DEMO}`, "en");
-    await page.goto("/en/staff");
-    await expect(page.getByRole("heading", { level: 1, name: "Staff console" })).toBeVisible();
-    await expect(page.getByRole("table")).toContainText("Awaiting payment");
-    await expectNoSeriousA11yViolations(page);
-    await page.goto("/en/admin");
-    await expect(page.getByRole("heading", { level: 1, name: "Restricted area" })).toBeVisible();
+  test.describe("staff", () => {
+    test.use({ storageState: "e2e/.auth/staff.json" });
+    test("see the staff console but not administration", async ({ page }) => {
+      await page.goto("/en/staff");
+      await expect(page.getByRole("heading", { level: 1, name: "Staff console" })).toBeVisible();
+      await expect(page.getByRole("table")).toContainText("Preparing");
+      await expectNoSeriousA11yViolations(page);
+      await page.goto("/en/admin");
+      await expect(page.getByRole("heading", { level: 1, name: "Restricted area" })).toBeVisible();
+    });
   });
 
-  test("managers see administration with demo-data warning", async ({ page }) => {
-    await signIn(page, `manager@${DEMO}`, "fr");
-    await page.goto("/fr/admin");
-    await expect(page.getByRole("heading", { level: 1, name: "Administration" })).toBeVisible();
-    await expect(page.getByText(/produits de démonstration/)).toBeVisible();
-    await expectNoSeriousA11yViolations(page);
+  test.describe("manager", () => {
+    test.use({ storageState: "e2e/.auth/manager.json" });
+    test("sees administration with the demo-data warning", async ({ page }) => {
+      await page.goto("/fr/admin");
+      await expect(page.getByRole("heading", { level: 1, name: "Administration" })).toBeVisible();
+      await expect(page.getByText(/produits de démonstration/)).toBeVisible();
+      await expectNoSeriousA11yViolations(page);
+    });
   });
 });

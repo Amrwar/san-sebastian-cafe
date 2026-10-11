@@ -1,6 +1,8 @@
 # 04 — Implementation Plan & Phase Checklist
 
-_Status: **Phase 1 complete (2026-10-11).** Phase 2 not started — awaiting approval. See [10-phase-1-report.md](10-phase-1-report.md)._
+_Status: **Phase 2 complete (2026-10-11)** — customer experience & design system. Phase 3 awaiting approval. Reports: [Phase 1](10-phase-1-report.md), [Phase 2](11-phase-2-report.md)._
+
+> Scope note: the owner's Phase 2 brief covered the complete customer-facing experience, so parts of Phases 3, 5 and 8 were delivered early (pricing/tax/promotion/reward quote engine, pickup scheduling, menu & cart, read-only loyalty/orders/favorites views). Order **placement**, payments, loyalty **earning/redemption writes**, and staff status changes remain in Phases 6–8.
 
 Every phase ends with: typecheck ✔ · lint ✔ · unit/integration/E2E tests for the phase ✔ · security, a11y, responsive and failure-state review · docs and this checklist updated · a written report (done / test results / open issues / next).
 
@@ -10,13 +12,13 @@ Legend: ☐ not started · ◐ in progress · ☑ done · ⛔ blocked on owner d
 | --- | -------------------------------------------------------- | ---------------------------- |
 | 0   | Discovery & planning                                     | ☑                            |
 | 1   | Foundation & tooling                                     | ☑                            |
-| 2   | Design system & PWA shell                                | ◐                            |
-| 3   | Domain core (pricing, tax, loyalty, order state machine) | ☐                            |
+| 2   | Design system & PWA shell                                | ☑                            |
+| 3   | Domain core (pricing, tax, loyalty, order state machine) | ◐                            |
 | 4   | Auth, accounts, roles                                    | ◐                            |
-| 5   | Menu browsing, product customization, cart               | ☐                            |
+| 5   | Menu browsing, product customization, cart               | ☑                            |
 | 6   | Checkout, pickup scheduling, payments                    | ☐ (provider choice ⛔ D1/D2) |
 | 7   | Staff order console, realtime, notifications             | ☐                            |
-| 8   | Loyalty wallet, history, favorites, reorder, receipts    | ☐                            |
+| 8   | Loyalty wallet, history, favorites, reorder, receipts    | ◐                            |
 | 9   | Admin: menu, store settings, loyalty rules, staff, audit | ☐                            |
 | 10  | Reporting & exports                                      | ☐                            |
 | 11  | Privacy & compliance features                            | ☐                            |

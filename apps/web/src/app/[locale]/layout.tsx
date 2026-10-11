@@ -5,6 +5,8 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { SkipLink } from "@ssc/ui";
 import "../globals.css";
+import { BottomNav } from "@/components/Navigation.client";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration.client";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { routing, toDomainLocale } from "@/i18n/routing";
@@ -56,6 +58,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             {children}
           </main>
           <SiteFooter />
+          <BottomNav />
+          <ServiceWorkerRegistration />
         </NextIntlClientProvider>
       </body>
     </html>

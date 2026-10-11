@@ -8,6 +8,10 @@ export interface MenuProduct {
   nameEn: string;
   descriptionFr: string | null;
   descriptionEn: string | null;
+  imageUrl: string | null;
+  imageAltFr: string | null;
+  imageAltEn: string | null;
+  isDrink: boolean;
   availability: Exclude<Availability, "hidden">;
   /** Lowest available variant price in cents (before options and taxes), or null if none. */
   fromPriceCents: number | null;
@@ -62,6 +66,10 @@ export async function getPublishedMenu(db: Database): Promise<MenuCategory[]> {
           nameEn: p.nameEn,
           descriptionFr: p.descriptionFr,
           descriptionEn: p.descriptionEn,
+          imageUrl: p.imageUrl,
+          imageAltFr: p.imageAltFr,
+          imageAltEn: p.imageAltEn,
+          isDrink: p.isDrink,
           availability:
             p.availability === "sold_out" || prices.length === 0 ? "sold_out" : "available",
           fromPriceCents: prices.length > 0 ? Math.min(...prices) : null,

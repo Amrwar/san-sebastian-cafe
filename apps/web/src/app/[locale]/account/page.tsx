@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Button, Container, PageHeader } from "@ssc/ui";
+import { AccountNav } from "@/components/AccountNav";
+import { SettingsForm } from "@/components/SettingsForm.client";
 import { db } from "@/server/db";
 import { getAccountSettings } from "@/server/modules/identity/account-settings";
 import { requireSessionUser } from "@/server/session";
 import { signOut } from "./actions";
-import { AccountForm } from "./AccountForm";
 
 export async function generateMetadata({
   params,
@@ -25,22 +26,16 @@ export default async function AccountPage({ params }: PageProps<"/[locale]/accou
   ]);
 
   return (
-    <Container className="max-w-2xl">
+    <Container className="max-w-3xl">
       <PageHeader eyebrow={t("eyebrow")} title={t("title", { name: settings.name || "empty" })}>
         <p>{t("signedInAs", { email: settings.email })}</p>
         {user.role !== "customer" ? (
           <p className="text-base">{t("role", { role: tRoles(user.role) })}</p>
         ) : null}
       </PageHeader>
+      <AccountNav current="profile" role={user.role} />
 
-      <AccountForm
-        initial={{
-          name: settings.name,
-          preferredLocale: settings.preferredLocale,
-          orderUpdatesEmail: settings.orderUpdatesEmail,
-          marketingEmail: settings.marketingEmail,
-        }}
-      />
+      <SettingsForm sections={["profile"]} initial={settings} />
 
       <form action={signOut} className="mt-10 border-t border-line pt-6">
         <input type="hidden" name="locale" value={locale} />

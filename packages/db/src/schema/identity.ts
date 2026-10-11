@@ -100,6 +100,8 @@ export const customerProfiles = pgTable("customer_profiles", {
     .references(() => users.id, { onDelete: "cascade" }),
   preferredLocale: localeEnum().notNull().default("fr-CA"),
   phone: text(),
+  /** Set when the customer finishes first-run onboarding (name and preferences). */
+  onboardedAt: timestamp({ withTimezone: true }),
   ...timestamps,
 });
 

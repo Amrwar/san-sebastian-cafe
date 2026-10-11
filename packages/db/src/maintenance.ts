@@ -7,11 +7,15 @@ import {
   deliveryZones,
   loyaltyAccounts,
   modifierGroups,
+  openingHours,
   orders,
+  payments,
   products,
   promotions,
   rewardRedemptions,
   rewards,
+  storeClosures,
+  storeSettings,
   users,
 } from "./schema/index";
 
@@ -50,6 +54,7 @@ export async function purgeDemoData(db: Database): Promise<void> {
         sql`${rewardRedemptions.orderId} in ${demoOrders} or ${rewardRedemptions.rewardId} in ${demoRewards}`,
       );
     await tx.delete(loyaltyAccounts).where(eq(loyaltyAccounts.isDemo, true));
+    await tx.delete(payments).where(inArray(payments.orderId, demoOrders));
     await tx.delete(orders).where(eq(orders.isDemo, true));
     await tx.delete(promotions).where(eq(promotions.isDemo, true));
     await tx.delete(deliveryZones).where(eq(deliveryZones.isDemo, true));
@@ -57,5 +62,8 @@ export async function purgeDemoData(db: Database): Promise<void> {
     await tx.delete(modifierGroups).where(eq(modifierGroups.isDemo, true));
     await tx.delete(categories).where(eq(categories.isDemo, true));
     await tx.delete(users).where(eq(users.isDemo, true));
+    await tx.delete(openingHours).where(eq(openingHours.isDemo, true));
+    await tx.delete(storeClosures).where(eq(storeClosures.isDemo, true));
+    await tx.delete(storeSettings).where(eq(storeSettings.isDemo, true));
   });
 }

@@ -13,6 +13,11 @@ export const accountSettingsInput = z.object({
 });
 export type AccountSettingsInput = z.infer<typeof accountSettingsInput>;
 
+/** Partial update: only the provided fields change (used by the separate profile and communication forms). */
+export const accountSettingsPatch = accountSettingsInput
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
+
 export interface AccountSettings extends AccountSettingsInput {
   email: string;
   marketingConsentedAt: Date | null;
@@ -43,7 +48,7 @@ export async function getAccountSettings(
 }
 
 /**
- * Updates the actor's own profile and email preferences in one transaction.
+ * Updates the actor's own profile and/or email preferences in one transaction (partial update).
  * Marketing consent changes are timestamped and written to the audit log (CASL / Law 25 evidence).
  */
 export async function updateAccountSettings(
@@ -53,7 +58,7 @@ export async function updateAccountSettings(
   requestId?: string,
 ): Promise<AccountSettings> {
   authorize(actor, "profile:update_own");
-  const parsed = accountSettingsInput.safeParse(rawInput);
+  const parsed = accountSettingsPatch.safeParse(rawInput);
   if (!parsed.success) throw fromZodError(parsed.error);
   const input = parsed.data;
   const userId = actor.userId;
@@ -71,34 +76,31 @@ export async function updateAccountSettings(
       )
       .for("update");
 
-    await tx.update(users).set({ name: input.name }).where(eq(users.id, userId));
-    await tx
-      .insert(customerProfiles)
-      .values({ userId, preferredLocale: input.preferredLocale })
-      .onConflictDoUpdate({
-        target: customerProfiles.userId,
-        set: { preferredLocale: input.preferredLocale },
-      });
-
-    await tx
-      .insert(notificationPreferences)
-      .values({
-        userId,
-        channel: "email",
-        topic: "order_updates",
-        enabled: input.orderUpdatesEmail,
-      })
-      .onConflictDoUpdate({
-        target: [
-          notificationPreferences.userId,
-          notificationPreferences.channel,
-          notificationPreferences.topic,
-        ],
-        set: { enabled: input.orderUpdatesEmail },
-      });
+    if (input.name !== undefined) {
+      await tx.update(users).set({ name: input.name }).where(eq(users.id, userId));
+    }
+    if (input.preferredLocale !== undefined) {
+      const preferredLocale = input.preferredLocale;
+      await tx
+        .insert(customerProfiles)
+        .values({ userId, preferredLocale })
+        .onConflictDoUpdate({ target: customerProfiles.userId, set: { preferredLocale } });
+    }
+    const prefTarget = [
+      notificationPreferences.userId,
+      notificationPreferences.channel,
+      notificationPreferences.topic,
+    ];
+    if (input.orderUpdatesEmail !== undefined) {
+      const enabled = input.orderUpdatesEmail;
+      await tx
+        .insert(notificationPreferences)
+        .values({ userId, channel: "email", topic: "order_updates", enabled })
+        .onConflictDoUpdate({ target: prefTarget, set: { enabled } });
+    }
 
     const wasConsented = existingMarketing?.enabled ?? false;
-    if (wasConsented !== input.marketingEmail) {
+    if (input.marketingEmail !== undefined && wasConsented !== input.marketingEmail) {
       const consentedAt = input.marketingEmail ? new Date() : null;
       await tx
         .insert(notificationPreferences)

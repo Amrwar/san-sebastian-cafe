@@ -107,3 +107,17 @@ Each row is one database transaction. Services own the transaction; route handle
 | Earn / convert stamps              | 8     | ledger entries + balance cache + reward rows                                             | account row `FOR UPDATE`; unique (order_item, kind)        |
 | Redeem reward                      | 8     | redemption `reserved` → `committed` with payment, or `released` on expiry/cancel         | partial unique index on active redemption                  |
 | Refund                             | 6/8   | refund record + payment refunded amount + loyalty reversal + audit                       | payment row `FOR UPDATE`                                   |
+
+## Phase 2 additions (migration `0001_storefront.sql`)
+
+| Table / column                      | Owner      | Purpose and constraints                                                                                                                     |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `products.is_featured`              | catalog    | Highlighted on the home screen                                                                                                              |
+| `customer_profiles.onboarded_at`    | identity   | Set when first-run onboarding is completed                                                                                                  |
+| `store_settings` (single row, id=1) | store      | Online ordering on/off, preparation minutes, slot length, days ahead (CHECK-bounded). **No row = ordering not configured.** `is_demo` flag. |
+| `opening_hours`                     | store      | Weekday (0–6, local) + open/close minute; CHECK open < close. Owner data — seeded only as labelled demo hours.                              |
+| `store_closures`                    | store      | Closed local dates (holidays)                                                                                                               |
+| `favorites`                         | engagement | Saved drink configuration; `option_ids` stored sorted; unique per (user, product, variant, options) so saving is idempotent                 |
+
+Pickup availability is computed (not stored) by `computePickupAvailability` in `@ssc/domain` from hours,
+closures and settings in the `America/Toronto` time zone (DST-safe, unit-tested on both transition days).

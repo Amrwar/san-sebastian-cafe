@@ -17,8 +17,16 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: { baseURL: BASE_URL, trace: "retain-on-failure" },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /responsive\.spec\.ts/ },
+    // Signs the demo roles in once; the other projects reuse the saved sessions.
+    { name: "setup", testMatch: /auth\.setup\.ts/, use: { ...devices["Desktop Chrome"] } },
+    { name: "desktop", dependencies: ["setup"], use: { ...devices["Desktop Chrome"] } },
+    {
+      // Critical customer journeys and layout also run on a phone viewport.
+      name: "mobile",
+      dependencies: ["setup"],
+      use: { ...devices["Pixel 7"] },
+      testMatch: /(responsive|journeys)\.spec\.ts/,
+    },
   ],
   webServer: {
     // CI builds once in a separate step; locally the E2E run builds a fresh production bundle.

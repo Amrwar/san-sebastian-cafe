@@ -11,6 +11,7 @@ import { customerProfiles, notificationPreferences, users } from "./identity";
 import { loyaltyAccounts, loyaltyTransactions, rewardRedemptions, rewards } from "./loyalty";
 import { orderItems, orderStatusEvents, orders } from "./ordering";
 import { payments } from "./payments";
+import { favorites } from "./store";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(customerProfiles, { fields: [users.id], references: [customerProfiles.userId] }),
@@ -103,4 +104,13 @@ export const rewardsRelations = relations(rewards, ({ one, many }) => ({
 
 export const rewardRedemptionsRelations = relations(rewardRedemptions, ({ one }) => ({
   reward: one(rewards, { fields: [rewardRedemptions.rewardId], references: [rewards.id] }),
+}));
+
+export const favoritesRelations = relations(favorites, ({ one }) => ({
+  user: one(users, { fields: [favorites.userId], references: [users.id] }),
+  product: one(products, { fields: [favorites.productId], references: [products.id] }),
+  variant: one(productVariants, {
+    fields: [favorites.variantId],
+    references: [productVariants.id],
+  }),
 }));

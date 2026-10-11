@@ -13,11 +13,15 @@ test.describe("localization and shell", () => {
     page,
   }) => {
     await page.goto("/fr/menu");
-    await expect(page.getByRole("heading", { level: 1, name: "Aperçu du menu" })).toBeVisible();
+    await expect(
+      page.getByText("Prix avant taxes. Les options peuvent modifier le prix."),
+    ).toBeVisible();
     await page.getByRole("link", { name: "Afficher le site en anglais" }).click();
     await expect(page).toHaveURL(/\/en\/menu$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en-CA");
-    await expect(page.getByRole("heading", { level: 1, name: "Menu preview" })).toBeVisible();
+    await expect(
+      page.getByText("Prices before taxes. Options may change the price."),
+    ).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
   });
 
@@ -34,9 +38,26 @@ test.describe("localization and shell", () => {
     const response = await page.goto("/fr/does-not-exist");
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { level: 1, name: "Page introuvable" })).toBeVisible();
+    const product = await page.goto("/en/menu/no-such-product");
+    expect(product?.status()).toBe(404);
   });
 
-  for (const path of ["/fr", "/en", "/fr/menu", "/en/sign-in"]) {
+  for (const path of [
+    "/fr",
+    "/en",
+    "/fr/menu",
+    "/en/menu?q=latte",
+    "/fr/menu/demo-latte",
+    "/fr/cart",
+    "/fr/checkout",
+    "/fr/welcome",
+    "/en/sign-in",
+    "/fr/sign-in/help",
+    "/fr/rewards",
+    "/fr/promotions",
+    "/en/gift-cards",
+    "/fr/offline",
+  ]) {
     test(`${path} has no serious accessibility violations`, async ({ page }) => {
       await page.goto(path);
       await expectNoSeriousA11yViolations(page);
@@ -58,8 +79,8 @@ test.describe("menu preview", () => {
     await expect(
       page.getByRole("listitem").filter({ hasText: "[DÉMO] Croissant" }).getByText("Épuisé"),
     ).toBeVisible();
-    // No ordering controls exist yet: nothing on the page claims you can order.
-    await expect(page.getByRole("button", { name: /ajouter|commander/i })).toHaveCount(0);
+    // Placeholder product art is labelled so it can't be mistaken for a real photo.
+    await expect(latte.getByText("Photo à venir")).toBeVisible();
   });
 
   test("formats prices for English Canada", async ({ page }) => {

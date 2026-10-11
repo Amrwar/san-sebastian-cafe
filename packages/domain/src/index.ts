@@ -7,3 +7,7 @@ export * from "./ordering/ordering";
 export * from "./payments/payments";
 export * from "./loyalty/loyalty";
 export * from "./promotions/promotions";
+export * from "./catalog/configuration";
+export * from "./pricing/tax";
+export * from "./pricing/quote";
+export * from "./ordering/pickup";

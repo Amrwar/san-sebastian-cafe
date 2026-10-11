@@ -1,33 +1,47 @@
 import { randomUUID } from "node:crypto";
-import type { Role } from "@ssc/domain";
-import type { Database } from "./index";
+import { eq } from "drizzle-orm";
+import { computeQuote, type Role } from "@ssc/domain";
+import type { Database, Tx } from "./index";
 import { purgeDemoData } from "./maintenance";
+import { loadCatalog } from "./queries/catalog";
 import {
   categories,
   customerProfiles,
   deliveryZones,
+  favorites,
   loyaltyAccounts,
   loyaltyTransactions,
   modifierGroups,
   modifierOptions,
   notificationPreferences,
+  openingHours,
+  orderItems,
+  orderStatusEvents,
+  orders,
+  payments,
   productModifierGroups,
   productVariants,
   products,
   promotions,
+  rewards,
+  storeSettings,
   users,
 } from "./schema/index";
 
 /*
- * DEVELOPMENT SEED DATA — NOT the café's real menu, prices or staff.
- * Every row is flagged is_demo = true, every name carries a "[DÉMO]"/"[DEMO]" prefix, slugs start
- * with "demo-", and emails use the reserved ".invalid" TLD so nothing can be delivered.
- * The real menu must come from the owner (docs/07-open-decisions.md, section C).
+ * DEVELOPMENT SEED DATA — NOT the café's real menu, prices, hours or staff.
+ * Every root row is flagged is_demo = true, names carry a "[DÉMO]"/"[DEMO]" prefix, slugs start
+ * with "demo-", emails use the reserved ".invalid" TLD, and prices are obviously placeholder
+ * whole-dollar amounts. Real data must come from the owner (docs/07-open-decisions.md, §C).
  */
 
 export const DEMO_EMAIL_DOMAIN = "demo.san-sebastian.invalid";
 const fr = (s: string) => `[DÉMO] ${s}`;
 const en = (s: string) => `[DEMO] ${s}`;
+const DEMO_DESCRIPTION = {
+  descriptionFr: "Produit de démonstration. Prix et description fictifs.",
+  descriptionEn: "Demonstration product. Placeholder price and description.",
+};
 
 export const DEMO_USERS: ReadonlyArray<{ role: Role; name: string; email: string }> = [
   { role: "owner", name: "Demo Owner", email: `owner@${DEMO_EMAIL_DOMAIN}` },
@@ -37,20 +51,162 @@ export const DEMO_USERS: ReadonlyArray<{ role: Role; name: string; email: string
   { role: "customer", name: "Demo Customer", email: `customer@${DEMO_EMAIL_DOMAIN}` },
 ];
 
+type GroupKey = "temperature" | "milk" | "syrups" | "shots";
+
+const GROUPS: Record<
+  GroupKey,
+  {
+    nameFr: string;
+    nameEn: string;
+    selection: "single" | "multiple";
+    min: number;
+    max: number;
+    options: Array<{ fr: string; en: string; delta?: number; isDefault?: boolean }>;
+  }
+> = {
+  temperature: {
+    nameFr: "Température",
+    nameEn: "Temperature",
+    selection: "single",
+    min: 1,
+    max: 1,
+    options: [
+      { fr: "Chaud", en: "Hot", isDefault: true },
+      { fr: "Glacé", en: "Iced" },
+    ],
+  },
+  milk: {
+    nameFr: "Lait",
+    nameEn: "Milk",
+    selection: "single",
+    min: 1,
+    max: 1,
+    options: [
+      { fr: "Lait entier", en: "Whole milk", isDefault: true },
+      { fr: "Lait écrémé", en: "Skim milk" },
+      { fr: "Boisson d’avoine", en: "Oat beverage", delta: 100 },
+      { fr: "Boisson d’amande", en: "Almond beverage", delta: 100 },
+    ],
+  },
+  syrups: {
+    nameFr: "Sirops",
+    nameEn: "Syrups",
+    selection: "multiple",
+    min: 0,
+    max: 3,
+    options: [
+      { fr: "Vanille", en: "Vanilla", delta: 100 },
+      { fr: "Caramel", en: "Caramel", delta: 100 },
+      { fr: "Noisette", en: "Hazelnut", delta: 100 },
+    ],
+  },
+  shots: {
+    nameFr: "Espresso supplémentaire",
+    nameEn: "Extra espresso",
+    selection: "multiple",
+    min: 0,
+    max: 1,
+    options: [{ fr: "Un espresso de plus", en: "One extra shot", delta: 100 }],
+  },
+};
+
+const PRODUCTS: Array<{
+  slug: string;
+  category: "drinks" | "bakery";
+  fr: string;
+  en: string;
+  drink: boolean;
+  featured?: boolean;
+  soldOut?: boolean;
+  variants: Array<{ fr: string; en: string; price: number }>;
+  groups: GroupKey[];
+}> = [
+  {
+    slug: "demo-latte",
+    category: "drinks",
+    fr: "Latte",
+    en: "Latte",
+    drink: true,
+    featured: true,
+    variants: [
+      { fr: "Petit", en: "Small", price: 100 },
+      { fr: "Grand", en: "Large", price: 200 },
+    ],
+    groups: ["temperature", "milk", "syrups", "shots"],
+  },
+  {
+    slug: "demo-cappuccino",
+    category: "drinks",
+    fr: "Cappuccino",
+    en: "Cappuccino",
+    drink: true,
+    featured: true,
+    variants: [
+      { fr: "Petit", en: "Small", price: 100 },
+      { fr: "Grand", en: "Large", price: 200 },
+    ],
+    groups: ["milk", "syrups", "shots"],
+  },
+  {
+    slug: "demo-americano",
+    category: "drinks",
+    fr: "Americano",
+    en: "Americano",
+    drink: true,
+    variants: [{ fr: "Régulier", en: "Regular", price: 100 }],
+    groups: ["temperature", "shots"],
+  },
+  {
+    slug: "demo-espresso",
+    category: "drinks",
+    fr: "Espresso",
+    en: "Espresso",
+    drink: true,
+    featured: true,
+    variants: [
+      { fr: "Simple", en: "Single", price: 100 },
+      { fr: "Double", en: "Double", price: 200 },
+    ],
+    groups: [],
+  },
+  {
+    slug: "demo-croissant",
+    category: "bakery",
+    fr: "Croissant",
+    en: "Croissant",
+    drink: false,
+    soldOut: true,
+    variants: [{ fr: "Unité", en: "Each", price: 100 }],
+    groups: [],
+  },
+  {
+    slug: "demo-muffin",
+    category: "bakery",
+    fr: "Muffin",
+    en: "Muffin",
+    drink: false,
+    variants: [{ fr: "Unité", en: "Each", price: 100 }],
+    groups: [],
+  },
+];
+
 export interface SeedSummary {
   users: number;
   categories: number;
   products: number;
+  orders: number;
 }
 
 /** Replaces all demo data with a fresh copy. Real (is_demo = false) data is never touched. */
-export async function seedDemoData(db: Database): Promise<SeedSummary> {
+export async function seedDemoData(db: Database, now = new Date()): Promise<SeedSummary> {
   await purgeDemoData(db);
 
   return db.transaction(async (tx) => {
-    // --- Users, profiles, preferences, loyalty ------------------------------------------------
+    // --- Users, profiles, preferences ----------------------------------------------------------
+    const userIds = new Map<Role, string>();
     for (const u of DEMO_USERS) {
       const id = randomUUID();
+      userIds.set(u.role, id);
       await tx.insert(users).values({
         id,
         name: u.name,
@@ -59,24 +215,35 @@ export async function seedDemoData(db: Database): Promise<SeedSummary> {
         role: u.role,
         isDemo: true,
       });
-      await tx.insert(customerProfiles).values({ userId: id, preferredLocale: "fr-CA" });
+      await tx
+        .insert(customerProfiles)
+        .values({ userId: id, preferredLocale: "fr-CA", onboardedAt: now });
       await tx.insert(notificationPreferences).values([
         { userId: id, channel: "email", topic: "order_updates", enabled: true },
         { userId: id, channel: "email", topic: "marketing", enabled: false },
       ]);
-      if (u.role === "customer") {
-        const [account] = await tx
-          .insert(loyaltyAccounts)
-          .values({ userId: id, stampBalance: 3, lifetimeStamps: 3, isDemo: true })
-          .returning({ id: loyaltyAccounts.id });
-        await tx.insert(loyaltyTransactions).values({
-          accountId: account!.id,
-          kind: "adjust",
-          stamps: 3,
-          reason: "Development seed balance",
-        });
-      }
     }
+
+    // --- Store: demo hours (Mon–Fri 07:00–18:00, Sat–Sun 08:00–17:00) ---------------------------
+    await tx.insert(storeSettings).values({
+      id: 1,
+      onlineOrderingEnabled: true,
+      prepMinutes: 10,
+      slotMinutes: 15,
+      daysAhead: 2,
+      isDemo: true,
+    });
+    await tx.insert(openingHours).values(
+      [0, 1, 2, 3, 4, 5, 6].map((weekday) => {
+        const weekend = weekday === 0 || weekday === 6;
+        return {
+          weekday,
+          opensAtMinute: (weekend ? 8 : 7) * 60,
+          closesAtMinute: (weekend ? 17 : 18) * 60,
+          isDemo: true,
+        };
+      }),
+    );
 
     // --- Catalog -------------------------------------------------------------------------------
     const [drinks, bakery] = await tx
@@ -98,164 +265,74 @@ export async function seedDemoData(db: Database): Promise<SeedSummary> {
         },
       ])
       .returning({ id: categories.id });
+    const categoryIds = { drinks: drinks!.id, bakery: bakery!.id };
 
-    const [temperature, milk, syrups, shots] = await tx
-      .insert(modifierGroups)
-      .values([
-        {
-          nameFr: fr("Température"),
-          nameEn: en("Temperature"),
-          selection: "single",
-          minSelected: 1,
-          maxSelected: 1,
+    const groupIds = new Map<GroupKey, string>();
+    for (const [key, g] of Object.entries(GROUPS) as Array<[GroupKey, (typeof GROUPS)[GroupKey]]>) {
+      const [group] = await tx
+        .insert(modifierGroups)
+        .values({
+          nameFr: fr(g.nameFr),
+          nameEn: en(g.nameEn),
+          selection: g.selection,
+          minSelected: g.min,
+          maxSelected: g.max,
           isDemo: true,
-        },
-        {
-          nameFr: fr("Lait"),
-          nameEn: en("Milk"),
-          selection: "single",
-          minSelected: 1,
-          maxSelected: 1,
-          isDemo: true,
-        },
-        {
-          nameFr: fr("Sirops"),
-          nameEn: en("Syrups"),
-          selection: "multiple",
-          minSelected: 0,
-          maxSelected: 3,
-          isDemo: true,
-        },
-        {
-          nameFr: fr("Espresso supplémentaire"),
-          nameEn: en("Extra espresso"),
-          selection: "multiple",
-          minSelected: 0,
-          maxSelected: 2,
-          isDemo: true,
-        },
-      ])
-      .returning({ id: modifierGroups.id });
+        })
+        .returning({ id: modifierGroups.id });
+      groupIds.set(key, group!.id);
+      await tx.insert(modifierOptions).values(
+        g.options.map((o, i) => ({
+          groupId: group!.id,
+          nameFr: o.fr,
+          nameEn: o.en,
+          priceDeltaCents: o.delta ?? 0,
+          isDefault: o.isDefault ?? false,
+          sortOrder: i + 1,
+        })),
+      );
+    }
 
-    await tx.insert(modifierOptions).values([
-      { groupId: temperature!.id, nameFr: "Chaud", nameEn: "Hot", isDefault: true, sortOrder: 1 },
-      { groupId: temperature!.id, nameFr: "Glacé", nameEn: "Iced", sortOrder: 2 },
-      {
-        groupId: milk!.id,
-        nameFr: "Lait entier",
-        nameEn: "Whole milk",
-        isDefault: true,
-        sortOrder: 1,
-      },
-      {
-        groupId: milk!.id,
-        nameFr: "Boisson d’avoine",
-        nameEn: "Oat beverage",
-        priceDeltaCents: 75,
-        sortOrder: 2,
-      },
-      {
-        groupId: syrups!.id,
-        nameFr: "Vanille",
-        nameEn: "Vanilla",
-        priceDeltaCents: 60,
-        sortOrder: 1,
-      },
-      {
-        groupId: syrups!.id,
-        nameFr: "Caramel",
-        nameEn: "Caramel",
-        priceDeltaCents: 60,
-        sortOrder: 2,
-      },
-      {
-        groupId: shots!.id,
-        nameFr: "Espresso",
-        nameEn: "Espresso shot",
-        priceDeltaCents: 100,
-        sortOrder: 1,
-      },
-    ]);
-
-    const [latte, americano, croissant] = await tx
-      .insert(products)
-      .values([
-        {
-          categoryId: drinks!.id,
-          slug: "demo-latte",
-          nameFr: fr("Latte"),
-          nameEn: en("Latte"),
-          descriptionFr: "Produit de démonstration. Prix et description fictifs.",
-          descriptionEn: "Demonstration product. Placeholder price and description.",
-          isDrink: true,
-          loyaltyQualifying: true,
-          rewardEligible: true,
-          sortOrder: 1,
+    const productIds = new Map<string, string>();
+    for (const [index, p] of PRODUCTS.entries()) {
+      const [product] = await tx
+        .insert(products)
+        .values({
+          categoryId: categoryIds[p.category],
+          slug: p.slug,
+          nameFr: fr(p.fr),
+          nameEn: en(p.en),
+          ...DEMO_DESCRIPTION,
+          isDrink: p.drink,
+          loyaltyQualifying: p.drink,
+          rewardEligible: p.drink,
+          isFeatured: p.featured ?? false,
+          availability: p.soldOut ? "sold_out" : "available",
+          sortOrder: index + 1,
           isDemo: true,
-        },
-        {
-          categoryId: drinks!.id,
-          slug: "demo-americano",
-          nameFr: fr("Americano"),
-          nameEn: en("Americano"),
-          descriptionFr: "Produit de démonstration. Prix et description fictifs.",
-          descriptionEn: "Demonstration product. Placeholder price and description.",
-          isDrink: true,
-          loyaltyQualifying: true,
-          rewardEligible: true,
-          sortOrder: 2,
-          isDemo: true,
-        },
-        {
-          categoryId: bakery!.id,
-          slug: "demo-croissant",
-          nameFr: fr("Croissant"),
-          nameEn: en("Croissant"),
-          descriptionFr: "Produit de démonstration. Prix et description fictifs.",
-          descriptionEn: "Demonstration product. Placeholder price and description.",
-          sortOrder: 1,
-          availability: "sold_out",
-          isDemo: true,
-        },
-      ])
-      .returning({ id: products.id });
-
-    await tx.insert(productVariants).values([
-      {
-        productId: latte!.id,
-        nameFr: "Petit",
-        nameEn: "Small",
-        priceCents: 100,
-        isDefault: true,
-        sortOrder: 1,
-      },
-      { productId: latte!.id, nameFr: "Grand", nameEn: "Large", priceCents: 200, sortOrder: 2 },
-      {
-        productId: americano!.id,
-        nameFr: "Régulier",
-        nameEn: "Regular",
-        priceCents: 100,
-        isDefault: true,
-        sortOrder: 1,
-      },
-      {
-        productId: croissant!.id,
-        nameFr: "Unité",
-        nameEn: "Each",
-        priceCents: 100,
-        isDefault: true,
-        sortOrder: 1,
-      },
-    ]);
-
-    await tx.insert(productModifierGroups).values([
-      { productId: latte!.id, groupId: temperature!.id, sortOrder: 1 },
-      { productId: latte!.id, groupId: milk!.id, sortOrder: 2 },
-      { productId: latte!.id, groupId: syrups!.id, sortOrder: 3 },
-      { productId: latte!.id, groupId: shots!.id, sortOrder: 4 },
-      { productId: americano!.id, groupId: temperature!.id, sortOrder: 1 },
-      { productId: americano!.id, groupId: shots!.id, sortOrder: 2 },
-    ]);
+        })
+        .returning({ id: products.id });
+      productIds.set(p.slug, product!.id);
+      await tx.insert(productVariants).values(
+        p.variants.map((v, i) => ({
+          productId: product!.id,
+          nameFr: v.fr,
+          nameEn: v.en,
+          priceCents: v.price,
+          isDefault: i === 0,
+          sortOrder: i + 1,
+        })),
+      );
+      if (p.groups.length > 0) {
+        await tx.insert(productModifierGroups).values(
+          p.groups.map((key, i) => ({
+            productId: product!.id,
+            groupId: groupIds.get(key)!,
+            sortOrder: i + 1,
+          })),
+        );
+      }
+    }
 
     // --- Growth config (inactive placeholders) ---------------------------------------------------
     await tx.insert(promotions).values({
@@ -278,6 +355,190 @@ export async function seedDemoData(db: Database): Promise<SeedSummary> {
       isDemo: true,
     });
 
-    return { users: DEMO_USERS.length, categories: 2, products: 3 };
+    // --- Demo customer: orders, loyalty, favorite ------------------------------------------------
+    const customerId = userIds.get("customer")!;
+    const catalog = await loadCatalog(tx, [...productIds.values()]);
+    const pick = (slug: string, variantIndex: number, optionNames: string[] = []) => {
+      const product = catalog.get(productIds.get(slug)!)!;
+      const options = product.groups.flatMap((g) => g.options);
+      const chosen = optionNames.map((name) => options.find((o) => o.nameEn === name)!.id);
+      // Fill required single-choice groups with their defaults.
+      for (const g of product.groups) {
+        if (g.minSelected > 0 && !g.options.some((o) => chosen.includes(o.id))) {
+          chosen.push((g.options.find((o) => o.isDefault) ?? g.options[0])!.id);
+        }
+      }
+      return {
+        productId: product.id,
+        variantId: product.variants[variantIndex]!.id,
+        optionIds: chosen,
+      };
+    };
+
+    const [account] = await tx
+      .insert(loyaltyAccounts)
+      .values({ userId: customerId, stampBalance: 0, lifetimeStamps: 0, isDemo: true })
+      .returning({ id: loyaltyAccounts.id });
+    let earned = 0;
+
+    const demoOrders = [
+      {
+        number: "D-1001",
+        placedAt: new Date(now.getTime() - 26 * 3600_000),
+        status: "completed" as const,
+        trail: ["paid", "accepted", "in_preparation", "ready", "completed"] as const,
+        lines: [
+          { ...pick("demo-latte", 1, ["Oat beverage", "Vanilla"]), quantity: 1 },
+          { ...pick("demo-muffin", 0), quantity: 1 },
+        ],
+        tip: { kind: "percent" as const, basisPoints: 1500 },
+      },
+      {
+        number: "D-1002",
+        placedAt: new Date(now.getTime() - 6 * 60_000),
+        status: "in_preparation" as const,
+        trail: ["paid", "accepted", "in_preparation"] as const,
+        lines: [
+          { ...pick("demo-americano", 0, ["Iced"]), quantity: 2 },
+          { ...pick("demo-espresso", 1), quantity: 1 },
+        ],
+        tip: { kind: "none" as const },
+      },
+    ];
+
+    for (const o of demoOrders) {
+      const quote = computeQuote({
+        lines: o.lines.map((l, i) => ({ lineId: String(i), ...l })),
+        catalog,
+        fulfilment: { method: "pickup" },
+        tip: o.tip,
+        now: o.placedAt,
+      });
+      const [order] = await tx
+        .insert(orders)
+        .values({
+          number: o.number,
+          userId: customerId,
+          status: o.status,
+          locale: "fr-CA",
+          subtotalCents: quote.subtotalCents,
+          discountCents: quote.discountCents,
+          rewardDiscountCents: quote.rewardDiscountCents,
+          deliveryFeeCents: quote.deliveryFeeCents,
+          gstCents: quote.gstCents,
+          qstCents: quote.qstCents,
+          tipCents: quote.tipCents,
+          totalCents: quote.totalCents,
+          pricingSnapshot: quote,
+          idempotencyKey: `demo-${o.number}`,
+          placedAt: o.placedAt,
+          paidAt: o.placedAt,
+          completedAt:
+            o.status === "completed" ? new Date(o.placedAt.getTime() + 15 * 60_000) : null,
+          isDemo: true,
+        })
+        .returning({ id: orders.id });
+
+      for (const line of quote.lines) {
+        const product = catalog.get(line.productId)!;
+        const variant = product.variants.find((v) => v.id === line.variantId)!;
+        const [item] = await tx
+          .insert(orderItems)
+          .values({
+            orderId: order!.id,
+            productId: product.id,
+            variantId: variant.id,
+            productNameFr: product.nameFr,
+            productNameEn: product.nameEn,
+            variantNameFr: variant.nameFr,
+            variantNameEn: variant.nameEn,
+            modifiers: product.groups.flatMap((g) =>
+              g.options
+                .filter((opt) => line.optionIds.includes(opt.id))
+                .map((opt) => ({
+                  optionId: opt.id,
+                  groupNameFr: g.nameFr,
+                  groupNameEn: g.nameEn,
+                  nameFr: opt.nameFr,
+                  nameEn: opt.nameEn,
+                  priceDeltaCents: opt.priceDeltaCents,
+                })),
+            ),
+            quantity: line.quantity,
+            unitPriceCents: line.unitPriceCents,
+            lineTotalCents: line.lineTotalCents,
+            taxCategory: product.taxCategory,
+            isDrink: product.isDrink,
+            loyaltyQualifying: product.loyaltyQualifying,
+          })
+          .returning({ id: orderItems.id });
+        if (product.loyaltyQualifying) {
+          await tx.insert(loyaltyTransactions).values({
+            accountId: account!.id,
+            kind: "earn",
+            stamps: line.quantity,
+            orderItemId: item!.id,
+          });
+          earned += line.quantity;
+        }
+      }
+
+      let from: (typeof o.trail)[number] | "awaiting_payment" = "awaiting_payment";
+      for (const [step, to] of o.trail.entries()) {
+        await tx.insert(orderStatusEvents).values({
+          orderId: order!.id,
+          fromStatus: from,
+          toStatus: to,
+          actorKind: to === "paid" ? "webhook" : "staff",
+          createdAt: new Date(o.placedAt.getTime() + step * 3 * 60_000),
+        });
+        from = to;
+      }
+      await tx.insert(payments).values({
+        orderId: order!.id,
+        provider: "fake",
+        providerPaymentId: `demo_pay_${o.number}`,
+        status: "succeeded",
+        amountCents: quote.totalCents,
+        succeededAt: o.placedAt,
+      });
+    }
+
+    // Seed balance so the demo customer has one free drink to try (clearly labelled adjustment).
+    const adjustment = 7 - earned;
+    await tx.insert(loyaltyTransactions).values({
+      accountId: account!.id,
+      kind: "adjust",
+      stamps: adjustment,
+      reason: "Development seed balance",
+    });
+    const [convert] = await tx
+      .insert(loyaltyTransactions)
+      .values({ accountId: account!.id, kind: "convert", stamps: -5 })
+      .returning({ id: loyaltyTransactions.id });
+    await tx.insert(rewards).values({ accountId: account!.id, sourceTransactionId: convert!.id });
+    await updateBalance(tx, account!.id, 2, 7);
+
+    const fav = pick("demo-latte", 1, ["Oat beverage"]);
+    await tx.insert(favorites).values({
+      userId: customerId,
+      productId: fav.productId,
+      variantId: fav.variantId,
+      optionIds: [...fav.optionIds].sort(),
+    });
+
+    return {
+      users: DEMO_USERS.length,
+      categories: 2,
+      products: PRODUCTS.length,
+      orders: demoOrders.length,
+    };
   });
+}
+
+async function updateBalance(tx: Tx, accountId: string, balance: number, lifetime: number) {
+  await tx
+    .update(loyaltyAccounts)
+    .set({ stampBalance: balance, lifetimeStamps: lifetime })
+    .where(eq(loyaltyAccounts.id, accountId));
 }

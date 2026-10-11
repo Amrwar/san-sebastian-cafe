@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Alert, Button, TextField } from "@ssc/ui";
 import { authClient } from "@/lib/auth-client";
 
@@ -31,7 +31,9 @@ function errorKeyFor(
  */
 export function SignInForm({ destination }: { destination: string }) {
   const t = useTranslations("SignIn");
+  const locale = useLocale();
   const [step, setStep] = useState<Step>("email");
+  const [resent, setResent] = useState(false);
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ErrorKey | null>(null);
@@ -89,8 +91,9 @@ export function SignInForm({ destination }: { destination: string }) {
         setPending(false);
         return;
       }
-      // Full navigation so every server component re-renders with the new session.
-      window.location.assign(destination);
+      // Full navigation so every server component re-renders with the new session. New accounts
+      // pass through onboarding first; it redirects straight to `destination` for existing ones.
+      window.location.assign(`/${locale}/onboarding?next=${encodeURIComponent(destination)}`);
     } catch {
       setError("generic");
       setPending(false);
@@ -143,9 +146,29 @@ export function SignInForm({ destination }: { destination: string }) {
           {t(`errors.${error}`)}
         </Alert>
       ) : null}
+      <div aria-live="polite">{resent ? <Alert tone="success">{t("resent")}</Alert> : null}</div>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" pending={pending}>
           {t("verify")}
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={pending}
+          onClick={() => {
+            setResent(false);
+            setError(null);
+            authClient.emailOtp
+              .sendVerificationOtp({ email, type: "sign-in" })
+              .then(({ error: apiError }) => {
+                if (apiError) setError(errorKeyFor(apiError, "generic"));
+                else setResent(true);
+              })
+              .catch(() => {
+                setError("generic");
+              });
+          }}
+        >
+          {t("resend")}
         </Button>
         <Button
           variant="ghost"

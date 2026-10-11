@@ -58,6 +58,8 @@ export const products = pgTable(
     allergenNoteEn: text(),
     taxCategory: taxCategoryEnum().notNull().default("standard"),
     isDrink: boolean().notNull().default(false),
+    /** Highlighted on the home screen. */
+    isFeatured: boolean().notNull().default(false),
     /** Counts toward the "5 drinks → 1 free" stamp card. */
     loyaltyQualifying: boolean().notNull().default(false),
     /** May be chosen as the free reward drink. */
