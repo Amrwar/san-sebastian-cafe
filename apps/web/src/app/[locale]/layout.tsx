@@ -20,9 +20,8 @@ const sans = Figtree({
   display: "swap",
 });
 
-export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
-}
+// No generateStaticParams: every page reads the session and/or the database, so pages render
+// on request. Prerendering at build time would require runtime secrets inside `next build`.
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;

@@ -65,11 +65,16 @@ export class EnvValidationError extends Error {
 /** Pure parser — never logs secret values, only variable names and messages. */
 export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
   const result = serverEnvSchema.safeParse(source);
-  if (!result.success) {
-    throw new EnvValidationError(
-      result.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`),
+  const issues = result.success
+    ? []
+    : result.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
+  // On a hosting platform, never fall back to the permissive "development" default silently.
+  if (source.VERCEL && !source.APP_ENV) {
+    issues.unshift(
+      "APP_ENV: must be set explicitly on Vercel (development, staging or production)",
     );
   }
+  if (!result.success || issues.length > 0) throw new EnvValidationError(issues);
   return result.data;
 }
 
