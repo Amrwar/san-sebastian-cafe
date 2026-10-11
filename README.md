@@ -122,3 +122,14 @@ docs/               planning and phase documentation
 | [08 Compliance notes](docs/08-compliance-notes.md)           | Québec/Canada obligations (requires professional confirmation)     |
 | [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                             |
 | [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                |
+
+## Deployment (Vercel demo)
+
+- Project `san-sebastian-cafe` on Vercel, deployed from `main`: https://san-sebastian-cafe.vercel.app
+- Database: Neon Postgres (US East) provisioned through the Vercel Marketplace, which sets `DATABASE_URL`
+  and `DATABASE_URL_UNPOOLED`. **Demo data only** until the Law 25 privacy impact assessment is done (D21).
+- Vercel variables: `APP_ENV=development` (required explicitly; sign-in codes appear in the function logs
+  because no email provider exists yet), `BETTER_AUTH_SECRET` (sensitive), `BETTER_AUTH_URL` (production;
+  previews derive it from `VERCEL_URL`), `EMAIL_FROM`, `LOG_LEVEL`.
+- Migrations are not run during the build. After a schema change, run `npm run db:migrate` against
+  `DATABASE_URL_UNPOOLED` before (or right after) deploying.
