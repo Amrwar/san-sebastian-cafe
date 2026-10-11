@@ -37,6 +37,11 @@ export async function sendEmail(message: OutgoingEmail): Promise<void> {
     ].join("\n"),
   );
 
+  // Local file copy for end-to-end tests. Hosted platforms (read-only filesystem) use the log only.
+  if (process.env.VERCEL) {
+    logger().info({ transport: "console" }, "development email logged");
+    return;
+  }
   const dir = join(process.cwd(), ".dev-mail");
   await mkdir(dir, { recursive: true });
   const file = join(dir, `${message.to.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.json`);
