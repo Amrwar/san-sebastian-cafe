@@ -278,7 +278,8 @@
       "promotion_exhausted": "This promotion is no longer available.",
       "promotion_limit_reached": "You’ve already used this promotion.",
       "payments_unavailable": "Online payment isn’t available yet.",
-      "generic": "Your order couldn’t be sent. Please try again."
+      "generic": "Your order couldn’t be sent. Please try again.",
+      "below_minimum_charge": "Card payments require a total of at least $0.50."
     },
     "errorsAddress": "Enter a complete address."
   },
@@ -346,7 +347,8 @@
     "errors": {
       "name": "Enter a name between 1 and 80 characters.",
       "generic": "Couldn’t save. Please try again."
-    }
+    },
+    "paymentsTab": "Payments"
   },
   "Notifications": {
     "eyebrow": "My account",
@@ -562,7 +564,21 @@
     "notAwaiting": "This order isn’t awaiting payment.",
     "expired": "The payment window has passed. The order was cancelled.",
     "unavailable": "Online payment isn’t available yet.",
-    "viewOrder": "View order"
+    "viewOrder": "View order",
+    "stripeTitle": "Secure payment",
+    "stripeBody": "You’ll be taken to Stripe’s secure payment page: credit or debit card, Apple Pay or Google Pay. Your card details never pass through our site.",
+    "payButton": "Pay {amount}",
+    "redirecting": "Taking you to Stripe…",
+    "cancelled": "Payment cancelled. You haven’t been charged — you can try again.",
+    "processingNotice": "Your bank is confirming your payment. This page will update on its own.",
+    "reasons": {
+      "order_expired": "The payment window has passed. The order was cancelled.",
+      "not_awaiting_payment": "This order is no longer awaiting payment.",
+      "payment_processing": "A payment for this order is already being confirmed.",
+      "payments_unavailable": "Online payment isn’t available right now.",
+      "generic": "The payment couldn’t start. Please try again."
+    },
+    "testMode": "Stripe test mode: no real card is charged. Test card: 4242 4242 4242 4242."
   },
   "StaffQueue": {
     "title": "Order queue",
@@ -609,7 +625,8 @@
     "availability": "Product availability",
     "recent": "Recently handed over",
     "items": "{count, plural, one {# item} other {# items}}",
-    "delivery": "Delivery"
+    "delivery": "Delivery",
+    "payments": "Payments"
   },
   "StaffAvailability": {
     "title": "Product availability",
@@ -628,5 +645,121 @@
     "saved": "{name}: updated.",
     "error": "The update failed.",
     "backToQueue": "Back to queue"
+  },
+  "PaymentReturn": {
+    "title": "Payment confirmation",
+    "checking": "Confirming your payment with Stripe…",
+    "paid": "Payment received. Thank you!",
+    "processing": "Your bank is confirming the payment. We’ll update your order as soon as it’s confirmed.",
+    "failed": "The payment didn’t go through. You haven’t been charged.",
+    "pending": "We haven’t received Stripe’s confirmation yet. If you paid, your order will update automatically.",
+    "checkAgain": "Check again",
+    "tryAgain": "Try paying again",
+    "viewOrder": "View order",
+    "error": "We can’t check the payment right now."
+  },
+  "PaymentInfo": {
+    "title": "Payment",
+    "state": {
+      "unpaid": "Not paid",
+      "pending": "Payment pending",
+      "processing": "Payment being confirmed",
+      "paid": "Paid",
+      "failed": "Payment declined",
+      "partially_refunded": "Partially refunded",
+      "refunded": "Refunded"
+    },
+    "paidWith": "Paid {amount} with {brand} •••• {last4}",
+    "paidAmount": "Paid {amount}",
+    "paidOn": "on {date}",
+    "refundLine": "Refund of {amount}",
+    "refundStatus": {
+      "pending": "in progress",
+      "succeeded": "completed",
+      "failed": "failed",
+      "cancelled": "cancelled"
+    },
+    "refundDelay": "Refunds appear on your statement within 5 to 10 business days.",
+    "returned": "A duplicate or late payment of {amount} was refunded automatically.",
+    "receipt": "View receipt",
+    "history": "Payment history"
+  },
+  "Receipt": {
+    "title": "Receipt — order {number}",
+    "print": "Print",
+    "cafe": "San Sebastian Café",
+    "address": "Montréal (Québec)",
+    "taxNumbers": "GST no.: [TO BE PROVIDED] · QST no.: [TO BE PROVIDED]",
+    "taxNumbersNote": "Tax registration numbers to be provided by the café.",
+    "date": "Date: {date}",
+    "payment": "Payment",
+    "refunds": "Refunds",
+    "legalNote": "Order and payment confirmation. The official bill required in Québec (SRS) is issued by the café — to be confirmed with a professional.",
+    "notPaid": "This order wasn’t paid."
+  },
+  "PaymentHistory": {
+    "title": "Payment history",
+    "intro": "Your payments and refunds, newest first.",
+    "empty": "No payments yet.",
+    "payment": "Payment",
+    "refund": "Refund",
+    "order": "Order {number}",
+    "status": {
+      "pending": "Pending",
+      "requires_action": "Action required",
+      "succeeded": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "partially_refunded": "Partially refunded",
+      "refunded": "Refunded"
+    }
+  },
+  "StaffPayments": {
+    "title": "Payments and refunds",
+    "intro": "Look up an order by its number to see its payments, issue a refund or follow a dispute.",
+    "search": "Order number",
+    "searchButton": "Search",
+    "notFound": "No order with that number.",
+    "attention": "Needs attention",
+    "attentionEmpty": "Nothing to report.",
+    "kinds": {
+      "refund_failed": "Refund failed",
+      "refund_pending": "Refund pending for over 30 min",
+      "dispute_open": "Open dispute",
+      "returned_payment": "Duplicate or late payment to refund"
+    },
+    "payments": "Payments",
+    "refunds": "Refunds",
+    "disputes": "Disputes",
+    "attempts": "Payment attempts",
+    "none": "None",
+    "refundable": "Refundable: {amount}",
+    "reconciliation": {
+      "late": "Late (refunded automatically)",
+      "duplicate": "Duplicate (refunded automatically)",
+      "amount_mismatch": "Wrong amount (refunded automatically)"
+    },
+    "refundTitle": "Refund",
+    "amount": "Amount ($)",
+    "full": "Full amount",
+    "reason": "Reason (kept in the history)",
+    "submit": "Refund",
+    "done": "Refund requested ({status}).",
+    "errors": {
+      "amount": "Enter an amount between $0.01 and {max}.",
+      "reason": "Enter a reason of at least 3 characters.",
+      "generic": "The refund couldn’t be requested.",
+      "refund_not_allowed": "Cancel the order first (it’s still being prepared)."
+    },
+    "requestedBy": "by {name}",
+    "source": {
+      "staff": "Staff",
+      "customer_cancel": "Customer cancellation",
+      "system": "Automatic",
+      "provider": "Stripe dashboard"
+    },
+    "evidenceDue": "Evidence due by {date}",
+    "disputeHelp": "Respond to disputes in the Stripe dashboard.",
+    "back": "Back to queue"
   }
 }

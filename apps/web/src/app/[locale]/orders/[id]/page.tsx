@@ -8,9 +8,11 @@ import { money } from "@/lib/format";
 import { db } from "@/server/db";
 import { AppError } from "@/server/errors";
 import { getOrderDetail, type OrderDetail } from "@/server/modules/ordering/customer-orders";
+import { orderPaymentSummary } from "@/server/modules/payments/history";
 import { getFulfilmentOptions } from "@/server/modules/store/pickup";
 import { getSessionUser, requireSessionUser } from "@/server/session";
 import { OrderActions } from "./OrderActions.client";
+import { PaymentInfo } from "./PaymentInfo";
 import { Reorder } from "./Reorder.client";
 import { Tracking } from "./Tracking.client";
 
@@ -42,13 +44,14 @@ export default async function OrderDetailPage({
     throw error;
   }
 
-  const [t, tCart, tStatus, tCommon, format, fulfilment] = await Promise.all([
+  const [t, tCart, tStatus, tCommon, format, fulfilment, payment] = await Promise.all([
     getTranslations("OrderDetail"),
     getTranslations("Cart"),
     getTranslations("OrderStatus"),
     getTranslations("Common"),
     getFormatter(),
     order.canModify ? getFulfilmentOptions(db()) : Promise.resolve(null),
+    orderPaymentSummary(db(), order.id),
   ]);
   const en = locale === "en";
   const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
@@ -225,6 +228,14 @@ export default async function OrderDetailPage({
           </dl>
           <p className="text-sm text-espresso-muted">{t("receiptNote")}</p>
         </Surface>
+
+        {order.status !== "awaiting_payment" || payment.state !== "unpaid" ? (
+          <PaymentInfo
+            summary={payment}
+            locale={locale}
+            receiptHref={`/orders/${order.id}/receipt${tokenQuery}`}
+          />
+        ) : null}
       </div>
     </Container>
   );

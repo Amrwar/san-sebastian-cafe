@@ -29,7 +29,11 @@ export default async function StaffPage({ params }: PageProps<"/[locale]/staff">
   return (
     <Container className="max-w-[90rem] py-6">
       <h1 className="mb-4 font-display text-4xl text-espresso">{t("title")}</h1>
-      <QueueBoard initial={queue} canPause={can(access.user.role, "store:pause_ordering")} />
+      <QueueBoard
+        initial={queue}
+        canPause={can(access.user.role, "store:pause_ordering")}
+        canRefund={can(access.user.role, "orders:refund")}
+      />
     </Container>
   );
 }

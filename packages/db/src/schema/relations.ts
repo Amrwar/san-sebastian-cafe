@@ -12,7 +12,7 @@ import {
 import { customerProfiles, notificationPreferences, users } from "./identity";
 import { loyaltyAccounts, loyaltyTransactions, rewardRedemptions, rewards } from "./loyalty";
 import { orderEvents, orderItems, orderStatusEvents, orders } from "./ordering";
-import { payments } from "./payments";
+import { paymentAttempts, payments, refunds } from "./payments";
 import { favorites } from "./store";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -92,6 +92,8 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   statusEvents: many(orderStatusEvents),
   events: many(orderEvents),
   payments: many(payments),
+  paymentAttempts: many(paymentAttempts),
+  refunds: many(refunds),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -102,8 +104,19 @@ export const orderStatusEventsRelations = relations(orderStatusEvents, ({ one })
   order: one(orders, { fields: [orderStatusEvents.orderId], references: [orders.id] }),
 }));
 
-export const paymentsRelations = relations(payments, ({ one }) => ({
+export const paymentsRelations = relations(payments, ({ one, many }) => ({
   order: one(orders, { fields: [payments.orderId], references: [orders.id] }),
+  refunds: many(refunds),
+}));
+
+export const paymentAttemptsRelations = relations(paymentAttempts, ({ one }) => ({
+  order: one(orders, { fields: [paymentAttempts.orderId], references: [orders.id] }),
+}));
+
+export const refundsRelations = relations(refunds, ({ one }) => ({
+  order: one(orders, { fields: [refunds.orderId], references: [orders.id] }),
+  payment: one(payments, { fields: [refunds.paymentId], references: [payments.id] }),
+  requestedBy: one(users, { fields: [refunds.requestedByUserId], references: [users.id] }),
 }));
 
 export const loyaltyAccountsRelations = relations(loyaltyAccounts, ({ one, many }) => ({

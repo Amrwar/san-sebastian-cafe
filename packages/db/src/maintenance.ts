@@ -9,6 +9,8 @@ import {
   modifierGroups,
   openingHours,
   orders,
+  paymentAttempts,
+  paymentDisputes,
   payments,
   products,
   refunds,
@@ -56,7 +58,9 @@ export async function purgeDemoData(db: Database): Promise<void> {
       );
     await tx.delete(loyaltyAccounts).where(eq(loyaltyAccounts.isDemo, true));
     await tx.delete(refunds).where(inArray(refunds.orderId, demoOrders));
+    await tx.delete(paymentDisputes).where(inArray(paymentDisputes.orderId, demoOrders));
     await tx.delete(payments).where(inArray(payments.orderId, demoOrders));
+    await tx.delete(paymentAttempts).where(inArray(paymentAttempts.orderId, demoOrders));
     await tx.delete(orders).where(eq(orders.isDemo, true));
     await tx.delete(promotions).where(eq(promotions.isDemo, true));
     await tx.delete(deliveryZones).where(eq(deliveryZones.isDemo, true));

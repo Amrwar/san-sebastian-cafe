@@ -17,7 +17,9 @@ import {
   checkPickupRequest,
   LOCALES,
   localParts,
+  MIN_CARD_CHARGE_CENTS,
   optionPriceForVariant,
+  type OrderStatus,
   type PaymentProviderName,
 } from "@ssc/domain";
 import { z } from "zod";
@@ -26,7 +28,7 @@ import { AppError, fromZodError, required, unprocessable } from "../../errors";
 import { reserveReward } from "../loyalty/ledger";
 import { computeAvailability, holdsSlot, loadStoreConfig } from "../store/pickup";
 import { cartLineInput, priceCart } from "./cart-quote";
-import { expireStaleOrders, recordOrderEvent } from "./lifecycle";
+import { applyTransition, expireStaleOrders, lockOrder, recordOrderEvent } from "./lifecycle";
 
 const tipInput = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("none") }),
@@ -78,7 +80,8 @@ export type PlaceOrderInput = z.infer<typeof placeOrderInput>;
 export interface PlacedOrder {
   orderId: string;
   number: string;
-  status: "awaiting_payment";
+  /** awaiting_payment, or paid/accepted for an order fully covered by discounts (nothing to pay). */
+  status: OrderStatus;
   totalCents: number;
   expiresAt: string;
   /** Returned once to guests; required to view and pay for the order. Only its hash is stored. */
@@ -140,7 +143,7 @@ async function findReplay(
   return {
     orderId: existing.id,
     number: existing.number,
-    status: "awaiting_payment",
+    status: existing.status,
     totalCents: existing.totalCents,
     expiresAt: (existing.expiresAt ?? existing.placedAt).toISOString(),
     guestToken: null, // never re-issued; the original response carried it
@@ -256,6 +259,8 @@ export async function placeOrder(
       if (!quote.canCheckout)
         throw unprocessable("cart_invalid", "The cart has items that can't be ordered");
       if (quote.totalCents !== input.expectedTotalCents) throw unprocessable("price_changed");
+      if (quote.totalCents > 0 && quote.totalCents < MIN_CARD_CHARGE_CENTS)
+        throw unprocessable("below_minimum_charge");
       if (input.useReward && quote.reward?.status !== "applied")
         throw unprocessable("reward_unavailable");
 
@@ -418,10 +423,30 @@ export async function placeOrder(
         createdAt: now,
       });
 
+      // Fully covered by discounts (e.g. a free drink): there is nothing to pay.
+      let status: OrderStatus = "awaiting_payment";
+      if (quote.totalCents === 0) {
+        const system = { kind: "system" as const };
+        await recordOrderEvent(tx, order.id, "payment_recorded", system, {
+          amountCents: 0,
+          noPaymentRequired: true,
+        });
+        let updated = await applyTransition(
+          tx,
+          required(await lockOrder(tx, order.id), "order"),
+          "paid",
+          system,
+          { now },
+        );
+        if (config.settings.autoAccept)
+          updated = await applyTransition(tx, updated, "accepted", system, { now });
+        status = updated.status;
+      }
+
       return {
         orderId: order.id,
         number,
-        status: "awaiting_payment" as const,
+        status,
         totalCents: quote.totalCents,
         expiresAt: expiresAt.toISOString(),
         guestToken,

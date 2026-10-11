@@ -7,6 +7,7 @@ import {
   MODIFIER_SELECTION,
   NOTIFICATION_CHANNELS,
   ORDER_STATUSES,
+  PAYMENT_ATTEMPT_STATUSES,
   PAYMENT_PROVIDERS,
   PAYMENT_STATUSES,
   PROMOTION_KINDS,
@@ -31,6 +32,7 @@ export const fulfilmentMethodEnum = pgEnum("fulfilment_method", FULFILMENT_METHO
 export const actorKindEnum = pgEnum("actor_kind", ["customer", "staff", "system", "webhook"]);
 export const paymentProviderEnum = pgEnum("payment_provider", PAYMENT_PROVIDERS);
 export const paymentStatusEnum = pgEnum("payment_status", PAYMENT_STATUSES);
+export const paymentAttemptStatusEnum = pgEnum("payment_attempt_status", PAYMENT_ATTEMPT_STATUSES);
 export const loyaltyTransactionKindEnum = pgEnum(
   "loyalty_transaction_kind",
   LOYALTY_TRANSACTION_KINDS,
@@ -48,4 +50,10 @@ export const orderEventTypeEnum = pgEnum("order_event_type", [
   "refund_recorded",
   "customer_updated",
   "staff_note_updated",
+  // Phase 4 (payments). Postgres enums are append-only: add new values at the end.
+  "checkout_started",
+  "payment_processing",
+  "refund_requested",
+  "refund_failed",
+  "dispute_updated",
 ]);

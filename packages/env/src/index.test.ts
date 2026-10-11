@@ -51,6 +51,32 @@ describe("parseServerEnv", () => {
     ).toThrow(/PAYMENT_PROVIDER/);
   });
 
+  it("requires Stripe keys for the Stripe provider, and test-mode keys outside production", () => {
+    const stripe = {
+      ...valid,
+      PAYMENT_PROVIDER: "stripe",
+      STRIPE_SECRET_KEY: "sk_test_abc123",
+      STRIPE_WEBHOOK_SECRET: "whsec_abc123",
+    };
+    expect(parseServerEnv(stripe).PAYMENT_PROVIDER).toBe("stripe");
+    expect(() => parseServerEnv({ ...stripe, STRIPE_WEBHOOK_SECRET: undefined })).toThrow(
+      /STRIPE_WEBHOOK_SECRET: required/,
+    );
+    expect(() => parseServerEnv({ ...stripe, STRIPE_SECRET_KEY: "pk_test_abc" })).toThrow(
+      /STRIPE_SECRET_KEY/,
+    );
+    // An empty "KEY=" line counts as not set.
+    expect(() => parseServerEnv({ ...stripe, STRIPE_SECRET_KEY: "" })).toThrow(
+      /STRIPE_SECRET_KEY: required/,
+    );
+    expect(parseServerEnv({ ...valid, STRIPE_SECRET_KEY: "", CRON_SECRET: "" }).CRON_SECRET).toBe(
+      undefined,
+    );
+    expect(() => parseServerEnv({ ...stripe, STRIPE_SECRET_KEY: "sk_live_abc123" })).toThrow(
+      /live keys are only allowed when APP_ENV=production/,
+    );
+  });
+
   it("forbids development-only settings in production", () => {
     expect(() =>
       parseServerEnv({

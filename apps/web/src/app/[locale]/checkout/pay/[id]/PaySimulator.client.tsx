@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Alert, Button } from "@ssc/ui";
 import { useRouter } from "@/i18n/navigation";
 import { apiFetch } from "@/lib/api-client";
 
 /**
- * DEVELOPMENT ONLY. Calls the fake provider endpoint, which records the outcome through the same
- * server path a real provider's webhook will use. Rendered only when PAYMENT_PROVIDER=fake.
+ * DEVELOPMENT ONLY. Calls the simulator endpoint, which records the outcome through the same
+ * reconciliation code as a verified Stripe payment. Rendered only when PAYMENT_PROVIDER=fake.
  */
 export function PaySimulator({ orderId, token }: { orderId: string; token: string | null }) {
   const t = useTranslations("Pay");
   const router = useRouter();
+  const locale = useLocale();
   const [pending, setPending] = useState<"approve" | "decline" | null>(null);
   const [message, setMessage] = useState<"declined" | "error" | null>(null);
   const orderPath = `/orders/${orderId}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
@@ -21,12 +22,12 @@ export function PaySimulator({ orderId, token }: { orderId: string; token: strin
     setPending(outcome);
     setMessage(null);
     try {
-      const result = await apiFetch<{ status: string }>("/api/dev/fake-payments", {
+      const result = await apiFetch<{ state: string }>("/api/dev/fake-payments", {
         method: "POST",
-        body: JSON.stringify({ orderId, outcome }),
+        body: JSON.stringify({ orderId, outcome, locale }),
         headers: token ? { "x-order-token": token } : {},
       });
-      if (outcome === "decline" || result.status === "awaiting_payment") {
+      if (outcome === "decline" || result.state !== "paid") {
         setMessage("declined");
         setPending(null);
         return;

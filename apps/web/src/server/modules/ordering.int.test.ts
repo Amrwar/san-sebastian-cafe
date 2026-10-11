@@ -6,6 +6,7 @@ import {
   orderEvents,
   orderItems,
   orders,
+  paymentAttempts,
   payments,
   promotions,
   refunds,
@@ -35,7 +36,7 @@ import {
 } from "./ordering/manage-order";
 import { placeOrder } from "./ordering/place-order";
 import { getStaffQueue, setItemAvailability, setOrderingPause } from "./ordering/staff-queue";
-import { recordPaymentOutcome } from "./payments/confirm";
+import { applyCheckout, simulateFakePayment } from "./payments/checkout";
 
 // Monday 2026-10-12 10:00 EDT — the demo café is open 07:00–18:00.
 const NOW = new Date("2026-10-12T14:00:00Z");
@@ -118,20 +119,15 @@ async function failure(promise: Promise<unknown>): Promise<string | null> {
   }
 }
 
-async function payFor(orderId: string, eventId = `evt_${orderId}`) {
+/** Pays through the development simulator (same reconciliation path as a verified Stripe payment). */
+async function payFor(orderId: string) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-  return recordPaymentOutcome(
-    db,
-    {
-      provider: "fake",
-      eventId,
-      orderId,
-      providerPaymentId: `pay_${orderId}`,
-      amountCents: order!.totalCents,
-      outcome: "succeeded",
-    },
-    NOW,
-  );
+  return simulateFakePayment(db, orderId, "approve", {
+    locale: "fr",
+    guestToken: null,
+    userId: order!.userId,
+    now: NOW,
+  });
 }
 
 describe("order creation", () => {
@@ -271,7 +267,7 @@ describe("order creation", () => {
 });
 
 describe("payment confirmation", () => {
-  it("marks paid once per provider event, earns stamps once, and ignores wrong amounts", async () => {
+  it("marks paid once per provider payment and earns stamps once", async () => {
     const placed = await placeOrder(
       db,
       customer,
@@ -283,22 +279,28 @@ describe("payment confirmation", () => {
       .from(loyaltyAccounts)
       .where(eq(loyaltyAccounts.userId, customer.userId));
 
-    const mismatch = await recordPaymentOutcome(
+    expect(await payFor(placed.orderId)).toMatchObject({ state: "paid", orderStatus: "paid" });
+    // The same provider payment reported again (webhook retry, return page) changes nothing.
+    const [payment] = await db.select().from(payments).where(eq(payments.orderId, placed.orderId));
+    const attempt = await db.query.paymentAttempts.findFirst({
+      where: eq(paymentAttempts.id, payment!.attemptId!),
+    });
+    const replay = await applyCheckout(
       db,
+      "fake",
       {
-        provider: "fake",
-        eventId: "evt_bad",
+        sessionId: attempt!.providerSessionId,
+        status: "complete",
+        payment: "paid",
+        paymentId: payment!.providerPaymentId,
+        amountCents: payment!.amountCents,
+        currency: "cad",
         orderId: placed.orderId,
-        providerPaymentId: "p_bad",
-        amountCents: 1,
-        outcome: "succeeded",
+        card: null,
       },
       NOW,
     );
-    expect(mismatch.status).toBe("awaiting_payment");
-
-    expect(await payFor(placed.orderId)).toMatchObject({ duplicate: false, status: "paid" });
-    expect(await payFor(placed.orderId)).toMatchObject({ duplicate: true });
+    expect(replay.outcome).toBe("duplicate");
     const paymentRows = await db
       .select()
       .from(payments)
@@ -328,8 +330,10 @@ describe("rewards and promotions under concurrency", () => {
     >;
     expect(ok).toHaveLength(1);
     expect(ok[0]!.value.totalCents).toBe(0); // large latte free, nothing else
+    // Nothing to pay: the order is confirmed at once and the free drink used.
+    expect(ok[0]!.value).toMatchObject({ status: "paid" });
     const [reward] = await db.select().from(rewards);
-    expect(reward!.status).toBe("reserved");
+    expect(reward!.status).toBe("redeemed");
 
     await cancelOrderAsCustomer(db, customer, ok[0]!.value.orderId);
     const [released] = await db.select().from(rewards);

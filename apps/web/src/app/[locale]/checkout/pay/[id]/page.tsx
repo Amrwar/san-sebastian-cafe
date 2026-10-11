@@ -7,8 +7,10 @@ import { db } from "@/server/db";
 import { env } from "@/server/env";
 import { AppError } from "@/server/errors";
 import { getOrderDetail, type OrderDetail } from "@/server/modules/ordering/customer-orders";
+import { paymentView } from "@/server/modules/payments/checkout";
 import { getSessionUser } from "@/server/session";
 import { PaySimulator } from "./PaySimulator.client";
+import { PayWithProvider } from "./PayWithProvider.client";
 
 export async function generateMetadata({
   params,
@@ -45,6 +47,9 @@ export default async function PayPage({
     getFormatter(),
   ]);
   const items = order.items.reduce((n, i) => n + i.quantity, 0);
+  const { PAYMENT_PROVIDER, STRIPE_SECRET_KEY } = env();
+  const payment = await paymentView(db(), order.id);
+  const testMode = PAYMENT_PROVIDER === "stripe" && !STRIPE_SECRET_KEY?.includes("_live_");
 
   return (
     <Container className="max-w-xl pb-10">
@@ -69,7 +74,23 @@ export default async function PayPage({
             {money(order.totals.totalCents, locale)}
           </p>
         </Surface>
-        {env().PAYMENT_PROVIDER === "fake" ? (
+        {sp.cancelled ? <Alert tone="neutral">{t("cancelled")}</Alert> : null}
+        {payment.state === "processing" ? (
+          <Alert tone="brand">{t("processingNotice")}</Alert>
+        ) : PAYMENT_PROVIDER === "stripe" ? (
+          <Surface className="flex flex-col gap-4">
+            <div>
+              <h2 className="font-display text-2xl text-espresso">{t("stripeTitle")}</h2>
+              <p className="mt-1 text-espresso-muted">{t("stripeBody")}</p>
+            </div>
+            <PayWithProvider
+              orderId={order.id}
+              token={token}
+              amountLabel={money(order.totals.totalCents, locale)}
+            />
+            {testMode ? <p className="text-sm text-warning">{t("testMode")}</p> : null}
+          </Surface>
+        ) : PAYMENT_PROVIDER === "fake" ? (
           <PaySimulator orderId={order.id} token={token} />
         ) : (
           <Alert tone="brand" role="note">

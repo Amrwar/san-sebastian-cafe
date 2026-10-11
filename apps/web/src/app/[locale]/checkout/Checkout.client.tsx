@@ -39,6 +39,7 @@ const REASONS = new Set([
   "promotion_exhausted",
   "promotion_limit_reached",
   "payments_unavailable",
+  "below_minimum_charge",
 ]);
 /** Refusals that mean the offered pickup times are stale: reload them from the server. */
 const TIME_REASONS = new Set([
@@ -232,7 +233,12 @@ export function Checkout({
       cart.clear();
       setCartExtras({ promoCode: "", useReward: false });
       const token = placed.guestToken ? `?token=${encodeURIComponent(placed.guestToken)}` : "";
-      router.push(`/checkout/pay/${placed.orderId}${token}`);
+      // Fully covered by discounts: nothing to pay, straight to the order.
+      router.push(
+        placed.status === "awaiting_payment"
+          ? `/checkout/pay/${placed.orderId}${token}`
+          : `/orders/${placed.orderId}${token}`,
+      );
     } catch (e) {
       setPlacing(false);
       if (

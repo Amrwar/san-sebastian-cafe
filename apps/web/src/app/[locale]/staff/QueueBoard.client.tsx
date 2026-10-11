@@ -40,7 +40,15 @@ function chime(context: AudioContext) {
  * Tablet-first live queue for busy service. Polls the server every 5 s (real-time push arrives in
  * Phase 7); every action carries the order version so two baristas can't double-apply a change.
  */
-export function QueueBoard({ initial, canPause }: { initial: StaffQueue; canPause: boolean }) {
+export function QueueBoard({
+  initial,
+  canPause,
+  canRefund,
+}: {
+  initial: StaffQueue;
+  canPause: boolean;
+  canRefund: boolean;
+}) {
   const t = useTranslations("StaffQueue");
   const locale = useLocale();
   const tag = locale === "en" ? "en-CA" : "fr-CA";
@@ -145,6 +153,11 @@ export function QueueBoard({ initial, canPause }: { initial: StaffQueue; canPaus
           <Link href="/staff/availability" className={buttonClasses("secondary")}>
             {t("availability")}
           </Link>
+          {canRefund ? (
+            <Link href="/staff/payments" className={buttonClasses("secondary")}>
+              {t("payments")}
+            </Link>
+          ) : null}
         </div>
       </div>
 

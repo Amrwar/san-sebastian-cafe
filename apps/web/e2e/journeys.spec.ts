@@ -122,6 +122,15 @@ test.describe("checkout → payment → café → ready", () => {
     await expect(page.getByRole("heading", { level: 1, name: `Commande ${number}` })).toBeVisible();
     await expect(page.locator('[aria-current="step"]')).toContainText("Reçue");
     await expect(page.getByText("Conservez ce lien pour suivre votre commande.")).toBeVisible();
+    // Payment recorded from the (simulated) provider, with a printable receipt.
+    await expect(page.getByText(/Payé 1,30\s\$ par visa •••• 4242/)).toBeVisible();
+    await page.getByRole("link", { name: "Voir le reçu" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: `Reçu — commande ${number}` }),
+    ).toBeVisible();
+    await expect(page.getByText(/No TPS : \[À FOURNIR\]/)).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+    await page.goBack();
 
     // Behind the counter: the order appears in the queue and moves through each station.
     // The counter runs on a landscape tablet (all four columns visible), whatever the customer uses.

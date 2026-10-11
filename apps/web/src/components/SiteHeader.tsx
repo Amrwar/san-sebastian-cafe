@@ -26,7 +26,7 @@ export async function SiteHeader() {
   items.push({ href: "/cart", label: t("cart") });
 
   return (
-    <header className="on-dark sticky top-0 z-40 border-b border-espresso-deep bg-espresso text-ivory">
+    <header className="on-dark sticky top-0 z-40 border-b border-espresso-deep bg-espresso text-ivory print:hidden">
       <Container className="flex min-h-16 items-center justify-between gap-4">
         <Link href="/" className="font-display text-xl tracking-tight text-ivory sm:text-2xl">
           San Sebastian <span className="text-crema">Café</span>

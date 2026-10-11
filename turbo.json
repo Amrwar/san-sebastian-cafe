@@ -13,7 +13,10 @@
     "EMAIL_TRANSPORT",
     "EMAIL_FROM",
     "LOG_LEVEL",
-    "PAYMENT_PROVIDER"
+    "PAYMENT_PROVIDER",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {

@@ -105,7 +105,9 @@ san-sebastian/
 
 Web pages may call `services` directly from Server Components and Server Actions. The HTTP API calls the **same services**, so behavior stays identical for the future mobile apps.
 
-## 5. Payment provider evaluation (decision deferred to Phase 6)
+## 5. Payment provider evaluation
+
+> **Decided 2026-10-11: Stripe** (hosted Checkout), because the POS is unknown. See [13-payments.md](13-payments.md) for the updated comparison, the flow, webhooks, refunds, recovery and the launch checklist.
 
 Fees below are as publicly reported in 2026 secondary sources and **must be confirmed on each provider's official Canadian pricing page or quote**.
 

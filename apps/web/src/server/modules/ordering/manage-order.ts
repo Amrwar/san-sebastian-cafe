@@ -9,13 +9,9 @@ import { z } from "zod";
 import { authorize, type Actor } from "../../authz";
 import { AppError, fromZodError, notFound, required, unprocessable } from "../../errors";
 import { computeAvailability, holdsSlot, loadStoreConfig } from "../store/pickup";
-import {
-  applyTransition,
-  lockOrder,
-  recordOrderEvent,
-  refundInTransaction,
-  type OrderActor,
-} from "./lifecycle";
+import { closeOpenCheckouts } from "../payments/checkout";
+import { primaryPayment, requestRefund, submitRefunds } from "../payments/refunds";
+import { applyTransition, lockOrder, recordOrderEvent, type OrderActor } from "./lifecycle";
 import { resolveOrderAccess } from "./order-access";
 
 function parse<S extends z.ZodType>(schema: S, raw: unknown): z.infer<S> {
@@ -28,7 +24,19 @@ function staffActor(actor: Actor): OrderActor {
   return { kind: "staff", userId: actor.userId, role: actor.role };
 }
 
-/** Customer cancellation (policy: until the café accepts). Paid orders are refunded in full. */
+/** Current status after post-commit work (refund settlement) has run. */
+async function statusOf(db: Database, orderId: string) {
+  const order = required(
+    await db.query.orders.findFirst({ where: eq(orders.id, orderId) }),
+    "order",
+  );
+  return { status: order.status, version: order.version };
+}
+
+/**
+ * Customer cancellation (policy: until the café accepts). Paid orders are refunded in full: the
+ * refund is recorded with the cancellation, then sent to the provider once both are committed.
+ */
 export async function cancelOrderAsCustomer(
   db: Database,
   actor: Actor | null,
@@ -38,32 +46,56 @@ export async function cancelOrderAsCustomer(
 ) {
   const access = await resolveOrderAccess(db, actor, orderId, guestToken);
   if (access.via === "staff") throw notFound("Order"); // staff use the staff actions instead
-  return db.transaction(async (tx) => {
+  const refundIds = await db.transaction(async (tx) => {
     const order = required(await lockOrder(tx, orderId), "order");
     if (!customerCanCancel(order.status)) throw unprocessable("cancel_not_allowed");
     const customer: OrderActor = { kind: "customer", userId: actor?.userId ?? null };
-    let updated = await applyTransition(tx, order, "cancelled", customer, {
+    const updated = await applyTransition(tx, order, "cancelled", customer, {
       reason: "Cancelled by customer",
       guestVerified: access.via === "guest_token",
       now,
     });
-    const refund = refundRequiredOnCancel({
-      paid: order.paidAt !== null,
-      totalCents: order.totalCents,
-      refundedCents: 0,
+    return refundInFull(tx, updated, "Cancelled by customer", "customer_cancel", {
+      kind: "system",
     });
-    if (refund > 0)
-      updated = await refundInTransaction(
-        tx,
-        updated,
-        refund,
-        "Cancelled by customer",
-        { kind: "system" },
-        { kind: "system" },
-        now,
-      );
-    return { status: updated.status };
   });
+  await submitRefunds(db, refundIds, now);
+  await closeOpenCheckouts(db, orderId);
+  return { status: (await statusOf(db, orderId)).status };
+}
+
+/** Records a full refund of the order's payment, if it was paid. Returns refund ids to submit. */
+async function refundInFull(
+  tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
+  order: {
+    id: string;
+    status: (typeof ORDER_STATUSES)[number];
+    paidAt: Date | null;
+    totalCents: number;
+  },
+  reason: string,
+  source: "customer_cancel" | "staff",
+  actor: OrderActor,
+): Promise<string[]> {
+  if (!order.paidAt) return [];
+  const payment = await primaryPayment(tx, order.id);
+  if (!payment) return [];
+  const amount = refundRequiredOnCancel({
+    paid: true,
+    totalCents: payment.amountCents,
+    refundedCents: payment.refundedCents,
+  });
+  if (amount <= 0) return [];
+  return [
+    await requestRefund(tx, {
+      payment,
+      orderStatus: order.status,
+      amountCents: amount,
+      reason,
+      source,
+      actor,
+    }),
+  ];
 }
 
 export const customerUpdateInput = z
@@ -157,29 +189,23 @@ export async function transitionOrderAsStaff(
       { path: "to", code: "use_refund" },
     ]);
   }
-  return db.transaction(async (tx) => {
+  const refundIds = await db.transaction(async (tx) => {
     const order = await lockOrder(tx, orderId);
     if (!order) throw notFound("Order");
     const staff = staffActor(actor);
-    let updated = await applyTransition(tx, order, input.to, staff, {
+    const updated = await applyTransition(tx, order, input.to, staff, {
       reason: input.reason ?? null,
       expectedVersion: input.expectedVersion,
       now,
     });
-    if ((input.to === "cancelled" || input.to === "rejected") && order.paidAt) {
-      // Automatic full refund: requested by this staff member, performed by the system.
-      updated = await refundInTransaction(
-        tx,
-        updated,
-        order.totalCents,
-        input.reason ?? input.to,
-        staff,
-        { kind: "system" },
-        now,
-      );
-    }
-    return { status: updated.status, version: updated.version };
+    // Cancelling or rejecting a paid order refunds it in full, requested by this staff member.
+    return input.to === "cancelled" || input.to === "rejected"
+      ? refundInFull(tx, updated, input.reason ?? input.to, "staff", staff)
+      : [];
   });
+  await submitRefunds(db, refundIds, now);
+  if (input.to === "cancelled") await closeOpenCheckouts(db, orderId);
+  return statusOf(db, orderId);
 }
 
 export const staffRefundInput = z.object({
@@ -197,21 +223,22 @@ export async function refundOrderAsStaff(
 ) {
   authorize(actor, "orders:refund");
   const input = parse(staffRefundInput, raw);
-  return db.transaction(async (tx) => {
+  const refundId = await db.transaction(async (tx) => {
     const order = await lockOrder(tx, orderId);
     if (!order) throw notFound("Order");
-    const staff = staffActor(actor);
-    const updated = await refundInTransaction(
-      tx,
-      order,
-      input.amountCents,
-      input.reason,
-      staff,
-      staff,
-      now,
-    );
-    return { status: updated.status, version: updated.version };
+    const payment = await primaryPayment(tx, order.id);
+    if (!payment) throw unprocessable("not_paid");
+    return requestRefund(tx, {
+      payment,
+      orderStatus: order.status,
+      amountCents: input.amountCents,
+      reason: input.reason,
+      source: "staff",
+      actor: staffActor(actor),
+    });
   });
+  const [refundStatus] = await submitRefunds(db, [refundId], now);
+  return { ...(await statusOf(db, orderId)), refundId, refundStatus };
 }
 
 export const staffNotesInput = z.object({ staffNotes: z.string().trim().max(500) });

@@ -1,27 +1,7 @@
-import { randomUUID } from "node:crypto";
-import {
-  and,
-  desc,
-  eq,
-  lt,
-  orderEvents,
-  orderStatusEvents,
-  orders,
-  payments,
-  refunds,
-  sql,
-  type Tx,
-} from "@ssc/db";
-import {
-  checkRefund,
-  checkTransition,
-  type OrderStatus,
-  type Role,
-  type TransitionActor,
-} from "@ssc/domain";
+import { and, eq, lt, orderEvents, orderStatusEvents, orders, sql, type Tx } from "@ssc/db";
+import { checkTransition, type OrderStatus, type Role, type TransitionActor } from "@ssc/domain";
 import { AppError, required } from "../../errors";
 import { earnForOrder, reverseForOrder, settleRedemption } from "../loyalty/ledger";
-import { paymentProvider } from "../payments/provider";
 
 /** Who is acting on an order, as the services see it. */
 export type OrderActor =
@@ -36,7 +16,7 @@ function actorKind(actor: OrderActor): "system" | "customer" | "staff" {
   return actor.kind;
 }
 
-function actorUserId(actor: OrderActor): string | null {
+export function actorUserId(actor: OrderActor): string | null {
   return actor.kind === "system" ? null : actor.userId;
 }
 
@@ -166,81 +146,16 @@ export async function applyTransition(
     ((to === "cancelled" || to === "rejected") && order.paidAt === null)
   ) {
     await settleRedemption(tx, order.id, "release");
-  } else if (to === "refunded") {
+  } else if (
+    to === "refunded" ||
+    // An order fully covered by discounts was "paid" without money; stopping it gives back
+    // the free drink and the stamps just as a refund would.
+    ((to === "cancelled" || to === "rejected") && order.paidAt !== null && order.totalCents === 0)
+  ) {
     await settleRedemption(tx, order.id, "release");
     if (order.userId) await reverseForOrder(tx, order.id, order.userId);
   }
   return updated;
-}
-
-/**
- * Refunds `amountCents` of a paid order through the payment provider and moves the order to
- * refunded / partially_refunded. Called after cancel/reject (full amount) or by a shift lead.
- * `requestedBy` is recorded on the refund; `transitionAs` performs the status change (the system,
- * for automatic refunds that follow a cancellation or rejection).
- */
-export async function refundInTransaction(
-  tx: Tx,
-  order: OrderRow,
-  amountCents: number,
-  reason: string,
-  actor: OrderActor,
-  transitionAs: OrderActor = actor,
-  now = new Date(),
-): Promise<OrderRow> {
-  const [payment] = await tx
-    .select()
-    .from(payments)
-    .where(and(eq(payments.orderId, order.id), eq(payments.status, "succeeded")))
-    .orderBy(desc(payments.createdAt))
-    .limit(1)
-    .for("update");
-  const refundedCents = payment?.refundedCents ?? 0;
-  const check = checkRefund(
-    { paid: Boolean(payment), totalCents: order.totalCents, refundedCents },
-    amountCents,
-  );
-  if (!check.ok || !payment) {
-    throw new AppError("validation_failed", "Refund not allowed", [
-      { path: "amountCents", code: check.ok ? "no_payment" : check.error },
-    ]);
-  }
-
-  const result = await paymentProvider(payment.provider).refund({
-    paymentId: payment.providerPaymentId,
-    amountCents,
-    idempotencyKey: randomUUID(),
-  });
-  await tx.insert(refunds).values({
-    orderId: order.id,
-    paymentId: payment.id,
-    amountCents,
-    reason,
-    status: result.status,
-    providerRefundId: result.providerRefundId,
-    requestedByUserId: actorUserId(actor),
-  });
-  if (result.status !== "succeeded") {
-    // Asynchronous providers confirm later via webhook (Phase 6); the status changes then.
-    await recordOrderEvent(tx, order.id, "refund_recorded", actor, {
-      amountCents,
-      status: result.status,
-    });
-    return order;
-  }
-  await tx
-    .update(payments)
-    .set({ refundedCents: refundedCents + amountCents })
-    .where(eq(payments.id, payment.id));
-  await recordOrderEvent(tx, order.id, "refund_recorded", actor, { amountCents, reason });
-  const fresh = required(await lockOrder(tx, order.id), "order");
-  return applyTransition(
-    tx,
-    fresh,
-    check.fullyRefunded ? "refunded" : "partially_refunded",
-    transitionAs,
-    { reason, now },
-  );
 }
 
 /** Moves unpaid orders past their expiry to "expired", freeing their slot and reward. */

@@ -278,7 +278,8 @@
       "promotion_exhausted": "Cette promotion n’est plus disponible.",
       "promotion_limit_reached": "Vous avez déjà utilisé cette promotion.",
       "payments_unavailable": "Le paiement en ligne n’est pas encore offert.",
-      "generic": "La commande n’a pas pu être envoyée. Réessayez."
+      "generic": "La commande n’a pas pu être envoyée. Réessayez.",
+      "below_minimum_charge": "Le paiement par carte exige un total d’au moins 0,50 $."
     },
     "errorsAddress": "Entrez une adresse complète."
   },
@@ -346,7 +347,8 @@
     "errors": {
       "name": "Entrez un nom de 1 à 80 caractères.",
       "generic": "Impossible d’enregistrer. Réessayez."
-    }
+    },
+    "paymentsTab": "Paiements"
   },
   "Notifications": {
     "eyebrow": "Mon compte",
@@ -562,7 +564,21 @@
     "notAwaiting": "Cette commande n’attend pas de paiement.",
     "expired": "Le délai de paiement est passé. La commande a été annulée.",
     "unavailable": "Le paiement en ligne n’est pas encore offert.",
-    "viewOrder": "Voir la commande"
+    "viewOrder": "Voir la commande",
+    "stripeTitle": "Paiement sécurisé",
+    "stripeBody": "Vous serez redirigé vers la page de paiement sécurisée de Stripe : carte de crédit ou de débit, Apple Pay ou Google Pay. Vos données de carte ne transitent jamais par notre site.",
+    "payButton": "Payer {amount}",
+    "redirecting": "Redirection vers Stripe…",
+    "cancelled": "Paiement annulé. Aucun montant n’a été prélevé — vous pouvez réessayer.",
+    "processingNotice": "Votre banque confirme votre paiement. Cette page se mettra à jour d’elle-même.",
+    "reasons": {
+      "order_expired": "Le délai de paiement est passé. La commande a été annulée.",
+      "not_awaiting_payment": "Cette commande n’attend plus de paiement.",
+      "payment_processing": "Un paiement est déjà en cours de confirmation pour cette commande.",
+      "payments_unavailable": "Le paiement en ligne n’est pas disponible pour le moment.",
+      "generic": "Le paiement n’a pas pu démarrer. Réessayez."
+    },
+    "testMode": "Mode test Stripe : aucune vraie carte n’est débitée. Carte de test : 4242 4242 4242 4242."
   },
   "StaffQueue": {
     "title": "File de commandes",
@@ -609,7 +625,8 @@
     "availability": "Disponibilité des produits",
     "recent": "Remises récemment",
     "items": "{count, plural, one {# article} other {# articles}}",
-    "delivery": "Livraison"
+    "delivery": "Livraison",
+    "payments": "Paiements"
   },
   "StaffAvailability": {
     "title": "Disponibilité des produits",
@@ -628,5 +645,121 @@
     "saved": "{name} : mis à jour.",
     "error": "La mise à jour a échoué.",
     "backToQueue": "Retour à la file"
+  },
+  "PaymentReturn": {
+    "title": "Confirmation du paiement",
+    "checking": "Nous confirmons votre paiement auprès de Stripe…",
+    "paid": "Paiement reçu. Merci!",
+    "processing": "Votre banque confirme le paiement. Nous mettrons votre commande à jour dès la confirmation.",
+    "failed": "Le paiement n’a pas abouti. Aucun montant n’a été prélevé.",
+    "pending": "Nous n’avons pas encore reçu la confirmation de Stripe. Si vous avez payé, votre commande se mettra à jour automatiquement.",
+    "checkAgain": "Vérifier de nouveau",
+    "tryAgain": "Réessayer le paiement",
+    "viewOrder": "Voir la commande",
+    "error": "Impossible de vérifier le paiement pour le moment."
+  },
+  "PaymentInfo": {
+    "title": "Paiement",
+    "state": {
+      "unpaid": "Non payée",
+      "pending": "Paiement en attente",
+      "processing": "Paiement en cours de confirmation",
+      "paid": "Payée",
+      "failed": "Paiement refusé",
+      "partially_refunded": "Partiellement remboursée",
+      "refunded": "Remboursée"
+    },
+    "paidWith": "Payé {amount} par {brand} •••• {last4}",
+    "paidAmount": "Payé {amount}",
+    "paidOn": "le {date}",
+    "refundLine": "Remboursement de {amount}",
+    "refundStatus": {
+      "pending": "en cours",
+      "succeeded": "effectué",
+      "failed": "échoué",
+      "cancelled": "annulé"
+    },
+    "refundDelay": "Les remboursements apparaissent sur votre relevé sous 5 à 10 jours ouvrables.",
+    "returned": "Un paiement en double ou tardif de {amount} a été remboursé automatiquement.",
+    "receipt": "Voir le reçu",
+    "history": "Historique des paiements"
+  },
+  "Receipt": {
+    "title": "Reçu — commande {number}",
+    "print": "Imprimer",
+    "cafe": "San Sebastian Café",
+    "address": "Montréal (Québec)",
+    "taxNumbers": "No TPS : [À FOURNIR] · No TVQ : [À FOURNIR]",
+    "taxNumbersNote": "Numéros d’inscription aux taxes à fournir par le café.",
+    "date": "Date : {date}",
+    "payment": "Paiement",
+    "refunds": "Remboursements",
+    "legalNote": "Confirmation de commande et de paiement. La facture officielle exigée au Québec (MEV/SRS) est remise par le café — à confirmer avec un professionnel.",
+    "notPaid": "Cette commande n’a pas été payée."
+  },
+  "PaymentHistory": {
+    "title": "Historique des paiements",
+    "intro": "Vos paiements et remboursements, du plus récent au plus ancien.",
+    "empty": "Aucun paiement pour le moment.",
+    "payment": "Paiement",
+    "refund": "Remboursement",
+    "order": "Commande {number}",
+    "status": {
+      "pending": "En attente",
+      "requires_action": "Action requise",
+      "succeeded": "Effectué",
+      "failed": "Échoué",
+      "cancelled": "Annulé",
+      "partially_refunded": "Partiellement remboursé",
+      "refunded": "Remboursé"
+    }
+  },
+  "StaffPayments": {
+    "title": "Paiements et remboursements",
+    "intro": "Recherchez une commande par son numéro pour voir ses paiements, la rembourser ou suivre un litige.",
+    "search": "Numéro de commande",
+    "searchButton": "Rechercher",
+    "notFound": "Aucune commande avec ce numéro.",
+    "attention": "À surveiller",
+    "attentionEmpty": "Rien à signaler.",
+    "kinds": {
+      "refund_failed": "Remboursement échoué",
+      "refund_pending": "Remboursement en attente depuis plus de 30 min",
+      "dispute_open": "Litige ouvert",
+      "returned_payment": "Paiement en double ou tardif à rembourser"
+    },
+    "payments": "Paiements",
+    "refunds": "Remboursements",
+    "disputes": "Litiges",
+    "attempts": "Tentatives de paiement",
+    "none": "Aucun",
+    "refundable": "Remboursable : {amount}",
+    "reconciliation": {
+      "late": "Tardif (remboursé automatiquement)",
+      "duplicate": "En double (remboursé automatiquement)",
+      "amount_mismatch": "Montant erroné (remboursé automatiquement)"
+    },
+    "refundTitle": "Rembourser",
+    "amount": "Montant ($)",
+    "full": "Montant total",
+    "reason": "Raison (visible dans l’historique)",
+    "submit": "Rembourser",
+    "done": "Remboursement demandé ({status}).",
+    "errors": {
+      "amount": "Entrez un montant entre 0,01 $ et {max}.",
+      "reason": "Entrez une raison d’au moins 3 caractères.",
+      "generic": "Le remboursement n’a pas pu être demandé.",
+      "refund_not_allowed": "Annulez d’abord la commande (elle est encore en préparation)."
+    },
+    "requestedBy": "par {name}",
+    "source": {
+      "staff": "Personnel",
+      "customer_cancel": "Annulation client",
+      "system": "Automatique",
+      "provider": "Tableau de bord Stripe"
+    },
+    "evidenceDue": "Preuves à fournir avant le {date}",
+    "disputeHelp": "Répondez aux litiges dans le tableau de bord Stripe.",
+    "back": "Retour à la file"
   }
 }

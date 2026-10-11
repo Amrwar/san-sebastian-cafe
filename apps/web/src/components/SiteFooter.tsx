@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 export async function SiteFooter() {
   const t = await getTranslations("Footer");
   return (
-    <footer className="border-t border-line bg-ivory-sunken pb-20 md:pb-0">
+    <footer className="border-t border-line bg-ivory-sunken pb-20 md:pb-0 print:hidden">
       <Container className="flex flex-col gap-4 py-8 text-sm text-espresso-muted md:flex-row md:items-start md:justify-between">
         <div className="flex flex-col gap-2">
           <p>

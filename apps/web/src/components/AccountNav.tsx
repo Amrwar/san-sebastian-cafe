@@ -3,7 +3,7 @@ import { can, type Role } from "@ssc/domain";
 import { cn } from "@ssc/ui";
 import { Link } from "@/i18n/navigation";
 
-type Section = "profile" | "notifications" | "favorites" | "orders" | "rewards";
+type Section = "profile" | "notifications" | "favorites" | "orders" | "payments" | "rewards";
 
 /** Secondary navigation between account pages (also gives staff a route to their tools on mobile). */
 export async function AccountNav({ current, role }: { current: Section; role: Role }) {
@@ -13,6 +13,7 @@ export async function AccountNav({ current, role }: { current: Section; role: Ro
     { key: "notifications", href: "/account/notifications", label: t("notificationsTab") },
     { key: "favorites", href: "/favorites", label: t("favorites") },
     { key: "orders", href: "/orders", label: t("orders") },
+    { key: "payments", href: "/account/payments", label: t("paymentsTab") },
     { key: "rewards", href: "/rewards", label: t("rewards") },
   ];
   if (can(role, "staff_console:access"))

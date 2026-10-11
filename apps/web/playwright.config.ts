@@ -42,8 +42,8 @@ export default defineConfig({
       DATABASE_URL: E2E_DATABASE_URL,
       BETTER_AUTH_URL: BASE_URL,
       EMAIL_TRANSPORT: "console",
-      // Development payment simulator (refused outside development/test by env validation).
-      PAYMENT_PROVIDER: "fake",
+      // Development payment simulator by default; the Stripe sandbox spec opts in to real test mode.
+      PAYMENT_PROVIDER: process.env.STRIPE_E2E === "1" ? "stripe" : "fake",
     },
   },
 });

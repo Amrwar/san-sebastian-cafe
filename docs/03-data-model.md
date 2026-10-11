@@ -161,3 +161,20 @@ completed / cancelled / rejected / partially_refunded ──▶ partially_refund
 | Cancel             | `awaiting_payment` or `paid` (before the café accepts)                     | Paid → automatic full refund                  |
 | Change pickup time | Scheduled order, not yet accepted, ≥ 15 min before the current pickup time | New slot re-checked against capacity          |
 | Change items       | Never after ordering                                                       | Cancel and re-order (keeps totals consistent) |
+
+## Phase 4 additions (migration `0003_payments.sql`)
+
+| Table / column                                                                                                        | Owner    | Purpose and constraints                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `payment_attempts` (+ enum `payment_attempt_status`)                                                                  | payments | One hosted checkout (Stripe Checkout Session) per attempt. **Partial unique index: one `open`/`processing` attempt per order.** Unique (provider, session id)                                  |
+| `payments.attempt_id`, `payments.reconciliation`                                                                      | payments | Which attempt paid; `late` / `duplicate` / `amount_mismatch` = money that can't pay for the order (refunded automatically). **Partial unique index: one non-reconciliation payment per order** |
+| `payment_status` + `partially_refunded`, `refunded`                                                                   | payments | Payment state follows confirmed refunds                                                                                                                                                        |
+| `refunds.source`, `failure_reason`, `submitted_at`, `settled_at`; `refund_status` + `cancelled`                       | payments | Audit trail: `staff` / `customer_cancel` / `system` / `provider` (dashboard). Unique provider refund id. Recorded `pending` before the provider is called                                      |
+| `payment_customers`                                                                                                   | payments | Stripe Customer per signed-in user (saved cards opt-in on Stripe's page). Deleted with the user                                                                                                |
+| `payment_disputes`                                                                                                    | payments | Chargebacks with status and evidence deadline, kept current from webhooks. Never changes the order                                                                                             |
+| `order_event_type` + `checkout_started`, `payment_processing`, `refund_requested`, `refund_failed`, `dispute_updated` | ordering | Order history                                                                                                                                                                                  |
+
+`payment_events` (Phase 1) is the webhook inbox. Its row is written in the same transaction as the event's
+effects, so a failed processing attempt leaves no row and the provider's retry is processed again. Only
+ids are stored from provider payloads. No card data is stored anywhere; `payments.card_brand` /
+`card_last4` are display-only values returned by the provider.

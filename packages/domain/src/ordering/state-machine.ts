@@ -33,6 +33,12 @@ interface Rule {
  */
 const REFUNDABLE_STATES: readonly OrderStatus[] = ["completed", "cancelled", "rejected"];
 
+/** Order statuses from which a (further) refund of the order's payment may be requested. */
+export const REFUNDABLE_ORDER_STATUSES: readonly OrderStatus[] = [
+  ...REFUNDABLE_STATES,
+  "partially_refunded",
+];
+
 export const TRANSITION_RULES: readonly Rule[] = [
   { from: ["awaiting_payment"], to: "paid", who: ["system"] },
   { from: ["awaiting_payment"], to: "expired", who: ["system"] },

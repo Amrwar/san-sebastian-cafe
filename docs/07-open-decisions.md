@@ -4,6 +4,8 @@ Nothing below will be invented. Until answered, the system uses the **dev defaul
 
 ## A. Blocking decisions (needed before the phase noted)
 
+> **2026-10-11:** D2 decided for development: **Stripe** (owner: POS unknown). Rationale, comparison and the launch checklist are in [13-payments.md](13-payments.md). D1 is still open, and if the café runs Square POS, D2 should be revisited.
+
 | ID     | Question                                                                                                                                                                         | Needed by                    | Dev default                      |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------------- |
 | **D1** | Which POS does the café use today (Square, Clover, Lightspeed, Maitre'D, Veloce, other)? Is it Revenu Québec WEB-SRM certified? Does it have an API for importing online orders? | Phase 6 (provider), Phase 12 | `pos: none`                      |

@@ -45,3 +45,40 @@ test.describe("staff product availability", () => {
     }
   });
 });
+
+test.describe("payments and refunds", () => {
+  test.use({ storageState: "e2e/.auth/manager.json" });
+
+  test("a manager refunds part of a completed order, with the reason kept in the audit trail", async ({
+    page,
+  }) => {
+    await page.goto("/fr/staff/payments?number=D-1001");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Paiements et remboursements" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "D-1001" })).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    // The server refuses more than what is refundable; the form checks first.
+    await page.getByLabel("Montant ($)").fill("999");
+    await page.getByLabel("Raison (visible dans l’historique)").fill("Boisson froide");
+    await page.getByRole("button", { name: "Rembourser" }).click();
+    await expect(page.getByText(/Entrez un montant entre 0,01/)).toBeVisible();
+
+    await page.getByLabel("Montant ($)").fill("0.50");
+    await page.getByRole("button", { name: "Rembourser" }).click();
+    await expect(page.getByText("Remboursement demandé (effectué).")).toBeVisible();
+    await expect(page.getByText(/Boisson froide — par /)).toBeVisible();
+  });
+
+  test("staff without refund rights can't open the payments screen", async ({ browser }) => {
+    const context = await browser.newContext({ storageState: "e2e/.auth/staff.json" });
+    try {
+      const page = await context.newPage();
+      await page.goto("/fr/staff/payments");
+      await expect(page.getByRole("heading", { level: 1, name: "Accès réservé" })).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+});

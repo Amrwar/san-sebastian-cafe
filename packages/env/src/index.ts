@@ -14,6 +14,10 @@ const postgresUrl = z
     message: "must be a postgres:// or postgresql:// URL",
   });
 
+/** An optional setting where an empty value (`KEY=` in .env) means "not set". */
+const optional = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((v) => (v === "" ? undefined : v), schema.optional());
+
 export const serverEnvSchema = z
   .object({
     APP_ENV: z.enum(APP_ENVS).default("development"),
@@ -28,9 +32,21 @@ export const serverEnvSchema = z
     EMAIL_FROM: z.string().min(3),
     /**
      * Payment boundary. "none": orders can't be placed. "fake": development simulator (no money
-     * moves). Real providers are added in Phase 6.
+     * moves). "stripe": Stripe Checkout — test-mode keys everywhere except production.
      */
-    PAYMENT_PROVIDER: z.enum(["none", "fake"]).default("none"),
+    PAYMENT_PROVIDER: z.enum(["none", "fake", "stripe"]).default("none"),
+    /** Stripe secret or restricted key (sk_/rk_ + test_/live_). Server-only; never logged. */
+    STRIPE_SECRET_KEY: optional(
+      z
+        .string()
+        .regex(/^(sk|rk)_(test|live)_[A-Za-z0-9]+$/, "must be a Stripe secret or restricted key"),
+    ),
+    /** Signing secret of the Stripe webhook endpoint (or of `stripe listen` locally). */
+    STRIPE_WEBHOOK_SECRET: optional(
+      z.string().regex(/^whsec_[A-Za-z0-9]+$/, "must be a Stripe webhook signing secret (whsec_…)"),
+    ),
+    /** Bearer secret for the payment recovery job (/api/cron/payments). Unset = job disabled. */
+    CRON_SECRET: optional(z.string().min(32, "must be at least 32 characters")),
   })
   .superRefine((env, ctx) => {
     const deployed = env.APP_ENV === "staging" || env.APP_ENV === "production";
@@ -55,6 +71,30 @@ export const serverEnvSchema = z
         path: ["PAYMENT_PROVIDER"],
         message: "the fake payment simulator is development-only",
       });
+    }
+    if (env.PAYMENT_PROVIDER === "stripe") {
+      for (const key of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] as const) {
+        if (!env[key])
+          ctx.addIssue({
+            code: "custom",
+            path: [key],
+            message: "required when PAYMENT_PROVIDER=stripe",
+          });
+      }
+      const live = env.STRIPE_SECRET_KEY?.includes("_live_") ?? false;
+      // Real money only in production; production never runs on test keys.
+      if (live && env.APP_ENV !== "production")
+        ctx.addIssue({
+          code: "custom",
+          path: ["STRIPE_SECRET_KEY"],
+          message: "live keys are only allowed when APP_ENV=production; use test-mode keys",
+        });
+      if (!live && env.STRIPE_SECRET_KEY && env.APP_ENV === "production")
+        ctx.addIssue({
+          code: "custom",
+          path: ["STRIPE_SECRET_KEY"],
+          message: "production requires a live-mode key",
+        });
     }
     if (deployed && !env.BETTER_AUTH_URL.startsWith("https://")) {
       ctx.addIssue({

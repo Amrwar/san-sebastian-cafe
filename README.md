@@ -2,7 +2,7 @@
 
 Customer PWA, staff/owner console, and backend for San Sebastian Café (Montréal, QC).
 
-**Status:** Phase 3 (ordering domain and staff queue) complete — see the [Phase 3 report](docs/12-phase-3-report.md). Real online payment is **not** integrated yet (Phase 6).
+**Status:** Phase 4 (payments) implemented: Stripe Checkout, webhooks, refunds and recovery — see the [Phase 4 report](docs/14-phase-4-report.md) and the [payments runbook](docs/13-payments.md). Verification in the Stripe sandbox is pending test keys, and production payments are **not** enabled.
 Customers can browse, customize, build a server-priced cart and review checkout, but **orders cannot be
 placed and nothing is charged yet** (payments are Phase 6). All menu items, prices, hours and accounts in
 development databases are clearly labelled demonstration data.
@@ -37,18 +37,21 @@ npm run dev                          # http://localhost:3000 → redirects to /f
 All variables are validated at startup by [`packages/env`](packages/env/src/index.ts); the app refuses to
 start with a clear message naming the invalid variable (values are never printed).
 
-| Variable             | Purpose                                                                     |
-| -------------------- | --------------------------------------------------------------------------- |
-| `APP_ENV`            | `development` \| `test` \| `staging` \| `production`                        |
-| `LOG_LEVEL`          | pino level (`debug` locally)                                                |
-| `DATABASE_URL`       | Application database                                                        |
-| `DATABASE_URL_TEST`  | Integration tests — **wiped on every run**; name must contain `test`        |
-| `DATABASE_URL_E2E`   | Playwright — **wiped and re-seeded on every run**; name must contain `e2e`  |
-| `BETTER_AUTH_URL`    | Public base URL (must be `https` in staging/production)                     |
-| `BETTER_AUTH_SECRET` | ≥ 32 random chars; the placeholder is rejected in staging/production        |
-| `EMAIL_TRANSPORT`    | `console` only (development) — rejected in staging/production until Phase 7 |
-| `EMAIL_FROM`         | Sender shown on emails                                                      |
-| `PAYMENT_PROVIDER`   | `none` (default: orders can be reviewed but not placed)                     | `fake` (development payment simulator, no money moves — refused in staging/production) |
+| Variable                | Purpose                                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENV`               | `development` \| `test` \| `staging` \| `production`                                                                                |
+| `LOG_LEVEL`             | pino level (`debug` locally)                                                                                                        |
+| `DATABASE_URL`          | Application database                                                                                                                |
+| `DATABASE_URL_TEST`     | Integration tests — **wiped on every run**; name must contain `test`                                                                |
+| `DATABASE_URL_E2E`      | Playwright — **wiped and re-seeded on every run**; name must contain `e2e`                                                          |
+| `BETTER_AUTH_URL`       | Public base URL (must be `https` in staging/production)                                                                             |
+| `BETTER_AUTH_SECRET`    | ≥ 32 random chars; the placeholder is rejected in staging/production                                                                |
+| `EMAIL_TRANSPORT`       | `console` only (development) — rejected in staging/production until Phase 7                                                         |
+| `EMAIL_FROM`            | Sender shown on emails                                                                                                              |
+| `PAYMENT_PROVIDER`      | `none` (default: orders can't be placed) · `fake` (development simulator, no money moves; refused in staging/production) · `stripe` |
+| `STRIPE_SECRET_KEY`     | Stripe secret/restricted key — test mode except in production (live keys refused elsewhere)                                         |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret of the webhook endpoint or of `stripe listen`                                                                        |
+| `CRON_SECRET`           | Enables the payment recovery job `GET /api/cron/payments` (Bearer)                                                                  |
 
 ## Signing in locally
 
@@ -72,7 +75,11 @@ Any other email creates a new **customer** account. Roles can only be changed in
 Set `PAYMENT_PROVIDER=fake` in `.env`, then: add items → **Commander et payer** → on the payment step use
 **Simuler un paiement accepté** → sign in as `staff@…` in another browser and open **/fr/staff** to accept,
 start, mark ready and hand over the order; the customer's order page follows along automatically.
-Products can be taken off sale from **/fr/staff/availability**.
+Products can be taken off sale from **/fr/staff/availability**. Shift leads and managers refund from
+**/fr/staff/payments**.
+
+To pay through the **Stripe sandbox** instead, follow [docs/13-payments.md §3](docs/13-payments.md#local-sandbox)
+(test-mode keys, `stripe listen`, test card 4242 4242 4242 4242).
 
 ## Verifying the foundation
 
@@ -118,21 +125,23 @@ docs/               planning and phase documentation
 
 ## Documentation
 
-| Doc                                                          | Contents                                                           |
-| ------------------------------------------------------------ | ------------------------------------------------------------------ |
-| [00 Repository inspection](docs/00-repository-inspection.md) | Environment and tooling findings                                   |
-| [01 Product requirements](docs/01-product-requirements.md)   | Goals, personas, functional & non-functional requirements          |
-| [02 Architecture](docs/02-architecture.md)                   | Stack, rationale, module boundaries, API, payment evaluation       |
-| [03 Data model](docs/03-data-model.md)                       | Implemented schema: ownership, constraints, transaction boundaries |
-| [04 Implementation plan](docs/04-implementation-plan.md)     | Phased roadmap and checklist                                       |
-| [05 Risk register](docs/05-risk-register.md)                 | Risks and mitigations                                              |
-| [06 Acceptance criteria](docs/06-acceptance-criteria.md)     | Testable criteria                                                  |
-| [07 Open decisions](docs/07-open-decisions.md)               | What the owner must decide or supply                               |
-| [08 Compliance notes](docs/08-compliance-notes.md)           | Québec/Canada obligations (requires professional confirmation)     |
-| [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                             |
-| [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                |
-| [11 Phase 2 report](docs/11-phase-2-report.md)               | Customer experience: pages, contracts, states, tests, limitations  |
-| [12 Phase 3 report](docs/12-phase-3-report.md)               | Ordering domain, staff queue, API, tests, limitations              |
+| Doc                                                          | Contents                                                                      |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| [00 Repository inspection](docs/00-repository-inspection.md) | Environment and tooling findings                                              |
+| [01 Product requirements](docs/01-product-requirements.md)   | Goals, personas, functional & non-functional requirements                     |
+| [02 Architecture](docs/02-architecture.md)                   | Stack, rationale, module boundaries, API, payment evaluation                  |
+| [03 Data model](docs/03-data-model.md)                       | Implemented schema: ownership, constraints, transaction boundaries            |
+| [04 Implementation plan](docs/04-implementation-plan.md)     | Phased roadmap and checklist                                                  |
+| [05 Risk register](docs/05-risk-register.md)                 | Risks and mitigations                                                         |
+| [06 Acceptance criteria](docs/06-acceptance-criteria.md)     | Testable criteria                                                             |
+| [07 Open decisions](docs/07-open-decisions.md)               | What the owner must decide or supply                                          |
+| [08 Compliance notes](docs/08-compliance-notes.md)           | Québec/Canada obligations (requires professional confirmation)                |
+| [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                                        |
+| [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                           |
+| [11 Phase 2 report](docs/11-phase-2-report.md)               | Customer experience: pages, contracts, states, tests, limitations             |
+| [12 Phase 3 report](docs/12-phase-3-report.md)               | Ordering domain, staff queue, API, tests, limitations                         |
+| [13 Payments](docs/13-payments.md)                           | Provider decision, flow, setup, webhooks, refunds, recovery, launch checklist |
+| [14 Phase 4 report](docs/14-phase-4-report.md)               | Payments: what was built, tests, limitations                                  |
 
 ## Deployment (Vercel demo)
 
