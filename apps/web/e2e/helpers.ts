@@ -5,6 +5,9 @@ import { expect, type Page } from "@playwright/test";
 
 /** Fails on serious or critical WCAG 2.x A/AA violations. */
 export async function expectNoSeriousA11yViolations(page: Page): Promise<void> {
+  // After a client-side navigation Next.js swaps <title> asynchronously; scan the settled page.
+  // (A page that never gets a title still fails here.)
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
