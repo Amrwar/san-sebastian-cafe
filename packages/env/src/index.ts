@@ -64,7 +64,12 @@ export class EnvValidationError extends Error {
 
 /** Pure parser — never logs secret values, only variable names and messages. */
 export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
-  const result = serverEnvSchema.safeParse(source);
+  // Vercel preview deployments each get their own URL; use it when no explicit URL is set.
+  const effective =
+    !source.BETTER_AUTH_URL && source.VERCEL_URL
+      ? { ...source, BETTER_AUTH_URL: `https://${source.VERCEL_URL}` }
+      : source;
+  const result = serverEnvSchema.safeParse(effective);
   const issues = result.success
     ? []
     : result.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);

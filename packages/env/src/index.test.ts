@@ -34,6 +34,15 @@ describe("parseServerEnv", () => {
     expect(parseServerEnv({ ...valid, VERCEL: "1" }).APP_ENV).toBe("development");
   });
 
+  it("derives the auth URL from the Vercel deployment URL when not set", () => {
+    const env = parseServerEnv({
+      ...valid,
+      BETTER_AUTH_URL: undefined,
+      VERCEL_URL: "ssc-abc.vercel.app",
+    });
+    expect(env.BETTER_AUTH_URL).toBe("https://ssc-abc.vercel.app");
+  });
+
   it("forbids development-only settings in production", () => {
     expect(() =>
       parseServerEnv({

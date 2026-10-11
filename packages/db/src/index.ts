@@ -17,6 +17,9 @@ export interface DbHandle {
 export function createDb(url: string, options: { max?: number } = {}): DbHandle {
   const client = postgres(url, {
     max: options.max ?? 10,
+    // PgBouncer-style poolers (e.g. Neon "-pooler" hosts) in transaction mode cannot keep
+    // prepared statements across transactions.
+    prepare: !new URL(url).hostname.includes("-pooler"),
     // Keep Postgres notices (e.g. "relation already exists, skipping") out of app logs.
     onnotice: () => undefined,
   });
