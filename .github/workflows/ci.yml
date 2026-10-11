@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ENV: test
+  LOG_LEVEL: warn
+  DATABASE_URL: postgres://ssc:ssc_ci_password@localhost:5432/ssc_dev
+  DATABASE_URL_TEST: postgres://ssc:ssc_ci_password@localhost:5432/ssc_test
+  DATABASE_URL_E2E: postgres://ssc:ssc_ci_password@localhost:5432/ssc_e2e
+  BETTER_AUTH_URL: http://localhost:3100
+  # CI-only throwaway value; never used for real data.
+  BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+  EMAIL_TRANSPORT: console
+  EMAIL_FROM: "San Sebastian Café CI <no-reply@example.invalid>"
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  checks:
+    name: Typecheck, lint, test, build, e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ssc
+          POSTGRES_PASSWORD: ssc_ci_password
+          POSTGRES_DB: ssc_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ssc -d ssc_dev"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Create test databases
+        run: |
+          PGPASSWORD=ssc_ci_password psql -h localhost -U ssc -d ssc_dev -c "CREATE DATABASE ssc_test OWNER ssc;"
+          PGPASSWORD=ssc_ci_password psql -h localhost -U ssc -d ssc_dev -c "CREATE DATABASE ssc_e2e OWNER ssc;"
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - name: Migrations apply and demo seed is repeatable
+        run: npm run db:migrate && npm run db:seed && npm run db:seed
+      - name: Migrations are in sync with the schema
+        run: |
+          npm run db:generate -- --name ci_drift_check
+          if [ -n "$(git status --porcelain packages/db/migrations)" ]; then
+            echo "::error::Schema changed without a committed migration. Run npm run db:generate."; git status --porcelain; exit 1
+          fi
+      - run: npm run test:integration
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npm run test:e2e
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7

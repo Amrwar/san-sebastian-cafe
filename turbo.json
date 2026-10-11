@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "globalEnv": [
+    "NODE_ENV",
+    "APP_ENV",
+    "CI",
+    "DATABASE_URL",
+    "DATABASE_URL_TEST",
+    "DATABASE_URL_E2E",
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "EMAIL_TRANSPORT",
+    "EMAIL_FROM",
+    "LOG_LEVEL"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "lint": {},
+    "test": {},
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@ssc/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./maintenance": "./src/maintenance.ts",
+    "./seed": "./src/seed.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run --project unit --passWithNoTests",
+    "test:integration": "vitest run --project integration",
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx scripts/migrate.ts",
+    "seed": "tsx scripts/seed.ts",
+    "purge-demo": "tsx scripts/purge-demo.ts",
+    "reset": "tsx scripts/reset.ts",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@ssc/domain": "*",
+    "@ssc/env": "*",
+    "drizzle-orm": "^0.45.4",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
+  }
+}

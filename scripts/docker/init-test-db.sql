@@ -1,0 +1,2 @@
+CREATE DATABASE ssc_test OWNER ssc;
+CREATE DATABASE ssc_e2e OWNER ssc;

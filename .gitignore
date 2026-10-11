@@ -18,3 +18,5 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.dev-mail/
+next-env.d.ts

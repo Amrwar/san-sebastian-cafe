@@ -1,0 +1,151 @@
+{
+  "Metadata": {
+    "title": "San Sebastian Café",
+    "description": "Specialty coffee in Montréal."
+  },
+  "Common": {
+    "skipToContent": "Skip to main content",
+    "demo": "Demo",
+    "switchLanguage": "Français",
+    "switchLanguageLabel": "View the site in French",
+    "optional": "(optional)"
+  },
+  "Nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "menu": "Menu",
+    "account": "My account",
+    "signIn": "Sign in",
+    "staff": "Staff",
+    "admin": "Admin",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "Footer": {
+    "devNotice": "Development build. Products, prices and accounts shown are demonstration data.",
+    "city": "Montréal, Québec"
+  },
+  "Home": {
+    "eyebrow": "Specialty coffee · Montréal",
+    "title": "San Sebastian Café",
+    "intro": "Our ordering and loyalty app is being prepared. You can already preview the menu and create your account.",
+    "viewMenu": "View the menu",
+    "signIn": "Create an account or sign in",
+    "comingTitle": "Coming to the app",
+    "coming1Title": "Order ahead",
+    "coming1Body": "Choose your pickup time and pay online.",
+    "coming2Title": "Digital stamp card",
+    "coming2Body": "Buy five qualifying drinks and the sixth is on us.",
+    "coming3Title": "Order tracking",
+    "coming3Body": "Know exactly when your order is ready.",
+    "comingNote": "These features are not available yet."
+  },
+  "Menu": {
+    "eyebrow": "Menu",
+    "title": "Menu preview",
+    "intro": "Online ordering is not open yet. Prices include base options and exclude taxes.",
+    "demoNotice": "This menu contains demonstration products only. The real menu will be added by the café.",
+    "from": "From {price}",
+    "soldOut": "Sold out",
+    "options": "{count, plural, =0 {No options} one {# option group} other {# option groups}}",
+    "emptyTitle": "The menu isn’t published yet",
+    "emptyBody": "Please check back soon."
+  },
+  "SignIn": {
+    "eyebrow": "Account",
+    "title": "Sign in",
+    "intro": "No password needed: we email you a one-time code. An account is created automatically the first time you sign in.",
+    "emailLabel": "Email address",
+    "sendCode": "Send me a code",
+    "codeLabel": "Verification code",
+    "codeHint": "Enter the 6-digit code sent to {email}. It expires in 10 minutes.",
+    "verify": "Sign in",
+    "changeEmail": "Use a different email",
+    "devHint": "Development mode: no email is sent. The code is printed in the server terminal.",
+    "errors": {
+      "invalidEmail": "Enter a valid email address.",
+      "invalidCode": "That code is invalid or has expired.",
+      "codeFormat": "The code has 6 digits.",
+      "tooManyRequests": "Too many attempts. Wait a few minutes, then try again.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "Account": {
+    "eyebrow": "My account",
+    "title": "Hello{name, select, empty {} other {, {name}}}",
+    "signedInAs": "Signed in as {email}",
+    "role": "Role: {role}",
+    "profileTitle": "Profile",
+    "nameLabel": "Name",
+    "nameHint": "Shown on your orders at the counter.",
+    "languageLabel": "Communication language",
+    "notificationsTitle": "Communications",
+    "orderUpdatesLabel": "Order updates by email",
+    "orderUpdatesHint": "Confirmation and a notice when your order is ready.",
+    "marketingLabel": "I agree to receive offers and news from San Sebastian Café by email.",
+    "marketingHint": "Optional. You can withdraw your consent at any time.",
+    "save": "Save",
+    "saved": "Your preferences have been saved.",
+    "signOut": "Sign out",
+    "errors": {
+      "name": "Enter a name between 1 and 80 characters.",
+      "generic": "Couldn’t save. Please try again."
+    }
+  },
+  "Roles": {
+    "customer": "Customer",
+    "staff": "Barista",
+    "shift_lead": "Shift lead",
+    "manager": "Manager",
+    "owner": "Owner"
+  },
+  "OrderStatus": {
+    "awaiting_payment": "Awaiting payment",
+    "paid": "Paid",
+    "accepted": "Accepted",
+    "in_preparation": "In preparation",
+    "ready": "Ready",
+    "completed": "Picked up",
+    "cancelled": "Cancelled",
+    "expired": "Expired",
+    "refunded": "Refunded",
+    "partially_refunded": "Partially refunded"
+  },
+  "Staff": {
+    "eyebrow": "Staff",
+    "title": "Staff console",
+    "intro": "Overview of recorded orders.",
+    "queueTitle": "Live order queue",
+    "queueBody": "The real-time queue isn’t enabled yet. Online orders can’t be placed at this time.",
+    "ordersByStatus": "Orders by status",
+    "status": "Status",
+    "count": "Count"
+  },
+  "Admin": {
+    "eyebrow": "Admin",
+    "title": "Administration",
+    "intro": "Catalog status and the log of privileged actions.",
+    "catalogTitle": "Catalog",
+    "categories": "Categories",
+    "products": "Products",
+    "real": "Real",
+    "demo": "Demo",
+    "demoWarning": "The catalog contains {count, plural, one {# demonstration product} other {# demonstration products}}. Remove them before going live (npm run db:purge-demo).",
+    "auditTitle": "Audit log",
+    "auditEmpty": "No actions recorded yet.",
+    "auditWhen": "Date",
+    "auditAction": "Action",
+    "auditEntity": "Item"
+  },
+  "Errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "This page doesn’t exist or has moved.",
+    "backHome": "Back to home",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We couldn’t display this page. Please try again in a moment.",
+    "retry": "Try again",
+    "reference": "Reference: {id}",
+    "forbiddenTitle": "Restricted area",
+    "forbiddenBody": "Your account doesn’t have permission to access this section."
+  }
+}

@@ -1,0 +1,80 @@
+/*
+ * San Sebastian Café design tokens (Tailwind CSS v4 theme).
+ * Brand palette: docs/09-design-direction.md. Contrast against ivory:
+ *   espresso 12.8:1 · espresso-muted 7.4:1 · burgundy 8.2:1 · danger 6.4:1 · success 5.6:1 · warning 6.1:1
+ *   crema is DECORATIVE ONLY on ivory (1.7:1) — use it on espresso surfaces (7.5:1).
+ * Font families are supplied by the app (next/font) through --font-display-family / --font-sans-family.
+ */
+@theme {
+  --color-ivory: #f6f0e6;
+  --color-ivory-raised: #fbf8f3;
+  --color-ivory-sunken: #efe6d8;
+  --color-line: #ddd0bd;
+  --color-line-strong: #b9a68f;
+
+  --color-espresso: #38251f;
+  --color-espresso-muted: #5c4a43;
+  --color-espresso-deep: #2a1b16;
+
+  --color-burgundy: #772f3b;
+  --color-burgundy-hover: #5f2430;
+  --color-burgundy-tint: #f1e2e1;
+
+  --color-crema: #d7b77a; /* confirm hex with owner — see docs/07-open-decisions.md */
+  --color-crema-soft: #ecdcb8;
+
+  --color-success: #2f6b4f;
+  --color-success-tint: #e3efe7;
+  --color-warning: #7a5200;
+  --color-warning-tint: #f6ead0;
+  --color-danger: #a12a2a;
+  --color-danger-tint: #f6e1de;
+
+  --font-display: var(--font-display-family), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-sans-family), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 1px 2px rgb(56 37 31 / 0.06), 0 6px 20px -8px rgb(56 37 31 / 0.18);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-ivory);
+    color: var(--color-espresso);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-burgundy);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  .on-dark :focus-visible {
+    outline-color: var(--color-crema);
+  }
+
+  ::selection {
+    background: var(--color-crema-soft);
+    color: var(--color-espresso);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

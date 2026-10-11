@@ -4,22 +4,23 @@ _Status: Proposed for Phase 2 · inputs: owner palette + two reference mobile co
 
 ## 1. Palette & roles
 
-| Token | Hex | Role |
-|---|---|---|
-| `--color-ivory` | `#F6F0E6` | Main background |
-| `--color-espresso` | `#38251F` | Primary text, dark surfaces (hero, product header, staff console header) |
-| `--color-burgundy` | `#772F3B` | Brand accent, primary buttons, links, selected states |
-| `--color-crema` | `#D7B77A` ⚠ | Rewards, stamps, highlights. **Confirm the hex:** the second message listed `#38251F`. |
+| Token              | Hex         | Role                                                                                   |
+| ------------------ | ----------- | -------------------------------------------------------------------------------------- |
+| `--color-ivory`    | `#F6F0E6`   | Main background                                                                        |
+| `--color-espresso` | `#38251F`   | Primary text, dark surfaces (hero, product header, staff console header)               |
+| `--color-burgundy` | `#772F3B`   | Brand accent, primary buttons, links, selected states                                  |
+| `--color-crema`    | `#D7B77A` ⚠ | Rewards, stamps, highlights. **Confirm the hex:** the second message listed `#38251F`. |
 
 Derived tokens are generated in Phase 2 (tints/shades for surfaces, borders, hover/pressed, focus ring, success/warning/danger tuned to the palette) and dark-surface variants.
 
 ### Contrast (computed, WCAG 2.x)
-| Pair | Ratio | Use |
-|---|---|---|
-| Espresso on Ivory | ≈ 12.8 : 1 | Body text ✔ |
-| Burgundy on Ivory | ≈ 8.2 : 1 | Links, accent text, button fill with ivory label ✔ |
-| Crema on Espresso | ≈ 7.5 : 1 | Reward text on dark surfaces ✔ |
-| Crema on Ivory | ≈ 1.7 : 1 | ✘ **Never for text or essential icons on ivory.** Decorative fills, stamp graphics with an espresso outline, and highlights only. |
+
+| Pair              | Ratio      | Use                                                                                                                               |
+| ----------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Espresso on Ivory | ≈ 12.8 : 1 | Body text ✔                                                                                                                       |
+| Burgundy on Ivory | ≈ 8.2 : 1  | Links, accent text, button fill with ivory label ✔                                                                                |
+| Crema on Espresso | ≈ 7.5 : 1  | Reward text on dark surfaces ✔                                                                                                    |
+| Crema on Ivory    | ≈ 1.7 : 1  | ✘ **Never for text or essential icons on ivory.** Decorative fills, stamp graphics with an espresso outline, and highlights only. |
 
 ## 2. What we take from the reference concepts
 
@@ -32,16 +33,16 @@ Derived tokens are generated in Phase 2 (tints/shades for surfaces, borders, hov
 
 ## 3. Where we diverge, and why
 
-| Reference element | Our approach | Reason |
-|---|---|---|
+| Reference element                                                  | Our approach                                                                                                                | Reason                                                                                    |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Very large corner radii on everything, cards inside rounded frames | Restrained radius scale (4 / 8 / 14 px). Pills only for chips and buttons. Photography can be square-cropped and editorial. | Brief: avoid excessive rounded cards; aim for a premium brand look rather than a template |
-| Heavy brown gradients | Gradients only as **photo scrims** for text legibility. Otherwise flat colour planes. | Brief: avoid excessive gradients |
-| Star ratings (4.3, 4.8) | **Omitted.** No review system exists and none will be invented. | Don't fabricate data |
-| "Volume 160 mL" | Shown only if the owner supplies sizes or volumes | Don't invent menu facts |
-| "Buy now" on each product | "Add to order" + cart. Express "Reorder" for favourites. | Café orders are multi-item |
-| White label on tan buttons | Ivory on burgundy (8.2:1) | Tan with white fails contrast |
-| Location header ("Los Vegas") | Pickup location and time chip ("Pickup · ASAP ~10 min") | More useful information |
-| Emoji-like category icons | A custom line-icon set (1.5 px stroke) or Lucide, consistent sizes | Brief: no emoji as primary icons |
+| Heavy brown gradients                                              | Gradients only as **photo scrims** for text legibility. Otherwise flat colour planes.                                       | Brief: avoid excessive gradients                                                          |
+| Star ratings (4.3, 4.8)                                            | **Omitted.** No review system exists and none will be invented.                                                             | Don't fabricate data                                                                      |
+| "Volume 160 mL"                                                    | Shown only if the owner supplies sizes or volumes                                                                           | Don't invent menu facts                                                                   |
+| "Buy now" on each product                                          | "Add to order" + cart. Express "Reorder" for favourites.                                                                    | Café orders are multi-item                                                                |
+| White label on tan buttons                                         | Ivory on burgundy (8.2:1)                                                                                                   | Tan with white fails contrast                                                             |
+| Location header ("Los Vegas")                                      | Pickup location and time chip ("Pickup · ASAP ~10 min")                                                                     | More useful information                                                                   |
+| Emoji-like category icons                                          | A custom line-icon set (1.5 px stroke) or Lucide, consistent sizes                                                          | Brief: no emoji as primary icons                                                          |
 
 The reference concepts are third-party work. They're used for mood only. Layouts, compositions and assets will be original (Risk R18).
 
@@ -56,6 +57,7 @@ The reference concepts are third-party work. They're used for mood only. Layouts
 7. **Admin:** quiet, dense, data-first layout. Same tokens with neutral surfaces, so it stays readable rather than decorative.
 
 ## 5. Motion & detail
+
 - 150–250 ms ease-out transitions. Respect `prefers-reduced-motion`.
 - A subtle stamp "press" animation when a stamp is earned. Skeletons rather than spinners for content.
 - Soft single-layer shadows with low opacity espresso tint (no stacked blur shadows).

@@ -1,0 +1,151 @@
+{
+  "Metadata": {
+    "title": "San Sebastian Café",
+    "description": "Café de spécialité à Montréal."
+  },
+  "Common": {
+    "skipToContent": "Aller au contenu principal",
+    "demo": "Démo",
+    "switchLanguage": "English",
+    "switchLanguageLabel": "Afficher le site en anglais",
+    "optional": "(facultatif)"
+  },
+  "Nav": {
+    "label": "Navigation principale",
+    "home": "Accueil",
+    "menu": "Menu",
+    "account": "Mon compte",
+    "signIn": "Se connecter",
+    "staff": "Personnel",
+    "admin": "Administration",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
+  },
+  "Footer": {
+    "devNotice": "Version de développement. Les produits, prix et comptes affichés sont des données de démonstration.",
+    "city": "Montréal (Québec)"
+  },
+  "Home": {
+    "eyebrow": "Café de spécialité · Montréal",
+    "title": "San Sebastian Café",
+    "intro": "Notre application de commande et de fidélité est en préparation. Vous pouvez déjà consulter un aperçu du menu et créer votre compte.",
+    "viewMenu": "Voir le menu",
+    "signIn": "Créer un compte ou se connecter",
+    "comingTitle": "Bientôt dans l’application",
+    "coming1Title": "Commander à l’avance",
+    "coming1Body": "Choisissez votre heure de cueillette et payez en ligne.",
+    "coming2Title": "Carte de fidélité numérique",
+    "coming2Body": "Cinq boissons admissibles payées, la sixième vous est offerte.",
+    "coming3Title": "Suivi de commande",
+    "coming3Body": "Sachez exactement quand votre commande est prête.",
+    "comingNote": "Ces fonctionnalités ne sont pas encore offertes."
+  },
+  "Menu": {
+    "eyebrow": "Menu",
+    "title": "Aperçu du menu",
+    "intro": "La commande en ligne n’est pas encore ouverte. Les prix incluent les options de base et excluent les taxes.",
+    "demoNotice": "Ce menu contient uniquement des produits de démonstration. Le vrai menu sera ajouté par le café.",
+    "from": "À partir de {price}",
+    "soldOut": "Épuisé",
+    "options": "{count, plural, =0 {Aucune option} one {# groupe d’options} other {# groupes d’options}}",
+    "emptyTitle": "Le menu n’est pas encore publié",
+    "emptyBody": "Revenez bientôt."
+  },
+  "SignIn": {
+    "eyebrow": "Compte",
+    "title": "Se connecter",
+    "intro": "Pas de mot de passe : nous vous envoyons un code à usage unique par courriel. Un compte est créé automatiquement à votre première connexion.",
+    "emailLabel": "Adresse courriel",
+    "sendCode": "Recevoir un code",
+    "codeLabel": "Code de vérification",
+    "codeHint": "Entrez le code à 6 chiffres envoyé à {email}. Il expire dans 10 minutes.",
+    "verify": "Se connecter",
+    "changeEmail": "Utiliser une autre adresse",
+    "devHint": "Mode développement : aucun courriel n’est envoyé. Le code s’affiche dans le terminal du serveur.",
+    "errors": {
+      "invalidEmail": "Entrez une adresse courriel valide.",
+      "invalidCode": "Le code est invalide ou expiré.",
+      "codeFormat": "Le code contient 6 chiffres.",
+      "tooManyRequests": "Trop de tentatives. Patientez quelques minutes, puis réessayez.",
+      "generic": "Une erreur est survenue. Réessayez."
+    }
+  },
+  "Account": {
+    "eyebrow": "Mon compte",
+    "title": "Bonjour{name, select, empty {} other {, {name}}}",
+    "signedInAs": "Connecté en tant que {email}",
+    "role": "Rôle : {role}",
+    "profileTitle": "Profil",
+    "nameLabel": "Nom",
+    "nameHint": "Affiché sur vos commandes au comptoir.",
+    "languageLabel": "Langue de communication",
+    "notificationsTitle": "Communications",
+    "orderUpdatesLabel": "Avis de commande par courriel",
+    "orderUpdatesHint": "Confirmation et avis lorsque votre commande est prête.",
+    "marketingLabel": "J’accepte de recevoir des offres et nouvelles de San Sebastian Café par courriel.",
+    "marketingHint": "Facultatif. Vous pouvez retirer votre consentement en tout temps.",
+    "save": "Enregistrer",
+    "saved": "Vos préférences ont été enregistrées.",
+    "signOut": "Se déconnecter",
+    "errors": {
+      "name": "Entrez un nom de 1 à 80 caractères.",
+      "generic": "Impossible d’enregistrer. Réessayez."
+    }
+  },
+  "Roles": {
+    "customer": "Client",
+    "staff": "Barista",
+    "shift_lead": "Chef d’équipe",
+    "manager": "Gérant",
+    "owner": "Propriétaire"
+  },
+  "OrderStatus": {
+    "awaiting_payment": "En attente de paiement",
+    "paid": "Payée",
+    "accepted": "Acceptée",
+    "in_preparation": "En préparation",
+    "ready": "Prête",
+    "completed": "Remise",
+    "cancelled": "Annulée",
+    "expired": "Expirée",
+    "refunded": "Remboursée",
+    "partially_refunded": "Partiellement remboursée"
+  },
+  "Staff": {
+    "eyebrow": "Personnel",
+    "title": "Console du personnel",
+    "intro": "Vue d’ensemble des commandes enregistrées.",
+    "queueTitle": "File de commandes en direct",
+    "queueBody": "La file en temps réel n’est pas encore activée. Aucune commande en ligne ne peut être passée pour l’instant.",
+    "ordersByStatus": "Commandes par statut",
+    "status": "Statut",
+    "count": "Nombre"
+  },
+  "Admin": {
+    "eyebrow": "Administration",
+    "title": "Administration",
+    "intro": "État du catalogue et journal des actions privilégiées.",
+    "catalogTitle": "Catalogue",
+    "categories": "Catégories",
+    "products": "Produits",
+    "real": "Réels",
+    "demo": "Démo",
+    "demoWarning": "Le catalogue contient {count, plural, one {# produit de démonstration} other {# produits de démonstration}}. Supprimez-les avant la mise en ligne (npm run db:purge-demo).",
+    "auditTitle": "Journal d’audit",
+    "auditEmpty": "Aucune action enregistrée pour le moment.",
+    "auditWhen": "Date",
+    "auditAction": "Action",
+    "auditEntity": "Élément"
+  },
+  "Errors": {
+    "notFoundTitle": "Page introuvable",
+    "notFoundBody": "Cette page n’existe pas ou a été déplacée.",
+    "backHome": "Retour à l’accueil",
+    "errorTitle": "Un problème est survenu",
+    "errorBody": "Nous n’avons pas pu afficher cette page. Réessayez dans un instant.",
+    "retry": "Réessayer",
+    "reference": "Référence : {id}",
+    "forbiddenTitle": "Accès réservé",
+    "forbiddenBody": "Votre compte n’a pas l’autorisation d’accéder à cette section."
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+.next
+.turbo
+coverage
+packages/db/migrations
+playwright-report
+test-results
+package-lock.json
+apps/web/.dev-mail
+apps/web/.next
