@@ -30,8 +30,7 @@ describe("parseServerEnv", () => {
   });
 
   it("requires an explicit APP_ENV on Vercel", () => {
-    const { APP_ENV: _omit, ...withoutAppEnv } = valid;
-    expect(() => parseServerEnv({ ...withoutAppEnv, VERCEL: "1" })).toThrow(/APP_ENV/);
+    expect(() => parseServerEnv({ ...valid, APP_ENV: undefined, VERCEL: "1" })).toThrow(/APP_ENV/);
     expect(parseServerEnv({ ...valid, VERCEL: "1" }).APP_ENV).toBe("development");
   });
 
