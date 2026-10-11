@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   smallint,
   text,
@@ -30,6 +31,18 @@ export const storeSettings = pgTable(
     prepMinutes: integer().notNull().default(10),
     slotMinutes: integer().notNull().default(15),
     daysAhead: integer().notNull().default(2),
+    /** Staff pause of online ordering (rush, equipment problem); null = not paused. */
+    pausedUntil: timestamp({ withTimezone: true }),
+    /** Last orders this many minutes before closing. */
+    orderCutoffMinutes: integer().notNull().default(15),
+    /** Scheduled orders must be at least this far ahead (the preparation time also applies). */
+    minLeadMinutes: integer().notNull().default(0),
+    /** Maximum orders per pickup slot; null = unlimited. */
+    maxOrdersPerSlot: integer(),
+    /** Paid orders go straight to "accepted" without a staff tap. */
+    autoAccept: boolean().notNull().default(false),
+    /** Unpaid orders release their slot and reward after this many minutes. */
+    unpaidTtlMinutes: integer().notNull().default(15),
     ...demoFlag,
     ...timestamps,
   },
@@ -37,7 +50,7 @@ export const storeSettings = pgTable(
     check("store_settings_singleton", sql`${t.id} = 1`),
     check(
       "store_settings_ranges",
-      sql`${t.prepMinutes} between 0 and 240 and ${t.slotMinutes} between 5 and 120 and ${t.daysAhead} between 0 and 14`,
+      sql`${t.prepMinutes} between 0 and 240 and ${t.slotMinutes} between 5 and 120 and ${t.daysAhead} between 0 and 14 and ${t.orderCutoffMinutes} between 0 and 240 and ${t.minLeadMinutes} between 0 and 1440 and (${t.maxOrdersPerSlot} is null or ${t.maxOrdersPerSlot} > 0) and ${t.unpaidTtlMinutes} between 5 and 120`,
     ),
   ],
 );
@@ -103,3 +116,16 @@ export const favorites = pgTable(
     index("favorites_user_idx").on(t.userId, t.createdAt),
   ],
 );
+
+/**
+ * Signed-in customers' cart, so it follows them across devices. Holds ids and quantities only
+ * (validated on write, re-priced on every read); guests keep their cart on the device.
+ */
+export const carts = pgTable("carts", {
+  userId: text()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  lines: jsonb().notNull().default([]),
+  version: integer().notNull().default(0),
+  ...timestamps,
+});

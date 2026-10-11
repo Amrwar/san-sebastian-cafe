@@ -121,3 +121,43 @@ Each row is one database transaction. Services own the transaction; route handle
 
 Pickup availability is computed (not stored) by `computePickupAvailability` in `@ssc/domain` from hours,
 closures and settings in the `America/Toronto` time zone (DST-safe, unit-tested on both transition days).
+
+## Phase 3 additions (migration `0002_ordering_domain.sql`)
+
+| Table / column                                                                                                                        | Owner    | Purpose and constraints                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `product_availability_windows`                                                                                                        | catalog  | Weekly local-time windows (e.g. breakfast 07:00–11:00 weekdays). CHECK weekday 0–6 and start < end. No rows = available whenever open                                                                   |
+| `variant_option_rules`                                                                                                                | catalog  | Per-size option rule: a different price (`price_delta_cents`) or `excluded` (e.g. no iced small latte). CHECK: a rule must do one of the two                                                            |
+| `products.unavailable_until`, `modifier_options.unavailable_until`                                                                    | catalog  | Temporary "86": unavailable until this instant, then automatically back on sale                                                                                                                         |
+| `orders.slot_start`                                                                                                                   | ordering | Capacity slot the order occupies (indexed with status). Counted under a transaction-scoped advisory lock when placing orders                                                                            |
+| `orders.expires_at`                                                                                                                   | ordering | Unpaid orders hold their slot/reward until then (`store_settings.unpaid_ttl_minutes`); afterwards they become `expired`                                                                                 |
+| `orders.guest_access_token_hash`, `guest_phone`                                                                                       | ordering | Guest tracking link: only a SHA-256 hash of the token is stored                                                                                                                                         |
+| `orders.cancellation_reason`, `accepted_at`, `ready_at`, `staff_notes`; `order_items.notes`                                           | ordering | Café's reason for a reject/cancel (a customer's own cancellation stores none), lifecycle timestamps, internal and per-item notes                                                                        |
+| `order_events` (+ enum `order_event_type`)                                                                                            | ordering | Append-only order history: created, status changes, payments, refunds, customer edits, staff notes — with actor kind and user                                                                           |
+| `order_counters`                                                                                                                      | ordering | One row per local date; `INSERT … ON CONFLICT DO UPDATE` gives human order numbers `MMDD-NNN` without gaps or races                                                                                     |
+| `refunds` (+ enum `refund_status`)                                                                                                    | payments | One row per refund; CHECK amount > 0. The service never lets the total refunded exceed what was paid                                                                                                    |
+| `carts`                                                                                                                               | ordering | Signed-in customer's saved cart (ids and quantities only — never prices); `version` for optimistic concurrency between devices                                                                          |
+| `store_settings.paused_until`, `order_cutoff_minutes`, `min_lead_minutes`, `max_orders_per_slot`, `auto_accept`, `unpaid_ttl_minutes` | store    | Staff pause, last-order cutoff before closing, minimum lead time for scheduled orders, capacity per slot, automatic acceptance after payment, unpaid hold time. CHECK-bounded (`store_settings_ranges`) |
+
+### Order lifecycle (state machine — `packages/domain/src/ordering/state-machine.ts`)
+
+```
+awaiting_payment ──(system: payment confirmed)──▶ paid ──▶ accepted ──▶ in_preparation ──▶ ready ──▶ completed
+       │                                           │          │               │              │
+       ├──▶ expired (unpaid past expires_at)       ├──▶ rejected (café, reason required, refunded in full)
+       └──▶ cancelled (customer)                   └──▶ cancelled (customer before acceptance: refunded in full;
+                                                                 café at any kitchen stage: reason required, refunded)
+completed / cancelled / rejected / partially_refunded ──▶ partially_refunded | refunded (shift lead+, reason required)
+```
+
+- Only the **system** (a verified payment outcome) can move an order to `paid` — never a browser redirect or a staff tap.
+- Every transition is checked by `checkTransition` (actor, reason, paid state), applied with an **optimistic version check** (`orders.version`), and written to both `order_status_events` and `order_events`. Two staff tapping at once: one succeeds, the other gets 409 and a refreshed queue.
+- Side effects run in the same transaction: on `paid` the reserved free drink is committed and stamps are earned; a full refund reverses the stamps and releases the reward; an unpaid order that expires, is cancelled or rejected releases its reserved reward.
+
+### Customer policies (defaults pending owner decision D16 — `ordering/policies.ts`)
+
+| Action             | Allowed when                                                               | Effect                                        |
+| ------------------ | -------------------------------------------------------------------------- | --------------------------------------------- |
+| Cancel             | `awaiting_payment` or `paid` (before the café accepts)                     | Paid → automatic full refund                  |
+| Change pickup time | Scheduled order, not yet accepted, ≥ 15 min before the current pickup time | New slot re-checked against capacity          |
+| Change items       | Never after ordering                                                       | Cancel and re-order (keeps totals consistent) |

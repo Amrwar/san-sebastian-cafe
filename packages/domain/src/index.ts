@@ -11,3 +11,6 @@ export * from "./catalog/configuration";
 export * from "./pricing/tax";
 export * from "./pricing/quote";
 export * from "./ordering/pickup";
+export * from "./catalog/availability";
+export * from "./ordering/state-machine";
+export * from "./ordering/policies";

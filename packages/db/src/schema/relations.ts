@@ -3,13 +3,15 @@ import {
   categories,
   modifierGroups,
   modifierOptions,
+  productAvailabilityWindows,
   productModifierGroups,
   productVariants,
   products,
+  variantOptionRules,
 } from "./catalog";
 import { customerProfiles, notificationPreferences, users } from "./identity";
 import { loyaltyAccounts, loyaltyTransactions, rewardRedemptions, rewards } from "./loyalty";
-import { orderItems, orderStatusEvents, orders } from "./ordering";
+import { orderEvents, orderItems, orderStatusEvents, orders } from "./ordering";
 import { payments } from "./payments";
 import { favorites } from "./store";
 
@@ -39,10 +41,29 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, { fields: [products.categoryId], references: [categories.id] }),
   variants: many(productVariants),
   modifierGroups: many(productModifierGroups),
+  availabilityWindows: many(productAvailabilityWindows),
 }));
 
-export const productVariantsRelations = relations(productVariants, ({ one }) => ({
+export const productAvailabilityWindowsRelations = relations(
+  productAvailabilityWindows,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [productAvailabilityWindows.productId],
+      references: [products.id],
+    }),
+  }),
+);
+
+export const variantOptionRulesRelations = relations(variantOptionRules, ({ one }) => ({
+  variant: one(productVariants, {
+    fields: [variantOptionRules.variantId],
+    references: [productVariants.id],
+  }),
+}));
+
+export const productVariantsRelations = relations(productVariants, ({ one, many }) => ({
   product: one(products, { fields: [productVariants.productId], references: [products.id] }),
+  optionRules: many(variantOptionRules),
 }));
 
 export const modifierGroupsRelations = relations(modifierGroups, ({ many }) => ({
@@ -69,6 +90,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(users, { fields: [orders.userId], references: [users.id] }),
   items: many(orderItems),
   statusEvents: many(orderStatusEvents),
+  events: many(orderEvents),
   payments: many(payments),
 }));
 
@@ -113,4 +135,8 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
     fields: [favorites.variantId],
     references: [productVariants.id],
   }),
+}));
+
+export const orderEventsRelations = relations(orderEvents, ({ one }) => ({
+  order: one(orders, { fields: [orderEvents.orderId], references: [orders.id] }),
 }));

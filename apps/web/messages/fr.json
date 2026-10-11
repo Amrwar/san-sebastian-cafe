@@ -105,7 +105,11 @@
     "allCategories": "Tout",
     "noResultsTitle": "Aucun résultat",
     "noResultsBody": "Aucun produit ne correspond à « {q} ».",
-    "resultsCount": "{count, plural, one {# produit trouvé} other {# produits trouvés}}"
+    "resultsCount": "{count, plural, one {# produit trouvé} other {# produits trouvés}}",
+    "badges": {
+      "outside_hours": "Pas offert maintenant",
+      "temporarily_unavailable": "Indisponible pour l’instant"
+    }
   },
   "Product": {
     "back": "Retour au menu",
@@ -135,7 +139,11 @@
     "favoriteError": "Impossible d’enregistrer ce favori.",
     "groupMin": "Choisissez au moins {min} option.",
     "groupMax": "Choisissez au plus {max} options.",
-    "fixChoices": "Vérifiez les choix indiqués ci-dessus."
+    "fixChoices": "Vérifiez les choix indiqués ci-dessus.",
+    "outsideHours": "Ce produit n’est pas offert à cette heure-ci.",
+    "availableHours": "Offert : {hours}",
+    "temporarilyUnavailable": "Temporairement indisponible jusqu’à {time}.",
+    "notForSize": "Non offert pour ce format"
   },
   "Cart": {
     "eyebrow": "Panier",
@@ -158,7 +166,9 @@
       "option_invalid": "Une option choisie n’existe plus.",
       "group_below_minimum": "Un choix obligatoire est manquant.",
       "group_above_maximum": "Trop d’options choisies.",
-      "quantity_invalid": "Quantité invalide."
+      "quantity_invalid": "Quantité invalide.",
+      "product_outside_hours": "Ce produit n’est pas offert à l’heure choisie.",
+      "option_not_allowed_for_size": "Une option n’est pas offerte pour ce format."
     },
     "fixLines": "Retirez ou modifiez les articles indisponibles pour continuer.",
     "summaryTitle": "Résumé",
@@ -191,7 +201,10 @@
     "rewardSignIn": "Connectez-vous pour utiliser vos récompenses.",
     "rewardNone": "Aucune récompense disponible pour le moment.",
     "checkout": "Passer à la commande",
-    "demoItems": "Votre panier contient des produits de démonstration."
+    "demoItems": "Votre panier contient des produits de démonstration.",
+    "notesLabel": "Instructions",
+    "notesFor": "Instructions pour {name} (facultatif)",
+    "notesPlaceholder": "Ex. : très chaud"
   },
   "Checkout": {
     "eyebrow": "Commande",
@@ -245,7 +258,29 @@
     },
     "review": "Vérifier ma commande",
     "reviewOk": "Tout est en ordre. Votre commande pourra être transmise dès que le paiement en ligne sera offert.",
-    "reviewErrors": "Corrigez les champs indiqués."
+    "reviewErrors": "Corrigez les champs indiqués.",
+    "contactName": "Nom pour l’appel au comptoir",
+    "phone": "Téléphone (facultatif)",
+    "addressLine1": "Adresse",
+    "addressLine2": "App., bureau",
+    "city": "Ville",
+    "deliveryInstructions": "Instructions de livraison",
+    "placing": "Envoi de la commande…",
+    "paymentStepNote": "Vous confirmerez le paiement à l’étape suivante.",
+    "reasons": {
+      "price_changed": "Les prix ont changé depuis l’affichage. Vérifiez le nouveau total, puis réessayez.",
+      "slot_full": "Cette plage horaire vient d’être complétée. Choisissez une autre heure.",
+      "slot_unavailable": "Cette heure n’est plus offerte. Choisissez une autre heure.",
+      "asap_unavailable": "La commande « dès que possible » n’est pas offerte en ce moment. Choisissez une heure.",
+      "ordering_unavailable": "La commande en ligne est en pause ou fermée en ce moment.",
+      "cart_invalid": "Un article n’est plus offert. Vérifiez votre panier.",
+      "reward_unavailable": "Votre boisson gratuite n’est plus disponible.",
+      "promotion_exhausted": "Cette promotion n’est plus disponible.",
+      "promotion_limit_reached": "Vous avez déjà utilisé cette promotion.",
+      "payments_unavailable": "Le paiement en ligne n’est pas encore offert.",
+      "generic": "La commande n’a pas pu être envoyée. Réessayez."
+    },
+    "errorsAddress": "Entrez une adresse complète."
   },
   "SignIn": {
     "eyebrow": "Compte",
@@ -384,7 +419,27 @@
     "pickup": "Cueillette",
     "delivery": "Livraison",
     "placedAt": "Passée le {date}",
-    "receiptNote": "Confirmation de commande. Le reçu officiel est remis par le café."
+    "receiptNote": "Confirmation de commande. Le reçu officiel est remis par le café.",
+    "cancel": "Annuler la commande",
+    "cancelConfirmTitle": "Annuler cette commande?",
+    "cancelConfirmBody": "Cette action est définitive. Une commande déjà payée est remboursée en totalité.",
+    "cancelKeep": "Garder la commande",
+    "cancelDone": "La commande a été annulée.",
+    "actionError": "L’action n’a pas pu être effectuée. Réessayez.",
+    "changeTime": "Changer l’heure de cueillette",
+    "newTime": "Nouvelle heure",
+    "saveTime": "Enregistrer l’heure",
+    "timeChanged": "Heure de cueillette mise à jour.",
+    "payNow": "Payer maintenant",
+    "awaitingPayment": "En attente de paiement — réservée jusqu’à {time}.",
+    "expiredNotice": "Le délai de paiement est passé; cette commande n’a pas été transmise au café.",
+    "readyBy": "Prête vers {time}",
+    "scheduledFor": "Cueillette prévue à {time}",
+    "notesTitle": "Vos instructions",
+    "itemNote": "Note : {note}",
+    "guestNotice": "Conservez ce lien pour suivre votre commande.",
+    "deliveryTo": "Livraison : {address}",
+    "reason": "Raison : {reason}"
   },
   "Tracking": {
     "title": "Suivi",
@@ -493,5 +548,85 @@
     "reference": "Référence : {id}",
     "forbiddenTitle": "Accès réservé",
     "forbiddenBody": "Votre compte n’a pas l’autorisation d’accéder à cette section."
+  },
+  "Pay": {
+    "eyebrow": "Paiement",
+    "title": "Payer la commande {number}",
+    "heldUntil": "Votre commande est réservée jusqu’à {time}.",
+    "simulatorTitle": "Simulateur de paiement (développement)",
+    "simulatorBody": "Aucun argent n’est prélevé. Ce simulateur n’existe qu’en développement; il sera remplacé par le vrai paiement en ligne.",
+    "approve": "Simuler un paiement accepté",
+    "decline": "Simuler un paiement refusé",
+    "declined": "Paiement refusé. Vous pouvez réessayer.",
+    "error": "Le paiement n’a pas pu être traité. Réessayez.",
+    "notAwaiting": "Cette commande n’attend pas de paiement.",
+    "expired": "Le délai de paiement est passé. La commande a été annulée.",
+    "unavailable": "Le paiement en ligne n’est pas encore offert.",
+    "viewOrder": "Voir la commande"
+  },
+  "StaffQueue": {
+    "title": "File de commandes",
+    "live": "Actualisation automatique",
+    "updatedAt": "Mise à jour à {time}",
+    "reconnecting": "Connexion perdue. Nouvel essai…",
+    "columns": {
+      "paid": "Nouvelles",
+      "accepted": "Acceptées",
+      "in_preparation": "En préparation",
+      "ready": "Prêtes"
+    },
+    "empty": "Aucune commande",
+    "dueIn": "Dans {minutes} min",
+    "dueNow": "Maintenant",
+    "late": "En retard de {minutes} min",
+    "scheduled": "Planifiée {time}",
+    "asap": "Dès que possible",
+    "actions": {
+      "accepted": "Accepter",
+      "in_preparation": "Commencer",
+      "ready": "Prête",
+      "completed": "Remise au client",
+      "rejected": "Refuser",
+      "cancelled": "Annuler"
+    },
+    "reasonTitle": "Raison",
+    "reasonLabel": "Raison (visible dans l’historique)",
+    "reasonRequired": "Indiquez une raison d’au moins 3 caractères.",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "refundNote": "Une commande payée sera remboursée en totalité.",
+    "customerNote": "Note du client",
+    "staffNotes": "Notes internes",
+    "saveNotes": "Enregistrer",
+    "notesSaved": "Note enregistrée.",
+    "conflict": "Cette commande vient de changer. La liste a été actualisée.",
+    "actionError": "L’action n’a pas pu être effectuée.",
+    "sound": "Son des nouvelles commandes",
+    "newOrder": "Nouvelle commande {number}",
+    "pausedUntil": "Commandes en ligne en pause jusqu’à {time}.",
+    "pause": "Pause {minutes} min",
+    "resume": "Reprendre les commandes",
+    "availability": "Disponibilité des produits",
+    "recent": "Remises récemment",
+    "items": "{count, plural, one {# article} other {# articles}}",
+    "delivery": "Livraison"
+  },
+  "StaffAvailability": {
+    "title": "Disponibilité des produits",
+    "intro": "Retirez un produit ou une option de la vente en un geste. Les indisponibilités temporaires prennent fin automatiquement.",
+    "products": "Produits",
+    "options": "Options",
+    "onSale": "En vente",
+    "soldOut": "Épuisé",
+    "disable60": "Pause 1 h",
+    "state": {
+      "available": "En vente",
+      "sold_out": "Épuisé",
+      "until": "Indisponible jusqu’à {time}",
+      "hidden": "Masqué"
+    },
+    "saved": "{name} : mis à jour.",
+    "error": "La mise à jour a échoué.",
+    "backToQueue": "Retour à la file"
   }
 }

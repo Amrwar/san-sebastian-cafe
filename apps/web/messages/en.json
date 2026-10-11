@@ -105,7 +105,11 @@
     "allCategories": "All",
     "noResultsTitle": "No results",
     "noResultsBody": "No products match “{q}”.",
-    "resultsCount": "{count, plural, one {# product found} other {# products found}}"
+    "resultsCount": "{count, plural, one {# product found} other {# products found}}",
+    "badges": {
+      "outside_hours": "Not offered right now",
+      "temporarily_unavailable": "Unavailable for now"
+    }
   },
   "Product": {
     "back": "Back to menu",
@@ -135,7 +139,11 @@
     "favoriteError": "Couldn’t save this favourite.",
     "groupMin": "Choose at least {min} option.",
     "groupMax": "Choose at most {max} options.",
-    "fixChoices": "Please check the choices highlighted above."
+    "fixChoices": "Please check the choices highlighted above.",
+    "outsideHours": "This product isn’t offered at this time.",
+    "availableHours": "Offered: {hours}",
+    "temporarilyUnavailable": "Temporarily unavailable until {time}.",
+    "notForSize": "Not offered for this size"
   },
   "Cart": {
     "eyebrow": "Cart",
@@ -158,7 +166,9 @@
       "option_invalid": "A chosen option no longer exists.",
       "group_below_minimum": "A required choice is missing.",
       "group_above_maximum": "Too many options chosen.",
-      "quantity_invalid": "Invalid quantity."
+      "quantity_invalid": "Invalid quantity.",
+      "product_outside_hours": "This product isn’t offered at the chosen time.",
+      "option_not_allowed_for_size": "An option isn’t offered for this size."
     },
     "fixLines": "Remove or edit unavailable items to continue.",
     "summaryTitle": "Summary",
@@ -191,7 +201,10 @@
     "rewardSignIn": "Sign in to use your rewards.",
     "rewardNone": "No rewards available yet.",
     "checkout": "Go to checkout",
-    "demoItems": "Your cart contains demonstration products."
+    "demoItems": "Your cart contains demonstration products.",
+    "notesLabel": "Instructions",
+    "notesFor": "Instructions for {name} (optional)",
+    "notesPlaceholder": "E.g. extra hot"
   },
   "Checkout": {
     "eyebrow": "Checkout",
@@ -245,7 +258,29 @@
     },
     "review": "Review my order",
     "reviewOk": "Everything looks good. Your order can be sent as soon as online payment is available.",
-    "reviewErrors": "Please fix the highlighted fields."
+    "reviewErrors": "Please fix the highlighted fields.",
+    "contactName": "Name to call at the counter",
+    "phone": "Phone (optional)",
+    "addressLine1": "Address",
+    "addressLine2": "Apt., suite",
+    "city": "City",
+    "deliveryInstructions": "Delivery instructions",
+    "placing": "Sending your order…",
+    "paymentStepNote": "You’ll confirm payment on the next step.",
+    "reasons": {
+      "price_changed": "Prices changed since they were shown. Check the new total, then try again.",
+      "slot_full": "That time slot just filled up. Please choose another time.",
+      "slot_unavailable": "That time is no longer offered. Please choose another time.",
+      "asap_unavailable": "“As soon as possible” isn’t available right now. Please choose a time.",
+      "ordering_unavailable": "Online ordering is paused or closed right now.",
+      "cart_invalid": "An item is no longer available. Please check your cart.",
+      "reward_unavailable": "Your free drink is no longer available.",
+      "promotion_exhausted": "This promotion is no longer available.",
+      "promotion_limit_reached": "You’ve already used this promotion.",
+      "payments_unavailable": "Online payment isn’t available yet.",
+      "generic": "Your order couldn’t be sent. Please try again."
+    },
+    "errorsAddress": "Enter a complete address."
   },
   "SignIn": {
     "eyebrow": "Account",
@@ -384,7 +419,27 @@
     "pickup": "Pickup",
     "delivery": "Delivery",
     "placedAt": "Placed on {date}",
-    "receiptNote": "Order confirmation. The official receipt is issued by the café."
+    "receiptNote": "Order confirmation. The official receipt is issued by the café.",
+    "cancel": "Cancel order",
+    "cancelConfirmTitle": "Cancel this order?",
+    "cancelConfirmBody": "This can’t be undone. An order that was already paid is refunded in full.",
+    "cancelKeep": "Keep the order",
+    "cancelDone": "The order was cancelled.",
+    "actionError": "That didn’t work. Please try again.",
+    "changeTime": "Change pickup time",
+    "newTime": "New time",
+    "saveTime": "Save time",
+    "timeChanged": "Pickup time updated.",
+    "payNow": "Pay now",
+    "awaitingPayment": "Awaiting payment — held until {time}.",
+    "expiredNotice": "The payment window has passed; this order wasn’t sent to the café.",
+    "readyBy": "Ready around {time}",
+    "scheduledFor": "Pickup scheduled for {time}",
+    "notesTitle": "Your instructions",
+    "itemNote": "Note: {note}",
+    "guestNotice": "Keep this link to follow your order.",
+    "deliveryTo": "Delivery: {address}",
+    "reason": "Reason: {reason}"
   },
   "Tracking": {
     "title": "Tracking",
@@ -493,5 +548,85 @@
     "reference": "Reference: {id}",
     "forbiddenTitle": "Restricted area",
     "forbiddenBody": "Your account doesn’t have permission to access this section."
+  },
+  "Pay": {
+    "eyebrow": "Payment",
+    "title": "Pay for order {number}",
+    "heldUntil": "Your order is held until {time}.",
+    "simulatorTitle": "Payment simulator (development)",
+    "simulatorBody": "No money moves. This simulator only exists in development and will be replaced by real online payment.",
+    "approve": "Simulate an approved payment",
+    "decline": "Simulate a declined payment",
+    "declined": "Payment declined. You can try again.",
+    "error": "The payment couldn’t be processed. Please try again.",
+    "notAwaiting": "This order isn’t awaiting payment.",
+    "expired": "The payment window has passed. The order was cancelled.",
+    "unavailable": "Online payment isn’t available yet.",
+    "viewOrder": "View order"
+  },
+  "StaffQueue": {
+    "title": "Order queue",
+    "live": "Updates automatically",
+    "updatedAt": "Updated at {time}",
+    "reconnecting": "Connection lost. Retrying…",
+    "columns": {
+      "paid": "New",
+      "accepted": "Accepted",
+      "in_preparation": "Preparing",
+      "ready": "Ready"
+    },
+    "empty": "No orders",
+    "dueIn": "In {minutes} min",
+    "dueNow": "Now",
+    "late": "{minutes} min late",
+    "scheduled": "Scheduled {time}",
+    "asap": "As soon as possible",
+    "actions": {
+      "accepted": "Accept",
+      "in_preparation": "Start",
+      "ready": "Ready",
+      "completed": "Handed over",
+      "rejected": "Reject",
+      "cancelled": "Cancel"
+    },
+    "reasonTitle": "Reason",
+    "reasonLabel": "Reason (kept in the history)",
+    "reasonRequired": "Enter a reason of at least 3 characters.",
+    "confirm": "Confirm",
+    "back": "Back",
+    "refundNote": "A paid order is refunded in full.",
+    "customerNote": "Customer note",
+    "staffNotes": "Internal notes",
+    "saveNotes": "Save",
+    "notesSaved": "Note saved.",
+    "conflict": "This order just changed. The list was refreshed.",
+    "actionError": "That action didn’t go through.",
+    "sound": "New-order sound",
+    "newOrder": "New order {number}",
+    "pausedUntil": "Online ordering paused until {time}.",
+    "pause": "Pause {minutes} min",
+    "resume": "Resume ordering",
+    "availability": "Product availability",
+    "recent": "Recently handed over",
+    "items": "{count, plural, one {# item} other {# items}}",
+    "delivery": "Delivery"
+  },
+  "StaffAvailability": {
+    "title": "Product availability",
+    "intro": "Take a product or option off sale in one tap. Temporary pauses end automatically.",
+    "products": "Products",
+    "options": "Options",
+    "onSale": "On sale",
+    "soldOut": "Sold out",
+    "disable60": "Pause 1 h",
+    "state": {
+      "available": "On sale",
+      "sold_out": "Sold out",
+      "until": "Unavailable until {time}",
+      "hidden": "Hidden"
+    },
+    "saved": "{name}: updated.",
+    "error": "The update failed.",
+    "backToQueue": "Back to queue"
   }
 }

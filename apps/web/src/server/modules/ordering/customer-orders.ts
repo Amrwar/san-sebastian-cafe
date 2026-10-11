@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, orderItems, orderStatusEvents, orders, type Database } from "@ssc/db";
-import { can, type OrderStatus } from "@ssc/domain";
-import { z } from "zod";
+import { asc, desc, eq, orderItems, orderStatusEvents, orders, type Database } from "@ssc/db";
+import { customerCanCancel, customerCanModify, type OrderStatus } from "@ssc/domain";
 import { authorize, type Actor } from "../../authz";
 import { notFound } from "../../errors";
+import { resolveOrderAccess } from "./order-access";
 
 /** Statuses during which the customer is waiting for their order (shown as "in progress"). */
 export const ACTIVE_STATUSES: readonly OrderStatus[] = [
@@ -59,35 +59,51 @@ export async function findActiveOrder(
   return all.find((o) => ACTIVE_STATUSES.includes(o.status)) ?? null;
 }
 
-const orderId = z.uuid();
-
 /**
- * One order with items and status history. Customers can only read their own orders; staff
- * (orders:read_all) can read any. Unknown and foreign orders both return 404, so ids cannot be probed.
+ * One order with items and status history, for its owner, staff (orders:read_all) or a guest
+ * holding the order's tracking token. Unknown/foreign orders and wrong tokens all return 404.
  */
-export async function getOrderDetail(db: Database, actor: Actor | null, id: string) {
-  authorize(actor, "orders:read_own");
-  if (!orderId.safeParse(id).success) throw notFound("Order");
+export async function getOrderDetail(
+  db: Database,
+  actor: Actor | null,
+  id: string,
+  guestToken?: string | null,
+  now = new Date(),
+) {
+  const access = await resolveOrderAccess(db, actor, id, guestToken);
   const order = await db.query.orders.findFirst({
-    where: can(actor.role, "orders:read_all")
-      ? eq(orders.id, id)
-      : and(eq(orders.id, id), eq(orders.userId, actor.userId)),
+    where: eq(orders.id, access.order.id),
     with: {
       items: { orderBy: [asc(orderItems.createdAt)] },
       statusEvents: { orderBy: [asc(orderStatusEvents.createdAt)] },
     },
   });
   if (!order) throw notFound("Order");
+  const customerView = access.via !== "staff";
   return {
     id: order.id,
     number: order.number,
     status: order.status,
+    version: order.version,
     fulfilment: order.fulfilment,
     scheduledFor: order.scheduledFor,
+    readyBy:
+      order.scheduledFor ??
+      new Date((order.pricingSnapshot as { readyAt?: string }).readyAt ?? order.placedAt),
     placedAt: order.placedAt,
     completedAt: order.completedAt,
+    expiresAt: order.status === "awaiting_payment" ? order.expiresAt : null,
     locale: order.locale,
     isDemo: order.isDemo,
+    customerName: order.guestName,
+    notes: order.notes,
+    cancellationReason: order.cancellationReason,
+    deliveryAddress: order.deliveryAddress as {
+      line1: string;
+      line2?: string;
+      city: string;
+      postalCode: string;
+    } | null,
     totals: {
       subtotalCents: order.subtotalCents,
       discountCents: order.discountCents,
@@ -110,20 +126,30 @@ export async function getOrderDetail(db: Database, actor: Actor | null, id: stri
       quantity: i.quantity,
       unitPriceCents: i.unitPriceCents,
       lineTotalCents: i.lineTotalCents,
+      notes: i.notes,
     })),
     timeline: order.statusEvents.map((e) => ({ status: e.toStatus, at: e.createdAt })),
+    /** What the viewer may do now (customer policies). */
+    canCancel: customerView && customerCanCancel(order.status),
+    canModify: customerView && customerCanModify(order, now),
     updatedAt: order.updatedAt,
   };
 }
 export type OrderDetail = Awaited<ReturnType<typeof getOrderDetail>>;
 
 /** Lightweight status for live tracking (polled). */
-export async function getOrderStatus(db: Database, actor: Actor | null, id: string) {
-  const detail = await getOrderDetail(db, actor, id);
+export async function getOrderStatus(
+  db: Database,
+  actor: Actor | null,
+  id: string,
+  guestToken?: string | null,
+) {
+  const detail = await getOrderDetail(db, actor, id, guestToken);
   return {
     id: detail.id,
     number: detail.number,
     status: detail.status,
+    version: detail.version,
     timeline: detail.timeline,
     updatedAt: detail.updatedAt,
   };

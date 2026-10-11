@@ -41,7 +41,12 @@ export async function ProductCard({
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap gap-1.5">
           {product.isDemo ? <Badge tone="warning">{tCommon("demo")}</Badge> : null}
-          {soldOut ? <Badge tone="danger">{t("soldOut")}</Badge> : null}
+          {product.unavailableReason === "outside_hours" ||
+          product.unavailableReason === "temporarily_unavailable" ? (
+            <Badge tone="warning">{t(`badges.${product.unavailableReason}`)}</Badge>
+          ) : soldOut ? (
+            <Badge tone="danger">{t("soldOut")}</Badge>
+          ) : null}
         </div>
         <Heading className="text-lg font-semibold leading-snug text-espresso">
           {/* The whole card is clickable through this link's ::after overlay. */}

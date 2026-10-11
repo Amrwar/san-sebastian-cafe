@@ -117,7 +117,12 @@ export function Cart({ signedIn }: { signedIn: boolean }) {
                       {line.issues.length > 0 ? (
                         <ul className="mt-1 text-sm font-medium text-danger">
                           {[...new Set(line.issues.map((i) => i.code))].map((code) => (
-                            <li key={code}>{t(`issues.${code}`)}</li>
+                            <li key={code}>
+                              {code === "product_unavailable" &&
+                              d?.unavailableReason === "outside_hours"
+                                ? t("issues.product_outside_hours")
+                                : t(`issues.${code}`)}
+                            </li>
                           ))}
                         </ul>
                       ) : null}
@@ -156,6 +161,12 @@ export function Cart({ signedIn }: { signedIn: boolean }) {
                       {tCommon("remove")}
                     </Button>
                   </div>
+                  <LineNotes
+                    lineId={line.lineId}
+                    initial={stored?.notes ?? ""}
+                    label={t("notesFor", { name })}
+                    placeholder={t("notesPlaceholder")}
+                  />
                 </Surface>
               </li>
             );
@@ -259,5 +270,36 @@ export function Cart({ signedIn }: { signedIn: boolean }) {
         </Surface>
       </aside>
     </div>
+  );
+}
+
+/** Per-item instruction, saved to the cart (and the account cart) as the customer types. */
+function LineNotes({
+  lineId,
+  initial,
+  label,
+  placeholder,
+}: {
+  lineId: string;
+  initial: string;
+  label: string;
+  placeholder: string;
+}) {
+  const [value, setValue] = useState(initial);
+  return (
+    <TextField
+      className="mt-4"
+      label={label}
+      name={`notes-${lineId}`}
+      value={value}
+      maxLength={140}
+      placeholder={placeholder}
+      onChange={(e) => {
+        setValue(e.currentTarget.value);
+      }}
+      onBlur={() => {
+        cart.setNotes(lineId, value.trim());
+      }}
+    />
   );
 }

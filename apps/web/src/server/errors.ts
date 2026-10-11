@@ -11,6 +11,7 @@ export type AppErrorCode =
   | "forbidden"
   | "not_found"
   | "conflict"
+  | "unprocessable"
   | "rate_limited"
   | "internal";
 
@@ -20,6 +21,7 @@ const STATUS: Record<AppErrorCode, number> = {
   forbidden: 403,
   not_found: 404,
   conflict: 409,
+  unprocessable: 422,
   rate_limited: 429,
   internal: 500,
 };
@@ -35,6 +37,8 @@ export class AppError extends Error {
     readonly code: AppErrorCode,
     message: string,
     readonly fieldIssues: FieldIssue[] = [],
+    /** Machine-readable business reason for 409/422 responses (e.g. "price_changed", "slot_full"). */
+    readonly reason?: string,
   ) {
     super(message);
     this.name = "AppError";
@@ -62,6 +66,7 @@ export interface ProblemDetails {
   code: AppErrorCode;
   requestId: string;
   errors?: FieldIssue[];
+  reason?: string;
 }
 
 /** Converts any thrown value into a safe problem document. Unknown errors never leak details. */
@@ -79,5 +84,16 @@ export function toProblem(error: unknown, requestId: string): ProblemDetails {
     code: appError.code,
     requestId,
     ...(appError.fieldIssues.length > 0 ? { errors: appError.fieldIssues } : {}),
+    ...(appError.reason ? { reason: appError.reason } : {}),
   };
+}
+
+/** A business rule prevents the request (422); `reason` tells the client which one. */
+export const unprocessable = (reason: string, message = reason) =>
+  new AppError("unprocessable", message, [], reason);
+
+/** Narrows a value that must exist (row just written or locked); a miss is a server bug (500). */
+export function required<T>(value: T | null | undefined, what: string): T {
+  if (value === null || value === undefined) throw new Error(`Invariant: missing ${what}`);
+  return value;
 }

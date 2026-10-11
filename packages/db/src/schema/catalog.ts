@@ -65,6 +65,8 @@ export const products = pgTable(
     /** May be chosen as the free reward drink. */
     rewardEligible: boolean().notNull().default(false),
     availability: availabilityEnum().notNull().default("available"),
+    /** Temporarily disabled ("86'd") until this instant; restores automatically. */
+    unavailableUntil: timestamp({ withTimezone: true }),
     sortOrder: integer().notNull().default(0),
     archivedAt: timestamp({ withTimezone: true }),
     ...demoFlag,
@@ -142,6 +144,8 @@ export const modifierOptions = pgTable(
     priceDeltaCents: integer().notNull().default(0),
     isDefault: boolean().notNull().default(false),
     availability: availabilityEnum().notNull().default("available"),
+    /** Temporarily disabled ("86'd") until this instant; restores automatically. */
+    unavailableUntil: timestamp({ withTimezone: true }),
     sortOrder: integer().notNull().default(0),
     archivedAt: timestamp({ withTimezone: true }),
     ...timestamps,
@@ -161,4 +165,50 @@ export const productModifierGroups = pgTable(
     sortOrder: integer().notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.productId, t.groupId] })],
+);
+
+/** Weekly windows (local time) when a product can be ordered; no rows = whenever the café is open. */
+export const productAvailabilityWindows = pgTable(
+  "product_availability_windows",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    productId: uuid()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    weekday: integer().notNull(),
+    startMinute: integer().notNull(),
+    endMinute: integer().notNull(),
+  },
+  (t) => [
+    index("product_availability_windows_product_idx").on(t.productId),
+    check(
+      "product_availability_windows_range",
+      sql`${t.weekday} between 0 and 6 and ${t.startMinute} >= 0 and ${t.endMinute} <= 1440 and ${t.startMinute} < ${t.endMinute}`,
+    ),
+  ],
+);
+
+/**
+ * Size-specific option rules: a different price for this size (`price_delta_cents`) and/or the
+ * option is not allowed with this size (`excluded`), e.g. "no iced single espresso".
+ */
+export const variantOptionRules = pgTable(
+  "variant_option_rules",
+  {
+    variantId: uuid()
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "cascade" }),
+    optionId: uuid()
+      .notNull()
+      .references(() => modifierOptions.id, { onDelete: "cascade" }),
+    priceDeltaCents: integer(),
+    excluded: boolean().notNull().default(false),
+  },
+  (t) => [
+    primaryKey({ columns: [t.variantId, t.optionId] }),
+    check(
+      "variant_option_rules_meaningful",
+      sql`${t.excluded} or ${t.priceDeltaCents} is not null`,
+    ),
+  ],
 );

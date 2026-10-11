@@ -43,6 +43,14 @@ describe("parseServerEnv", () => {
     expect(env.BETTER_AUTH_URL).toBe("https://ssc-abc.vercel.app");
   });
 
+  it("defaults to no payment provider and forbids the simulator outside development", () => {
+    expect(parseServerEnv(valid).PAYMENT_PROVIDER).toBe("none");
+    expect(parseServerEnv({ ...valid, PAYMENT_PROVIDER: "fake" }).PAYMENT_PROVIDER).toBe("fake");
+    expect(() =>
+      parseServerEnv({ ...valid, APP_ENV: "staging", PAYMENT_PROVIDER: "fake" }),
+    ).toThrow(/PAYMENT_PROVIDER/);
+  });
+
   it("forbids development-only settings in production", () => {
     expect(() =>
       parseServerEnv({

@@ -11,6 +11,7 @@ import {
   orders,
   payments,
   products,
+  refunds,
   promotions,
   rewardRedemptions,
   rewards,
@@ -54,6 +55,7 @@ export async function purgeDemoData(db: Database): Promise<void> {
         sql`${rewardRedemptions.orderId} in ${demoOrders} or ${rewardRedemptions.rewardId} in ${demoRewards}`,
       );
     await tx.delete(loyaltyAccounts).where(eq(loyaltyAccounts.isDemo, true));
+    await tx.delete(refunds).where(inArray(refunds.orderId, demoOrders));
     await tx.delete(payments).where(inArray(payments.orderId, demoOrders));
     await tx.delete(orders).where(eq(orders.isDemo, true));
     await tx.delete(promotions).where(eq(promotions.isDemo, true));

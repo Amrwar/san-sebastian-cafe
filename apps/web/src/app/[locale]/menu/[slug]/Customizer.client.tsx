@@ -2,7 +2,14 @@
 
 import { useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { defaultSelection, unitPriceCents, validateSelection, type Selection } from "@ssc/domain";
+import {
+  defaultSelection,
+  optionAllowedForVariant,
+  optionPriceForVariant,
+  unitPriceCents,
+  validateSelection,
+  type Selection,
+} from "@ssc/domain";
 import { Alert, Button, ChoiceChip, ChoiceGroup, QuantityStepper } from "@ssc/ui";
 import type { CatalogProduct } from "@ssc/db";
 import { HeartIcon } from "@/components/icons";
@@ -62,6 +69,27 @@ export function Customizer({
   const update = (next: Partial<Selection>) => {
     setState((s) => ({ ...s, selection: { ...s.selection, ...next } }));
     setNotice(null);
+  };
+
+  const variant = product.variants.find((v) => v.id === selection.variantId);
+
+  /** Switching size drops options that size doesn't allow and refills required choices. */
+  const changeVariant = (variantId: string) => {
+    const next = product.variants.find((v) => v.id === variantId);
+    const kept = selection.optionIds.filter((id) => optionAllowedForVariant(next, id));
+    for (const g of product.groups) {
+      const inGroup = kept.filter((id) => g.options.some((o) => o.id === id)).length;
+      if (inGroup < g.minSelected) {
+        const usable = g.options.filter(
+          (o) =>
+            o.availability === "available" &&
+            optionAllowedForVariant(next, o.id) &&
+            !kept.includes(o.id),
+        );
+        kept.push(...usable.slice(0, g.minSelected - inGroup).map((o) => o.id));
+      }
+    }
+    update({ variantId, optionIds: kept });
   };
 
   const toggleOption = (groupId: string, optionId: string, single: boolean) => {
@@ -154,7 +182,7 @@ export function Customizer({
                 checked={selection.variantId === v.id}
                 disabled={unavailable}
                 onChange={() => {
-                  update({ variantId: v.id });
+                  changeVariant(v.id);
                 }}
                 label={pick(v, "name", locale)}
                 detail={money(v.priceCents, locale)}
@@ -192,6 +220,8 @@ export function Customizer({
             {g.options.map((o) => {
               const checked = chosen.includes(o.id);
               const unavailable = o.availability !== "available";
+              const notForSize = !optionAllowedForVariant(variant, o.id);
+              const delta = optionPriceForVariant(variant, o);
               return (
                 <ChoiceChip
                   key={o.id}
@@ -199,17 +229,15 @@ export function Customizer({
                   name={`group-${g.id}`}
                   value={o.id}
                   checked={checked}
-                  disabled={unavailable || (atMax && !checked)}
+                  disabled={unavailable || notForSize || (atMax && !checked)}
                   onChange={() => {
                     toggleOption(g.id, o.id, single);
                   }}
                   label={pick(o, "name", locale)}
-                  detail={
-                    o.priceDeltaCents > 0
-                      ? t("priceDelta", { price: money(o.priceDeltaCents, locale) })
-                      : undefined
+                  detail={delta > 0 ? t("priceDelta", { price: money(delta, locale) }) : undefined}
+                  unavailableLabel={
+                    notForSize ? t("notForSize") : unavailable ? t("soldOutOption") : undefined
                   }
-                  unavailableLabel={unavailable ? t("soldOutOption") : undefined}
                 />
               );
             })}

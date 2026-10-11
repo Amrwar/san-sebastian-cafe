@@ -2,7 +2,7 @@
 
 Customer PWA, staff/owner console, and backend for San Sebastian Café (Montréal, QC).
 
-**Status:** Phase 2 (customer experience) complete — see the [Phase 2 report](docs/11-phase-2-report.md).
+**Status:** Phase 3 (ordering domain and staff queue) complete — see the [Phase 3 report](docs/12-phase-3-report.md). Real online payment is **not** integrated yet (Phase 6).
 Customers can browse, customize, build a server-priced cart and review checkout, but **orders cannot be
 placed and nothing is charged yet** (payments are Phase 6). All menu items, prices, hours and accounts in
 development databases are clearly labelled demonstration data.
@@ -48,6 +48,7 @@ start with a clear message naming the invalid variable (values are never printed
 | `BETTER_AUTH_SECRET` | ≥ 32 random chars; the placeholder is rejected in staging/production        |
 | `EMAIL_TRANSPORT`    | `console` only (development) — rejected in staging/production until Phase 7 |
 | `EMAIL_FROM`         | Sender shown on emails                                                      |
+| `PAYMENT_PROVIDER`   | `none` (default: orders can be reviewed but not placed)                     | `fake` (development payment simulator, no money moves — refused in staging/production) |
 
 ## Signing in locally
 
@@ -65,6 +66,13 @@ the code is printed in the `npm run dev` terminal inside a `DEV EMAIL (not sent)
 
 Any other email creates a new **customer** account. Roles can only be changed in the database for now
 (staff management UI is Phase 9).
+
+### Trying an order end to end (development)
+
+Set `PAYMENT_PROVIDER=fake` in `.env`, then: add items → **Commander et payer** → on the payment step use
+**Simuler un paiement accepté** → sign in as `staff@…` in another browser and open **/fr/staff** to accept,
+start, mark ready and hand over the order; the customer's order page follows along automatically.
+Products can be taken off sale from **/fr/staff/availability**.
 
 ## Verifying the foundation
 
@@ -124,6 +132,7 @@ docs/               planning and phase documentation
 | [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                             |
 | [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                |
 | [11 Phase 2 report](docs/11-phase-2-report.md)               | Customer experience: pages, contracts, states, tests, limitations  |
+| [12 Phase 3 report](docs/12-phase-3-report.md)               | Ordering domain, staff queue, API, tests, limitations              |
 
 ## Deployment (Vercel demo)
 

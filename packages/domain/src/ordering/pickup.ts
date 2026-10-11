@@ -1,7 +1,8 @@
 /**
  * Pickup scheduling in the café's local time zone (America/Toronto for Montréal), DST-safe.
  * Opening hours are owner data; until supplied, development seed hours are used (labelled demo).
- * Slot capacity (orders per slot) is enforced at order placement (Phase 6), not here.
+ * Capacity: `booked` counts are supplied by the caller (orders already holding each slot); the
+ * order-placement transaction re-checks them under a lock so two customers can't take the last spot.
  */
 export const CAFE_TIME_ZONE = "America/Toronto";
 
@@ -18,6 +19,14 @@ export interface PickupSettings {
   prepMinutes: number;
   slotMinutes: number;
   daysAhead: number;
+  /** Staff "pause online ordering" until this instant (rush, equipment failure…). */
+  pausedUntil?: Date | null;
+  /** Last orders this many minutes before closing (ASAP and slots). Default 0. */
+  orderCutoffMinutes?: number;
+  /** Scheduled orders must be at least this far ahead (≥ prepMinutes). Default = prepMinutes. */
+  minLeadMinutes?: number;
+  /** Maximum orders per slot; null/undefined = unlimited. */
+  maxOrdersPerSlot?: number | null;
 }
 
 export interface PickupSlot {
@@ -25,6 +34,8 @@ export interface PickupSlot {
   startsAt: string;
   /** Local calendar date (YYYY-MM-DD) the slot belongs to. */
   localDate: string;
+  /** Orders still accepted in this slot; null = unlimited. Full slots are not listed. */
+  remaining: number | null;
 }
 
 export interface PickupAvailability {
@@ -32,9 +43,44 @@ export interface PickupAvailability {
   asapAvailable: boolean;
   /** Earliest ready time for ASAP orders (UTC ISO), if available. */
   asapReadyAt: string | null;
+  /** Why ASAP isn't possible right now (null when it is, or when ordering is unavailable). */
+  asapUnavailableReason: "closed" | "busy" | null;
   slots: PickupSlot[];
   /** Why ordering is unavailable right now, if it is. */
-  reason: "ordering_disabled" | "no_hours_configured" | null;
+  reason: "ordering_disabled" | "paused" | "no_hours_configured" | null;
+  /** End of a staff pause (UTC ISO), when paused. */
+  pausedUntil: string | null;
+}
+
+/** Start of the capacity slot that contains `instant` (slots are aligned to UTC epoch multiples). */
+export function slotStartFor(instant: Date, slotMinutes: number): Date {
+  const slotMs = slotMinutes * 60_000;
+  return new Date(Math.floor(instant.getTime() / slotMs) * slotMs);
+}
+
+export type PickupRequest = { kind: "asap" } | { kind: "scheduled"; at: Date };
+
+export type PickupCheck =
+  | { ok: true; readyAt: Date; slotStart: Date; scheduledFor: Date | null }
+  | { ok: false; error: "ordering_unavailable" | "asap_unavailable" | "slot_unavailable" };
+
+/** Validates a requested pickup against freshly computed availability. */
+export function checkPickupRequest(
+  availability: PickupAvailability,
+  request: PickupRequest,
+  slotMinutes: number,
+): PickupCheck {
+  if (availability.reason) return { ok: false, error: "ordering_unavailable" };
+  if (request.kind === "asap") {
+    if (!availability.asapAvailable || !availability.asapReadyAt)
+      return { ok: false, error: "asap_unavailable" };
+    const readyAt = new Date(availability.asapReadyAt);
+    return { ok: true, readyAt, slotStart: slotStartFor(readyAt, slotMinutes), scheduledFor: null };
+  }
+  const iso = request.at.toISOString();
+  const slot = availability.slots.find((s) => s.startsAt === iso);
+  if (!slot) return { ok: false, error: "slot_unavailable" };
+  return { ok: true, readyAt: request.at, slotStart: request.at, scheduledFor: request.at };
 }
 
 interface LocalParts {
@@ -109,19 +155,34 @@ export function computePickupAvailability(
   now: Date,
   timeZone = CAFE_TIME_ZONE,
   closedDates: ReadonlySet<string> = new Set(),
+  /** Orders already holding each slot, keyed by slot start (UTC ISO). */
+  booked: ReadonlyMap<string, number> = new Map(),
 ): PickupAvailability {
-  if (!settings.onlineOrderingEnabled) {
-    return { asapAvailable: false, asapReadyAt: null, slots: [], reason: "ordering_disabled" };
-  }
-  if (hours.length === 0) {
-    return { asapAvailable: false, asapReadyAt: null, slots: [], reason: "no_hours_configured" };
-  }
+  const unavailable = (reason: PickupAvailability["reason"]): PickupAvailability => ({
+    asapAvailable: false,
+    asapReadyAt: null,
+    asapUnavailableReason: null,
+    slots: [],
+    reason,
+    pausedUntil:
+      reason === "paused" && settings.pausedUntil ? settings.pausedUntil.toISOString() : null,
+  });
+  if (!settings.onlineOrderingEnabled) return unavailable("ordering_disabled");
+  if (hours.length === 0) return unavailable("no_hours_configured");
+  if (settings.pausedUntil && settings.pausedUntil > now) return unavailable("paused");
 
   const earliest = now.getTime() + settings.prepMinutes * 60_000;
+  const earliestScheduled =
+    now.getTime() + Math.max(settings.prepMinutes, settings.minLeadMinutes ?? 0) * 60_000;
+  const cutoffMs = (settings.orderCutoffMinutes ?? 0) * 60_000;
   const slotMs = settings.slotMinutes * 60_000;
+  const capacity = settings.maxOrdersPerSlot ?? null;
+  const remainingIn = (startIso: string) =>
+    capacity === null ? null : Math.max(0, capacity - (booked.get(startIso) ?? 0));
   const today = localParts(now, timeZone);
   const slots: PickupSlot[] = [];
   let asapReadyAt: string | null = null;
+  let asapUnavailableReason: PickupAvailability["asapUnavailableReason"] = "closed";
 
   for (let offset = 0; offset <= settings.daysAhead; offset++) {
     // Calendar arithmetic at local noon avoids DST edge effects when stepping days.
@@ -133,19 +194,41 @@ export function computePickupAvailability(
     for (const range of hours.filter((h) => h.weekday === d.weekday)) {
       const open = zonedToUtc(d.year, d.month, d.day, range.opensAtMinute, timeZone).getTime();
       const close = zonedToUtc(d.year, d.month, d.day, range.closesAtMinute, timeZone).getTime();
-      if (offset === 0 && now.getTime() >= open && earliest <= close && asapReadyAt === null) {
-        asapReadyAt = new Date(earliest).toISOString();
+      const lastOrder = close - cutoffMs;
+      if (
+        offset === 0 &&
+        asapReadyAt === null &&
+        now.getTime() >= open &&
+        now.getTime() <= lastOrder &&
+        earliest <= close
+      ) {
+        const slot = slotStartFor(new Date(earliest), settings.slotMinutes).toISOString();
+        if (remainingIn(slot) === 0) asapUnavailableReason = "busy";
+        else {
+          asapReadyAt = new Date(earliest).toISOString();
+          asapUnavailableReason = null;
+        }
       }
-      // Slots start once preparation is possible and must be ready before closing.
+      // Slots start once the lead time has passed, before the cutoff, and end before closing.
       for (
-        let t = Math.max(open, Math.ceil(earliest / slotMs) * slotMs);
-        t <= close - slotMs;
+        let t = Math.max(open, Math.ceil(earliestScheduled / slotMs) * slotMs);
+        t <= Math.min(close - slotMs, lastOrder);
         t += slotMs
       ) {
-        if (t >= earliest) slots.push({ startsAt: new Date(t).toISOString(), localDate });
+        if (t < earliestScheduled) continue;
+        const startsAt = new Date(t).toISOString();
+        const remaining = remainingIn(startsAt);
+        if (remaining !== 0) slots.push({ startsAt, localDate, remaining });
       }
     }
   }
 
-  return { asapAvailable: asapReadyAt !== null, asapReadyAt, slots, reason: null };
+  return {
+    asapAvailable: asapReadyAt !== null,
+    asapReadyAt,
+    asapUnavailableReason: asapReadyAt !== null ? null : asapUnavailableReason,
+    slots,
+    reason: null,
+    pausedUntil: null,
+  };
 }

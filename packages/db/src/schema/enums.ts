@@ -12,6 +12,7 @@ import {
   PROMOTION_KINDS,
   PROMOTION_SCOPES,
   REDEMPTION_STATUSES,
+  REFUND_STATUSES,
   REWARD_STATUSES,
   ROLES,
   TAX_CATEGORIES,
@@ -38,3 +39,13 @@ export const rewardStatusEnum = pgEnum("reward_status", REWARD_STATUSES);
 export const redemptionStatusEnum = pgEnum("redemption_status", REDEMPTION_STATUSES);
 export const promotionKindEnum = pgEnum("promotion_kind", PROMOTION_KINDS);
 export const promotionScopeEnum = pgEnum("promotion_scope", PROMOTION_SCOPES);
+export const refundStatusEnum = pgEnum("refund_status", REFUND_STATUSES);
+export const orderEventTypeEnum = pgEnum("order_event_type", [
+  "created",
+  "status_changed",
+  "payment_recorded",
+  "payment_failed",
+  "refund_recorded",
+  "customer_updated",
+  "staff_note_updated",
+]);

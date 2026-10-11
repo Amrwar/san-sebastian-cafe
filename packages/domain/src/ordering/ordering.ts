@@ -1,7 +1,6 @@
 /**
- * Order lifecycle states. Transition rules (who may move an order from which state to which)
- * are implemented in Phase 3; the persisted vocabulary is defined here so the schema and the
- * state machine can never drift apart.
+ * Order lifecycle states (persisted vocabulary). Transition rules live in ./state-machine.ts.
+ * New values are only ever appended (Postgres enum values can be added, not reordered).
  */
 export const ORDER_STATUSES = [
   "awaiting_payment",
@@ -14,6 +13,7 @@ export const ORDER_STATUSES = [
   "expired",
   "refunded",
   "partially_refunded",
+  "rejected",
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 

@@ -12,7 +12,8 @@
     "BETTER_AUTH_URL",
     "EMAIL_TRANSPORT",
     "EMAIL_FROM",
-    "LOG_LEVEL"
+    "LOG_LEVEL",
+    "PAYMENT_PROVIDER"
   ],
   "tasks": {
     "build": {

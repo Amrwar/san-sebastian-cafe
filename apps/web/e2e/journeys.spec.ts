@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expectNoSeriousA11yViolations } from "./helpers";
+import { choosePickupTime, clearSavedCart, expectNoSeriousA11yViolations } from "./helpers";
 
 /*
  * Critical customer journeys, run on desktop AND phone (see playwright.config.ts).
@@ -70,10 +70,13 @@ test.describe("menu → customize → cart", () => {
   });
 });
 
-test.describe("checkout review (payment not yet available)", () => {
-  test("guests must provide contact details; a valid review succeeds but placing the order stays disabled", async ({
+test.describe("checkout → payment → café → ready", () => {
+  test("a guest orders, pays in the development simulator and follows the order until it's ready", async ({
     page,
+    browser,
   }) => {
+    // Two browsers (customer + counter) and live tracking: longer than a single-page test.
+    test.setTimeout(90_000);
     await page.goto("/fr/menu/demo-americano");
     await page.getByRole("button", { name: money("Ajouter au panier · 1,00 $") }).click();
     await page.goto("/fr/checkout");
@@ -83,31 +86,76 @@ test.describe("checkout review (payment not yet available)", () => {
 
     // Delivery isn't offered: shown but disabled, with the reason.
     await expect(page.getByRole("radio", { name: /^Livraison/ })).toBeDisabled();
-
-    // Pickup time from the (demo) opening hours.
-    const asap = page.getByRole("radio", { name: /^Dès que possible/ });
-    if (await asap.isDisabled()) {
-      await page.getByRole("radio", { name: /^Choisir une heure/ }).check();
-      await page.getByLabel("Heure").selectOption({ index: 1 });
-    }
+    await choosePickupTime(page);
 
     // Tip suggestions are computed on the pre-tax amount (1,00 $ → 15 % = 0,15 $).
     await page.getByRole("radio", { name: /^15 %/ }).check();
     await expect(summaryTotal(page)).toContainText(money("1,30 $")); // 100 + 5 + 10 + 15
 
-    await page.getByRole("button", { name: "Vérifier ma commande" }).click();
+    // Guests must say who the order is for before anything is sent.
+    await page.getByRole("button", { name: "Commander et payer" }).click();
     await expect(page.getByText("Entrez un nom.")).toBeVisible();
     await expect(page.getByText("Entrez une adresse courriel valide.")).toBeVisible();
+    await expect(page).toHaveURL(/\/fr\/checkout$/);
 
-    await page.getByLabel("Nom pour la commande").fill("Alex");
+    await page.getByLabel("Nom pour l’appel au comptoir").fill("Alex");
     await page.getByLabel("Courriel pour le reçu").fill("alex@example.test");
-    await page.getByRole("button", { name: "Vérifier ma commande" }).click();
-    await expect(page.getByText(/Tout est en ordre/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Commander et payer" })).toBeDisabled();
-    await expect(
-      page.getByRole("note").getByText("Paiement en ligne pas encore offert"),
-    ).toBeVisible();
     await expectNoSeriousA11yViolations(page);
+    await page.getByRole("button", { name: "Commander et payer" }).click();
+
+    // Payment step: the order is held (awaiting payment) and the simulator is clearly labelled.
+    await page.waitForURL(/\/fr\/checkout\/pay\/[\w-]+\?token=/);
+    const heading = page.getByRole("heading", { level: 1, name: /^Payer la commande / });
+    await expect(heading).toBeVisible();
+    const number = (await heading.textContent())?.replace("Payer la commande ", "").trim() ?? "";
+    expect(number).toMatch(/^\d{4}-\d{3}$/);
+    await expect(page.getByText("Simulateur de paiement (développement)")).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    // A decline leaves the order unpaid and lets the customer try again.
+    await page.getByRole("button", { name: "Simuler un paiement refusé" }).click();
+    await expect(page.getByText("Paiement refusé. Vous pouvez réessayer.")).toBeVisible();
+    await page.getByRole("button", { name: "Simuler un paiement accepté" }).click();
+
+    // The guest follows the order through the private link (no account).
+    await page.waitForURL(/\/fr\/orders\/[\w-]+\?token=/);
+    await expect(page.getByRole("heading", { level: 1, name: `Commande ${number}` })).toBeVisible();
+    await expect(page.locator('[aria-current="step"]')).toContainText("Reçue");
+    await expect(page.getByText("Conservez ce lien pour suivre votre commande.")).toBeVisible();
+
+    // Behind the counter: the order appears in the queue and moves through each station.
+    // The counter runs on a landscape tablet (all four columns visible), whatever the customer uses.
+    const staff = await browser.newContext({
+      storageState: "e2e/.auth/staff.json",
+      viewport: { width: 1180, height: 820 },
+      isMobile: false,
+      hasTouch: true,
+    });
+    try {
+      const counter = await staff.newPage();
+      await counter.goto("/fr/staff");
+      const card = counter.getByRole("article", { name: number });
+      await expect(card).toContainText("[DÉMO] Americano");
+      await expect(card).toContainText("Alex");
+      for (const action of ["Accepter", "Commencer", "Prête"]) {
+        await card.getByRole("button", { name: action, exact: true }).click();
+        await expect(card.getByRole("button", { name: action, exact: true })).toHaveCount(0);
+      }
+
+      // The customer's tracking page picks the change up on its own.
+      await expect(page.getByText("Votre commande est prête!")).toBeVisible({ timeout: 30_000 });
+      await expect(
+        page.getByText(`Présentez-vous au comptoir avec le numéro ${number}.`),
+      ).toBeVisible();
+
+      await card.getByRole("button", { name: "Remise au client" }).click();
+      await expect(counter.getByRole("article", { name: number })).toHaveCount(0);
+      await expect(counter.getByRole("region", { name: "Remises récemment" })).toContainText(
+        number,
+      );
+    } finally {
+      await staff.close();
+    }
   });
 });
 
@@ -151,6 +199,10 @@ test.describe("first visit", () => {
 
 test.describe("signed-in customer", () => {
   test.use({ storageState: "e2e/.auth/customer.json" });
+  // The cart follows the account across devices, so start each test from an empty one.
+  test.beforeEach(async ({ page }) => {
+    await clearSavedCart(page);
+  });
 
   test("sees the stamp card, rewards wallet and history from the ledger", async ({ page }) => {
     await page.goto("/fr/rewards");
@@ -191,5 +243,27 @@ test.describe("signed-in customer", () => {
     await expect(summary).toContainText("Boisson gratuite");
     // Large latte 2,00 $ free; oat (+1,00 $) still charged → 100 + 5 + 10.
     await expect(summary).toContainText(money("1,15 $"));
+  });
+
+  test("pays for an order, then cancels it before the café accepts (refunded in full)", async ({
+    page,
+  }) => {
+    await page.goto("/fr/menu/demo-americano");
+    await page.getByRole("button", { name: money("Ajouter au panier · 1,00 $") }).click();
+    await page.goto("/fr/checkout");
+    await choosePickupTime(page);
+    await page.getByLabel("Nom pour l’appel au comptoir").fill("Camille");
+    await page.getByRole("button", { name: "Commander et payer" }).click();
+    await page.waitForURL(/\/fr\/checkout\/pay\//);
+    await page.getByRole("button", { name: "Simuler un paiement accepté" }).click();
+    await page.waitForURL(/\/fr\/orders\/[\w-]+/);
+
+    await page.getByRole("button", { name: "Annuler la commande" }).click();
+    const dialog = page.getByRole("dialog", { name: "Annuler cette commande?" });
+    await expect(dialog).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+    await dialog.getByRole("button", { name: "Annuler la commande" }).click();
+    await expect(page.getByText("La commande a été annulée.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Annuler la commande" })).toHaveCount(0);
   });
 });

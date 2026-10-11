@@ -118,3 +118,33 @@ Fees below are as publicly reported in 2026 secondary sources and **must be conf
 | **Clover (Fiserv)** | Quote-based                                                       | Relevant if the café runs Clover POS                                                                                                                                                                           | Developer platform constraints                                                                   |
 
 **Recommendation:** pick the provider that matches the café's **existing certified POS** when it has a usable online API (Square or Clover). Without one, use **Stripe** for online payments and solve the SRS bill obligation with a POS integration or professional guidance. Development proceeds against `FakePaymentProvider` plus a Stripe test-mode adapter, so this decision doesn't block Phases 1–5.
+
+## 6. Phase 3 as-built: ordering, payment boundary and staff queue
+
+- **Placing an order** (`POST /api/v1/orders` → `server/modules/ordering/place-order.ts`) runs in **one
+  transaction**: expire stale unpaid orders → re-check pickup time, pause, cutoff and slot capacity under a
+  transaction-scoped advisory lock → **re-price from the database** (the client only sends ids, quantities
+  and the total it was shown; a mismatch returns 422 `price_changed`) → enforce promotion caps → reserve the
+  free drink → allocate the order number → write item/price snapshots and events. The status is
+  `awaiting_payment`, held until `expires_at`.
+- **Idempotency**: every checkout attempt sends an `idempotencyKey`. A retry with the same body returns the
+  same order (200); the same key with a different body returns 409. Two concurrent requests with one key
+  hit the unique constraint, and the loser returns the winner's order.
+- **Payment boundary**: `modules/payments/confirm.ts` `recordPaymentOutcome` is the only path to `paid`. It
+  is idempotent per provider event id (`payment_events` inbox) and refuses an amount that differs from the
+  order total. The development simulator (`POST /api/dev/fake-payments`, enabled only when
+  `PAYMENT_PROVIDER=fake`, which env validation refuses in staging/production) calls the same function a
+  real webhook will. The browser returning from a payment page never marks anything paid.
+- **Refunds** go through the `PaymentProvider` interface (`refund()`); only the fake provider exists, and a
+  real one is Phase 6.
+- **Staff queue** (`/[locale]/staff`) polls `GET /api/v1/staff/orders` every few seconds. Transitions send
+  `expectedVersion`; a stale tap gets 409 and the queue refreshes. Pause ordering, product/option "86" and
+  internal notes are audited in `order_events`/`audit_log`.
+- **Guest access**: guests receive a random token in their tracking link (`?token=` or the `x-order-token`
+  header); only its SHA-256 hash is stored. Without owner, staff or token access an order returns 404, so
+  order ids can't be probed.
+- **CSRF**: `apiRoute` refuses non-GET requests whose `Origin` header is neither the app's own origin nor
+  `BETTER_AUTH_URL` (requests without `Origin`, e.g. server-to-server, rely on their own credentials).
+  Session cookies are also `SameSite=Lax`.
+- **Cart sync**: signed-in carts are saved in `carts` (ids and quantities only) with optimistic versioning;
+  the device cart and the account cart are merged on sign-in. Prices are always recomputed by the server.

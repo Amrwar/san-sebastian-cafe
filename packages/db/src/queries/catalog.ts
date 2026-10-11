@@ -57,7 +57,9 @@ export async function loadCatalog(
       variants: {
         where: (v) => isNull(v.archivedAt),
         orderBy: [asc(productVariants.sortOrder)],
+        with: { optionRules: true },
       },
+      availabilityWindows: true,
       modifierGroups: {
         orderBy: [asc(productModifierGroups.sortOrder)],
         with: {
@@ -91,6 +93,12 @@ export async function loadCatalog(
         allergenNoteFr: p.allergenNoteFr,
         allergenNoteEn: p.allergenNoteEn,
         availability: p.availability,
+        unavailableUntil: p.unavailableUntil,
+        availabilityWindows: p.availabilityWindows.map((w) => ({
+          weekday: w.weekday,
+          startMinute: w.startMinute,
+          endMinute: w.endMinute,
+        })),
         taxCategory: p.taxCategory,
         isDrink: p.isDrink,
         loyaltyQualifying: p.loyaltyQualifying,
@@ -104,6 +112,11 @@ export async function loadCatalog(
           priceCents: v.priceCents,
           isDefault: v.isDefault,
           availability: v.availability,
+          optionRules: v.optionRules.map((r) => ({
+            optionId: r.optionId,
+            priceDeltaCents: r.priceDeltaCents,
+            excluded: r.excluded,
+          })),
         })),
         groups: p.modifierGroups
           .filter((link) => link.group.archivedAt === null)
@@ -121,6 +134,7 @@ export async function loadCatalog(
               priceDeltaCents: o.priceDeltaCents,
               isDefault: o.isDefault,
               availability: o.availability,
+              unavailableUntil: o.unavailableUntil,
             })),
           })),
       },

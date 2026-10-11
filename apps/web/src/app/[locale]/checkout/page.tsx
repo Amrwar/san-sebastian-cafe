@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Container, PageHeader } from "@ssc/ui";
 import { db } from "@/server/db";
+import { env } from "@/server/env";
 import { getFulfilmentOptions } from "@/server/modules/store/pickup";
 import { getSessionUser } from "@/server/session";
 import { Checkout } from "./Checkout.client";
@@ -27,6 +28,7 @@ export default async function CheckoutPage() {
         pickup={options.pickup}
         deliveryOffered={options.deliveryOffered}
         usesDemoHours={options.usesDemoHours}
+        paymentsEnabled={env().PAYMENT_PROVIDER !== "none"}
         signedInEmail={user?.email ?? null}
         signedInName={user?.name ?? null}
       />

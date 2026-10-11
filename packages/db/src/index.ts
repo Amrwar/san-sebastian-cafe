@@ -29,4 +29,21 @@ export function createDb(url: string, options: { max?: number } = {}): DbHandle 
 
 export * from "./schema/index";
 export * from "./queries/catalog";
-export { and, asc, count, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+export {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  ne,
+  not,
+  or,
+  sql,
+} from "drizzle-orm";

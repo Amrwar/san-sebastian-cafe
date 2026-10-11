@@ -91,8 +91,8 @@ test.describe("role-based access", () => {
     test.use({ storageState: "e2e/.auth/staff.json" });
     test("see the staff console but not administration", async ({ page }) => {
       await page.goto("/en/staff");
-      await expect(page.getByRole("heading", { level: 1, name: "Staff console" })).toBeVisible();
-      await expect(page.getByRole("table")).toContainText("Preparing");
+      await expect(page.getByRole("heading", { level: 1, name: "Order queue" })).toBeVisible();
+      await expect(page.getByRole("region", { name: /^Preparing/ })).toContainText("D-1002");
       await expectNoSeriousA11yViolations(page);
       await page.goto("/en/admin");
       await expect(page.getByRole("heading", { level: 1, name: "Restricted area" })).toBeVisible();

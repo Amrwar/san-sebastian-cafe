@@ -11,6 +11,7 @@ const FINAL: readonly OrderStatus[] = [
   "completed",
   "cancelled",
   "expired",
+  "rejected",
   "refunded",
   "partially_refunded",
 ];
@@ -31,10 +32,12 @@ export function Tracking({
   orderId,
   number,
   initialStatus,
+  token = null,
 }: {
   orderId: string;
   number: string;
   initialStatus: OrderStatus;
+  token?: string | null;
 }) {
   const t = useTranslations("Tracking");
   const locale = useLocale();
@@ -66,7 +69,8 @@ export function Tracking({
         return;
       }
       try {
-        const next = await apiFetch<StatusResponse>(`/api/v1/me/orders/${orderId}/status`, {
+        const next = await apiFetch<StatusResponse>(`/api/v1/orders/${orderId}/status`, {
+          headers: token ? { "x-order-token": token } : {},
           signal: controller.signal,
           timeoutMs: 8000,
         });
@@ -103,7 +107,7 @@ export function Tracking({
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [orderId, done]);
+  }, [orderId, done, token]);
 
   const currentIndex = STEPS.indexOf(status as (typeof STEPS)[number]);
   const time = new Intl.DateTimeFormat(locale === "en" ? "en-CA" : "fr-CA", {
@@ -111,7 +115,7 @@ export function Tracking({
     minute: "2-digit",
   });
 
-  if (status === "cancelled" || status === "expired")
+  if (status === "cancelled" || status === "expired" || status === "rejected")
     return <Alert tone="warning">{t("cancelled")}</Alert>;
   if (status === "refunded" || status === "partially_refunded")
     return <Alert tone="neutral">{t("refunded")}</Alert>;

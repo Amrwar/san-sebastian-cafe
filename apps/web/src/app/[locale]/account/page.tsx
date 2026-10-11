@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { Button, Container, PageHeader } from "@ssc/ui";
+import { Container, PageHeader } from "@ssc/ui";
 import { AccountNav } from "@/components/AccountNav";
 import { SettingsForm } from "@/components/SettingsForm.client";
+import { SignOutButton } from "@/components/SignOutButton.client";
 import { db } from "@/server/db";
 import { getAccountSettings } from "@/server/modules/identity/account-settings";
 import { requireSessionUser } from "@/server/session";
@@ -39,9 +40,7 @@ export default async function AccountPage({ params }: PageProps<"/[locale]/accou
 
       <form action={signOut} className="mt-10 border-t border-line pt-6">
         <input type="hidden" name="locale" value={locale} />
-        <Button type="submit" variant="secondary">
-          {t("signOut")}
-        </Button>
+        <SignOutButton label={t("signOut")} />
       </form>
     </Container>
   );

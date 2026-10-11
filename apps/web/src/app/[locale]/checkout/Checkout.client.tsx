@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CAFE_TIME_ZONE, type PickupAvailability } from "@ssc/domain";
 import {
@@ -15,56 +15,94 @@ import {
   Surface,
   TextField,
 } from "@ssc/ui";
+import type { PlacedOrder } from "@/server/modules/ordering/place-order";
 import { RequestProblem, SlowNetworkNotice } from "@/components/NetworkStatus.client";
 import { QuoteSummary } from "@/components/QuoteSummary.client";
-import { Link } from "@/i18n/navigation";
-import { useCartLines } from "@/lib/cart";
-import { useCartExtras } from "@/lib/cart-extras";
+import { Link, useRouter } from "@/i18n/navigation";
+import { ApiError, apiFetch } from "@/lib/api-client";
+import { cart, useCartLines } from "@/lib/cart";
+import { setCartExtras, useCartExtras } from "@/lib/cart-extras";
 import { money } from "@/lib/format";
 import { useCartQuote, type QuoteOptions } from "@/lib/use-quote";
 
 type Tip = QuoteOptions["tip"];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const POSTAL = /^[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d$/;
+const REASONS = new Set([
+  "price_changed",
+  "slot_full",
+  "slot_unavailable",
+  "asap_unavailable",
+  "ordering_unavailable",
+  "cart_invalid",
+  "reward_unavailable",
+  "promotion_exhausted",
+  "promotion_limit_reached",
+  "payments_unavailable",
+]);
+/** Refusals that mean the offered pickup times are stale: reload them from the server. */
+const TIME_REASONS = new Set([
+  "slot_full",
+  "slot_unavailable",
+  "asap_unavailable",
+  "ordering_unavailable",
+]);
 
 export interface CheckoutProps {
   pickup: PickupAvailability;
   deliveryOffered: boolean;
   usesDemoHours: boolean;
+  /** False when no payment provider is configured: orders can't be placed yet. */
+  paymentsEnabled: boolean;
   signedInEmail: string | null;
   signedInName: string | null;
 }
 
 /**
- * Checkout review. Everything shown is computed by the server; placing an order stays disabled
- * until payments and order placement exist (Phase 6). No order is created and nothing is charged.
+ * Checkout. Every amount shown comes from the server quote; on submit the server re-prices and
+ * re-validates everything (time, capacity, availability, promotion, reward) and refuses a total
+ * the customer didn't see. Retries reuse the same idempotency key, so a flaky network can't
+ * create two orders. On success the customer continues to the payment step.
  */
 export function Checkout({
   pickup,
   deliveryOffered,
   usesDemoHours,
+  paymentsEnabled,
   signedInEmail,
   signedInName,
 }: CheckoutProps) {
   const t = useTranslations("Checkout");
   const tCart = useTranslations("Cart");
+  const tCommon = useTranslations("Common");
   const locale = useLocale();
+  const router = useRouter();
   const lines = useCartLines();
   const extras = useCartExtras();
 
   const [method, setMethod] = useState<"pickup" | "delivery">("pickup");
-  const [postalDraft, setPostalDraft] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [address, setAddress] = useState({
+    line1: "",
+    line2: "",
+    city: "Montréal",
+    instructions: "",
+  });
   const [timing, setTiming] = useState<"asap" | "scheduled">(
     pickup.asapAvailable ? "asap" : "scheduled",
   );
   const [slot, setSlot] = useState("");
   const [tipChoice, setTipChoice] = useState<"none" | "1000" | "1500" | "1800" | "custom">("none");
   const [customTip, setCustomTip] = useState("");
-  const [guestName, setGuestName] = useState(signedInName ?? "");
-  const [guestEmail, setGuestEmail] = useState("");
+  const [name, setName] = useState(signedInName ?? "");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  // One key per checkout attempt; kept across network retries, renewed after a server answer.
+  const idempotencyKey = useRef<string | null>(null);
 
   const customCents = Math.round(Number(customTip.replace(",", ".")) * 100);
   const customValid =
@@ -77,23 +115,26 @@ export function Checkout({
           ? { kind: "amount", cents: customCents }
           : { kind: "none" }
         : { kind: "percent", basisPoints: Number(tipChoice) };
+  const postalValid = POSTAL.test(postalCode.trim());
 
   const { data, loading, slow, error, retry } = useCartQuote(lines, {
     promoCode: extras.promoCode || undefined,
     useReward: extras.useReward,
     fulfilment:
-      method === "delivery" && postalCode
-        ? { method: "delivery", postalCode }
+      method === "delivery" && postalValid
+        ? { method: "delivery", postalCode: postalCode.trim() }
         : { method: "pickup" },
     tip,
+    ...(method === "pickup" && timing === "scheduled" && slot ? { pickupAt: slot } : {}),
   });
 
-  const timeFormat = new Intl.DateTimeFormat(locale === "en" ? "en-CA" : "fr-CA", {
+  const tag = locale === "en" ? "en-CA" : "fr-CA";
+  const timeFormat = new Intl.DateTimeFormat(tag, {
     timeZone: CAFE_TIME_ZONE,
     hour: "numeric",
     minute: "2-digit",
   });
-  const dayFormat = new Intl.DateTimeFormat(locale === "en" ? "en-CA" : "fr-CA", {
+  const dayFormat = new Intl.DateTimeFormat(tag, {
     timeZone: CAFE_TIME_ZONE,
     weekday: "long",
     day: "numeric",
@@ -116,21 +157,106 @@ export function Checkout({
   }
 
   const errors = {
-    name: !signedInEmail && guestName.trim() === "" ? t("errors.name") : undefined,
-    email: !signedInEmail && !EMAIL.test(guestEmail.trim()) ? t("errors.email") : undefined,
+    name: name.trim() === "" ? t("errors.name") : undefined,
+    email: !signedInEmail && !EMAIL.test(email.trim()) ? t("errors.email") : undefined,
     slot: method === "pickup" && timing === "scheduled" && !slot ? t("errors.slot") : undefined,
     tip: tipChoice === "custom" && !customValid ? t("errors.tip") : undefined,
+    address:
+      method === "delivery" &&
+      (address.line1.trim().length < 3 || address.city.trim().length < 2 || !postalValid)
+        ? t("errorsAddress")
+        : undefined,
   };
   const show = (key: keyof typeof errors) => (submitted ? errors[key] : undefined);
-  const reviewOk =
-    submitted && Object.values(errors).every((e) => !e) && data?.quote.canCheckout === true;
   const delivery = data?.delivery;
 
-  // Group slots by local day for the picker.
   const slotsByDay = pickup.slots.reduce<Record<string, string[]>>((acc, s) => {
     (acc[s.localDate] ??= []).push(s.startsAt);
     return acc;
   }, {});
+
+  const placeOrder = async () => {
+    setSubmitted(true);
+    setRefusal(null);
+    if (Object.values(errors).some(Boolean) || !data?.quote.canCheckout || loading) return;
+    idempotencyKey.current ??= crypto.randomUUID();
+    setPlacing(true);
+    try {
+      const placed = await apiFetch<PlacedOrder>("/api/v1/orders", {
+        method: "POST",
+        timeoutMs: 20_000,
+        body: JSON.stringify({
+          idempotencyKey: idempotencyKey.current,
+          lines: lines.map(
+            ({ lineId, productId, variantId, optionIds, quantity, notes: lineNotes }) => ({
+              lineId,
+              productId,
+              variantId,
+              optionIds,
+              quantity,
+              ...(lineNotes ? { notes: lineNotes } : {}),
+            }),
+          ),
+          promoCode: extras.promoCode || undefined,
+          useReward: extras.useReward,
+          fulfilment:
+            method === "pickup"
+              ? {
+                  method: "pickup",
+                  when: timing === "asap" ? { kind: "asap" } : { kind: "scheduled", at: slot },
+                }
+              : {
+                  method: "delivery",
+                  address: {
+                    line1: address.line1.trim(),
+                    ...(address.line2.trim() ? { line2: address.line2.trim() } : {}),
+                    city: address.city.trim(),
+                    postalCode: postalCode.trim(),
+                    ...(address.instructions.trim()
+                      ? { instructions: address.instructions.trim() }
+                      : {}),
+                  },
+                },
+          tip,
+          contact: {
+            name: name.trim(),
+            ...(signedInEmail ? {} : { email: email.trim() }),
+            ...(phone.trim() ? { phone: phone.trim() } : {}),
+          },
+          notes: notes.trim() || undefined,
+          expectedTotalCents: data.quote.totalCents,
+          locale: tag,
+        }),
+      });
+      idempotencyKey.current = null;
+      cart.clear();
+      setCartExtras({ promoCode: "", useReward: false });
+      const token = placed.guestToken ? `?token=${encodeURIComponent(placed.guestToken)}` : "";
+      router.push(`/checkout/pay/${placed.orderId}${token}`);
+    } catch (e) {
+      setPlacing(false);
+      if (
+        e instanceof ApiError &&
+        (e.failure.kind === "unprocessable" || e.failure.kind === "conflict")
+      ) {
+        idempotencyKey.current = null;
+        const reason = e.failure.reason ?? "generic";
+        setRefusal(REASONS.has(reason) ? reason : "generic");
+        if (reason === "price_changed") retry();
+        if (TIME_REASONS.has(reason)) {
+          setSlot("");
+          router.refresh();
+        }
+        return;
+      }
+      // Network problem or timeout: keep the key so retrying can't create a second order.
+      setRefusal(
+        e instanceof ApiError && (e.failure.kind === "offline" || e.failure.kind === "timeout")
+          ? "network"
+          : "generic",
+      );
+    }
+  };
 
   return (
     <form
@@ -138,7 +264,7 @@ export function Checkout({
       className="grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start"
       onSubmit={(e) => {
         e.preventDefault();
-        setSubmitted(true);
+        void placeOrder();
       }}
     >
       <div className="flex flex-col gap-6">
@@ -169,30 +295,60 @@ export function Checkout({
           </ChoiceGroup>
 
           {method === "delivery" ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-end gap-2">
+            <fieldset className="flex flex-col gap-4">
+              <legend className="sr-only">{t("delivery")}</legend>
+              <TextField
+                label={t("addressLine1")}
+                name="line1"
+                autoComplete="address-line1"
+                value={address.line1}
+                onChange={(e) => {
+                  setAddress({ ...address, line1: e.currentTarget.value });
+                }}
+                error={show("address")}
+              />
+              <TextField
+                label={t("addressLine2")}
+                optionalLabel={tCommon("optional")}
+                name="line2"
+                autoComplete="address-line2"
+                value={address.line2}
+                onChange={(e) => {
+                  setAddress({ ...address, line2: e.currentTarget.value });
+                }}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  className="flex-1"
+                  label={t("city")}
+                  name="city"
+                  autoComplete="address-level2"
+                  value={address.city}
+                  onChange={(e) => {
+                    setAddress({ ...address, city: e.currentTarget.value });
+                  }}
+                />
+                <TextField
                   label={t("postalLabel")}
                   hint={t("postalHint")}
                   name="postalCode"
                   autoComplete="postal-code"
-                  value={postalDraft}
+                  value={postalCode}
                   maxLength={7}
                   onChange={(e) => {
-                    setPostalDraft(e.currentTarget.value);
+                    setPostalCode(e.currentTarget.value);
                   }}
                 />
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setPostalCode(postalDraft.trim());
-                  }}
-                  disabled={!POSTAL.test(postalDraft.trim())}
-                >
-                  {t("postalCheck")}
-                </Button>
               </div>
+              <TextField
+                label={t("deliveryInstructions")}
+                optionalLabel={tCommon("optional")}
+                name="deliveryInstructions"
+                value={address.instructions}
+                maxLength={200}
+                onChange={(e) => {
+                  setAddress({ ...address, instructions: e.currentTarget.value });
+                }}
+              />
               {delivery && delivery.status !== "not_requested" ? (
                 <p
                   role="status"
@@ -210,12 +366,12 @@ export function Checkout({
                     : t(`deliveryStatus.${delivery.status}`)}
                 </p>
               ) : null}
-            </div>
+            </fieldset>
           ) : (
             <ChoiceGroup legend={t("timeLegend")} error={show("slot")}>
               {pickup.reason ? (
                 <Alert tone="warning">
-                  {pickup.reason === "ordering_disabled" ? t("orderingDisabled") : t("noHours")}
+                  {pickup.reason === "no_hours_configured" ? t("noHours") : t("orderingDisabled")}
                 </Alert>
               ) : (
                 <div className="flex w-full flex-col gap-3">
@@ -287,36 +443,46 @@ export function Checkout({
           <h2 className="font-display text-2xl text-espresso">{t("contactTitle")}</h2>
           {signedInEmail ? (
             <p className="text-espresso-muted">{t("signedInAs", { email: signedInEmail })}</p>
-          ) : (
-            <>
-              <TextField
-                label={t("guestName")}
-                name="name"
-                autoComplete="name"
-                value={guestName}
-                maxLength={80}
-                required
-                onChange={(e) => {
-                  setGuestName(e.currentTarget.value);
-                }}
-                error={show("name")}
-              />
-              <TextField
-                label={t("guestEmail")}
-                hint={t("guestHint")}
-                name="email"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
-                value={guestEmail}
-                required
-                onChange={(e) => {
-                  setGuestEmail(e.currentTarget.value);
-                }}
-                error={show("email")}
-              />
-            </>
+          ) : null}
+          <TextField
+            label={t("contactName")}
+            name="name"
+            autoComplete="name"
+            value={name}
+            maxLength={80}
+            required
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+            }}
+            error={show("name")}
+          />
+          {signedInEmail ? null : (
+            <TextField
+              label={t("guestEmail")}
+              hint={t("guestHint")}
+              name="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              value={email}
+              required
+              onChange={(e) => {
+                setEmail(e.currentTarget.value);
+              }}
+              error={show("email")}
+            />
           )}
+          <TextField
+            label={t("phone")}
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            value={phone}
+            maxLength={20}
+            onChange={(e) => {
+              setPhone(e.currentTarget.value);
+            }}
+          />
           <div className="flex flex-col gap-1.5">
             <label htmlFor="order-notes" className="text-sm font-semibold text-espresso">
               {t("notesLabel")}
@@ -420,24 +586,46 @@ export function Checkout({
               </Link>
             </Alert>
           ) : null}
-          <Alert tone="brand" title={t("paymentUnavailableTitle")} role="note">
-            {t("paymentUnavailableBody")}
-          </Alert>
-          <Button type="submit" variant="secondary" size="lg" className="w-full">
-            {t("review")}
-          </Button>
-          <div aria-live="polite">
-            {reviewOk ? <Alert tone="success">{t("reviewOk")}</Alert> : null}
-            {submitted && !reviewOk && Object.values(errors).some(Boolean) ? (
+
+          <div aria-live="assertive">
+            {refusal ? (
+              <Alert tone="danger" role="alert">
+                {refusal === "network" ? t("reasons.generic") : t(`reasons.${refusal}`)}{" "}
+                {refusal === "cart_invalid" ? (
+                  <Link href="/cart" className="font-semibold underline underline-offset-4">
+                    {t("backToCart")}
+                  </Link>
+                ) : null}
+              </Alert>
+            ) : null}
+            {submitted && Object.values(errors).some(Boolean) ? (
               <Alert tone="danger">{t("reviewErrors")}</Alert>
             ) : null}
           </div>
-          <Button size="lg" className="w-full" disabled aria-describedby="payment-unavailable">
-            {t("placeOrder")}
-          </Button>
-          <p id="payment-unavailable" className="sr-only">
-            {t("paymentUnavailableTitle")}
-          </p>
+
+          {paymentsEnabled ? (
+            <>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                pending={placing}
+                disabled={placing || loading || !data?.quote.canCheckout}
+              >
+                {placing ? t("placing") : t("placeOrder")}
+              </Button>
+              <p className="text-center text-sm text-espresso-muted">{t("paymentStepNote")}</p>
+            </>
+          ) : (
+            <>
+              <Alert tone="brand" title={t("paymentUnavailableTitle")} role="note">
+                {t("paymentUnavailableBody")}
+              </Alert>
+              <Button size="lg" className="w-full" disabled>
+                {t("placeOrder")}
+              </Button>
+            </>
+          )}
           <Link href="/cart" className="text-center text-burgundy underline underline-offset-4">
             {t("backToCart")}
           </Link>

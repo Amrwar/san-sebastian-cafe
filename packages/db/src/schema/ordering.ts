@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -15,6 +16,7 @@ import { demoFlag, timestamps } from "./columns";
 import { deliveryZones } from "./delivery";
 import {
   actorKindEnum,
+  orderEventTypeEnum,
   fulfilmentMethodEnum,
   localeEnum,
   orderStatusEnum,
@@ -53,7 +55,18 @@ export const orders = pgTable(
     /** null = as soon as possible. */
     scheduledFor: timestamp({ withTimezone: true }),
     locale: localeEnum().notNull(),
+    /** Customer instructions for the whole order (≤ 200 chars). */
     notes: text(),
+    /** Internal preparation notes, visible to staff only. */
+    staffNotes: text(),
+    guestPhone: text(),
+    /** SHA-256 of the guest's tracking token; lets guests follow their order without an account. */
+    guestAccessTokenHash: text(),
+    /** Start of the capacity slot this order holds (pickup orders). */
+    slotStart: timestamp({ withTimezone: true }),
+    /** Unpaid orders expire (and free their slot) after this instant. */
+    expiresAt: timestamp({ withTimezone: true }),
+    cancellationReason: text(),
     promotionId: uuid().references(() => promotions.id, { onDelete: "restrict" }),
     subtotalCents: integer().notNull(),
     discountCents: integer().notNull().default(0),
@@ -70,12 +83,15 @@ export const orders = pgTable(
     placedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     paidAt: timestamp({ withTimezone: true }),
     completedAt: timestamp({ withTimezone: true }),
+    acceptedAt: timestamp({ withTimezone: true }),
+    readyAt: timestamp({ withTimezone: true }),
     ...demoFlag,
     ...timestamps,
   },
   (t) => [
     index("orders_user_idx").on(t.userId, t.placedAt),
     index("orders_status_idx").on(t.status, t.placedAt),
+    index("orders_slot_idx").on(t.slotStart, t.status),
     check(
       "orders_customer_identified",
       sql`${t.userId} is not null or ${t.guestEmail} is not null`,
@@ -120,6 +136,8 @@ export const orderItems = pgTable(
     taxCategory: taxCategoryEnum().notNull(),
     isDrink: boolean().notNull(),
     loyaltyQualifying: boolean().notNull(),
+    /** Customer instruction for this item (e.g. "extra hot"), ≤ 140 chars. */
+    notes: text(),
     ...timestamps,
   },
   (t) => [
@@ -149,3 +167,30 @@ export const orderStatusEvents = pgTable(
   },
   (t) => [index("order_status_events_order_idx").on(t.orderId, t.createdAt)],
 );
+
+/**
+ * Complete order history: creation, every status change, payments, refunds and edits, with the
+ * actor and structured details. Append-only. (`order_status_events` keeps the compact status
+ * timeline used by tracking; both are written in the same transaction.)
+ */
+export const orderEvents = pgTable(
+  "order_events",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    type: orderEventTypeEnum().notNull(),
+    actorKind: actorKindEnum().notNull(),
+    actorUserId: text().references(() => users.id, { onDelete: "set null" }),
+    data: jsonb().notNull().default({}),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("order_events_order_idx").on(t.orderId, t.createdAt)],
+);
+
+/** Per-day counters for short, unique, human-friendly order numbers (e.g. "1011-007"). */
+export const orderCounters = pgTable("order_counters", {
+  localDate: date().primaryKey(),
+  lastValue: integer().notNull().default(0),
+});

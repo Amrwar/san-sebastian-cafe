@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import type { z } from "zod";
 import { AppError, fromZodError, toProblem } from "./errors";
+import { env } from "./env";
 import { logger } from "./logger";
 
 export const REQUEST_ID_HEADER = "x-request-id";
@@ -18,6 +19,22 @@ type Handler<P> = (req: NextRequest, ctx: RequestContext & { params: P }) => Pro
  * Wraps a route handler with a request id, structured access/error logging and RFC 9457
  * problem responses. Every API route goes through this wrapper.
  */
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * CSRF defence in depth (on top of SameSite=Lax cookies): browsers send `Origin` on cross-site
+ * requests, so a state-changing request whose Origin isn't this app is refused. Requests without
+ * an Origin header (server-to-server, native apps) are allowed and rely on their own credentials.
+ */
+function assertSameOrigin(req: NextRequest): void {
+  if (SAFE_METHODS.has(req.method)) return;
+  const origin = req.headers.get("origin");
+  if (!origin) return;
+  const allowed = new Set([new URL(env().BETTER_AUTH_URL).origin, req.nextUrl.origin]);
+  if (!allowed.has(origin))
+    throw new AppError("forbidden", "Cross-site request refused", [], "cross_origin");
+}
+
 export function apiRoute<P = Record<string, never>>(handler: Handler<P>) {
   return async (req: NextRequest, segment: { params: Promise<P> }): Promise<Response> => {
     const incoming = req.headers.get(REQUEST_ID_HEADER);
@@ -26,6 +43,7 @@ export function apiRoute<P = Record<string, never>>(handler: Handler<P>) {
     const started = performance.now();
     let response: Response;
     try {
+      assertSameOrigin(req);
       response = await handler(req, { requestId, log, params: await segment.params });
     } catch (error) {
       const problem = toProblem(error, requestId);

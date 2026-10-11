@@ -9,8 +9,17 @@ import {
   sql,
   type CatalogProduct,
   type Database,
+  type Tx,
 } from "@ssc/db";
-import { computeQuote, MAX_LINE_QUANTITY, type Quote } from "@ssc/domain";
+import {
+  catalogAt,
+  computeQuote,
+  MAX_LINE_QUANTITY,
+  optionPriceForVariant,
+  type PromotionRule,
+  type Quote,
+  type UnavailableReason,
+} from "@ssc/domain";
 import { z } from "zod";
 import type { Actor } from "../../authz";
 import { fromZodError } from "../../errors";
@@ -18,18 +27,20 @@ import { fromZodError } from "../../errors";
 /** Canadian postal code (A1A 1A1), case-insensitive, optional space. */
 export const POSTAL_CODE = /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z] ?\d[ABCEGHJ-NPRSTV-Z]\d$/i;
 
+export const cartLineInput = z.object({
+  lineId: z.string().min(1).max(64),
+  productId: z.uuid(),
+  variantId: z.uuid(),
+  optionIds: z.array(z.uuid()).max(30),
+  quantity: z.number().int().min(1).max(MAX_LINE_QUANTITY),
+  /** Customer instruction for this item ("extra hot"). Not priced. */
+  notes: z.string().trim().max(140).optional(),
+});
+
 export const cartQuoteInput = z.object({
-  lines: z
-    .array(
-      z.object({
-        lineId: z.string().min(1).max(64),
-        productId: z.uuid(),
-        variantId: z.uuid(),
-        optionIds: z.array(z.uuid()).max(30),
-        quantity: z.number().int().min(1).max(MAX_LINE_QUANTITY),
-      }),
-    )
-    .max(30),
+  lines: z.array(cartLineInput).max(30),
+  /** When the order would be prepared (scheduled pickup); availability is checked for that time. */
+  pickupAt: z.iso.datetime().optional(),
   promoCode: z.string().trim().max(32).optional(),
   /** Apply the customer's oldest available free-drink reward (server chooses which). */
   useReward: z.boolean().optional(),
@@ -60,6 +71,8 @@ export interface QuoteLineDisplay {
   options: Array<{ nameFr: string; nameEn: string; priceDeltaCents: number }>;
   imageUrl: string | null;
   isDemo: boolean;
+  /** Why the product can't be ordered at the pickup time (null when it can). */
+  unavailableReason: UnavailableReason | null;
 }
 
 export type DeliveryStatus =
@@ -79,7 +92,7 @@ export interface CartQuoteResult {
 
 function displayFor(
   line: Quote["lines"][number],
-  product: CatalogProduct | undefined,
+  product: (CatalogProduct & { unavailableReason: UnavailableReason | null }) | undefined,
 ): QuoteLineDisplay {
   const variant = product?.variants.find((v) => v.id === line.variantId);
   const options =
@@ -94,31 +107,41 @@ function displayFor(
     options: options.map((o) => ({
       nameFr: o.nameFr,
       nameEn: o.nameEn,
-      priceDeltaCents: o.priceDeltaCents,
+      priceDeltaCents: optionPriceForVariant(variant, o),
     })),
     imageUrl: product?.imageUrl ?? null,
     isDemo: product?.isDemo ?? false,
+    unavailableReason: product ? product.unavailableReason : "hidden",
   };
 }
 
+/** Everything order placement needs besides the public quote result. */
+export interface PricedCart {
+  result: CartQuoteResult;
+  promotion: PromotionRule | null;
+  reward: { id: string; valueCapCents: number | null } | null;
+  deliveryZoneId: string | null;
+  catalog: Map<string, CatalogProduct & { unavailableReason: UnavailableReason | null }>;
+}
+
 /**
- * Prices a cart from ids only. Promotions are looked up by code, rewards must belong to the
- * signed-in actor and be available, and delivery requires an active zone for the postal code.
- * Read-only: nothing is reserved until an order is placed (Phase 6).
+ * Prices a cart from ids only — the single pricing path for both quotes and order placement.
+ * Availability (schedules, temporary disabling) is evaluated at `availableAt` (the pickup time).
+ * Promotions are looked up by code, rewards must belong to the signed-in actor and be available,
+ * and delivery requires an active zone for the postal code. Read-only: reserves nothing.
  */
-export async function quoteCart(
-  db: Database,
+export async function priceCart(
+  db: Database | Tx,
   actor: Actor | null,
-  rawInput: unknown,
-  now = new Date(),
-): Promise<CartQuoteResult> {
-  const parsed = cartQuoteInput.safeParse(rawInput);
-  if (!parsed.success) throw fromZodError(parsed.error);
-  const input = parsed.data;
+  input: CartQuoteInput,
+  { now, availableAt }: { now: Date; availableAt?: Date },
+): Promise<PricedCart> {
+  const catalog = catalogAt(
+    await loadCatalog(db, [...new Set(input.lines.map((l) => l.productId))]),
+    availableAt ?? (input.pickupAt ? new Date(input.pickupAt) : now),
+  );
 
-  const catalog = await loadCatalog(db, [...new Set(input.lines.map((l) => l.productId))]);
-
-  let promotion = null;
+  let promotion: PromotionRule | null = null;
   let promotionCodeNotFound = false;
   if (input.promoCode) {
     const found = await db.query.promotions.findFirst({
@@ -155,6 +178,7 @@ export async function quoteCart(
   }
 
   let delivery: DeliveryStatus = { status: "not_requested" };
+  let deliveryZoneId: string | null = null;
   let fulfilment: Parameters<typeof computeQuote>[0]["fulfilment"] = { method: "pickup" };
   if (input.fulfilment.method === "delivery") {
     const zones = await db.select().from(deliveryZones).where(eq(deliveryZones.isActive, true));
@@ -173,6 +197,7 @@ export async function quoteCart(
           zoneNameEn: zone.nameEn,
           estimatedMinutes: zone.estimatedMinutes,
         };
+        deliveryZoneId = zone.id;
         fulfilment = {
           method: "delivery",
           feeCents: zone.feeCents,
@@ -204,9 +229,27 @@ export async function quoteCart(
     quote.canCheckout = false;
 
   return {
-    quote,
-    display: quote.lines.map((l) => displayFor(l, catalog.get(l.productId))),
-    delivery,
-    availableRewardIds,
+    result: {
+      quote,
+      display: quote.lines.map((l) => displayFor(l, catalog.get(l.productId))),
+      delivery,
+      availableRewardIds,
+    },
+    promotion,
+    reward: ownedReward ?? null,
+    deliveryZoneId,
+    catalog,
   };
+}
+
+/** POST /api/v1/cart/quote — validated, read-only quote for the cart page and checkout. */
+export async function quoteCart(
+  db: Database,
+  actor: Actor | null,
+  rawInput: unknown,
+  now = new Date(),
+): Promise<CartQuoteResult> {
+  const parsed = cartQuoteInput.safeParse(rawInput);
+  if (!parsed.success) throw fromZodError(parsed.error);
+  return (await priceCart(db, actor, parsed.data, { now })).result;
 }

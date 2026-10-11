@@ -11,7 +11,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./columns";
-import { paymentProviderEnum, paymentStatusEnum } from "./enums";
+import { paymentProviderEnum, paymentStatusEnum, refundStatusEnum } from "./enums";
+import { users } from "./identity";
 import { orders } from "./ordering";
 
 /*
@@ -62,4 +63,29 @@ export const paymentEvents = pgTable(
     error: text(),
   },
   (t) => [unique("payment_events_provider_event_uq").on(t.provider, t.eventId)],
+);
+
+/**
+ * Refunds requested against an order. Money moves only through the payment provider; `status`
+ * follows the provider's confirmation (the development fake provider confirms immediately).
+ */
+export const refunds = pgTable(
+  "refunds",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid()
+      .notNull()
+      .references(() => orders.id, { onDelete: "restrict" }),
+    paymentId: uuid().references(() => payments.id, { onDelete: "restrict" }),
+    amountCents: integer().notNull(),
+    reason: text().notNull(),
+    status: refundStatusEnum().notNull().default("pending"),
+    providerRefundId: text(),
+    requestedByUserId: text().references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("refunds_order_idx").on(t.orderId),
+    check("refunds_amount_positive", sql`${t.amountCents} > 0`),
+  ],
 );

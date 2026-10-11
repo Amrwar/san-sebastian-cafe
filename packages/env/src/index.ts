@@ -26,6 +26,11 @@ export const serverEnvSchema = z
     BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
     EMAIL_TRANSPORT: z.enum(["console"]).default("console"),
     EMAIL_FROM: z.string().min(3),
+    /**
+     * Payment boundary. "none": orders can't be placed. "fake": development simulator (no money
+     * moves). Real providers are added in Phase 6.
+     */
+    PAYMENT_PROVIDER: z.enum(["none", "fake"]).default("none"),
   })
   .superRefine((env, ctx) => {
     const deployed = env.APP_ENV === "staging" || env.APP_ENV === "production";
@@ -42,6 +47,13 @@ export const serverEnvSchema = z
         code: "custom",
         path: ["EMAIL_TRANSPORT"],
         message: "console email transport is development-only; configure a real provider",
+      });
+    }
+    if (deployed && env.PAYMENT_PROVIDER === "fake") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["PAYMENT_PROVIDER"],
+        message: "the fake payment simulator is development-only",
       });
     }
     if (deployed && !env.BETTER_AUTH_URL.startsWith("https://")) {

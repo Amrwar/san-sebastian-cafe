@@ -189,7 +189,8 @@ describe("favorites", () => {
     const actor = await newCustomer();
     const config = {
       productId: latte.id,
-      variantId: latte.variants[0]!.id,
+      // Large: the demo menu doesn't allow an iced small latte (size rule).
+      variantId: latte.variants[1]!.id,
       optionIds: [option(latte, "Iced"), option(latte, "Oat beverage")],
     };
     const first = await addFavorite(db, actor, config);

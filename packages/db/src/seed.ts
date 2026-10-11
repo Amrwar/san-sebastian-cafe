@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { computeQuote, type Role } from "@ssc/domain";
 import type { Database, Tx } from "./index";
 import { purgeDemoData } from "./maintenance";
@@ -19,6 +19,7 @@ import {
   orderStatusEvents,
   orders,
   payments,
+  productAvailabilityWindows,
   productModifierGroups,
   productVariants,
   products,
@@ -26,6 +27,7 @@ import {
   rewards,
   storeSettings,
   users,
+  variantOptionRules,
 } from "./schema/index";
 
 /*
@@ -118,6 +120,8 @@ const PRODUCTS: Array<{
   drink: boolean;
   featured?: boolean;
   soldOut?: boolean;
+  /** Weekday windows (local), e.g. breakfast-only items. */
+  windows?: Array<{ weekday: number; start: number; end: number }>;
   variants: Array<{ fr: string; en: string; price: number }>;
   groups: GroupKey[];
 }> = [
@@ -180,6 +184,17 @@ const PRODUCTS: Array<{
     groups: [],
   },
   {
+    slug: "demo-breakfast-bowl",
+    category: "bakery",
+    fr: "Bol déjeuner (matin seulement)",
+    en: "Breakfast bowl (mornings only)",
+    drink: false,
+    // Weekdays 07:00–11:00 local: exercises availability schedules.
+    windows: [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start: 7 * 60, end: 11 * 60 })),
+    variants: [{ fr: "Unité", en: "Each", price: 100 }],
+    groups: [],
+  },
+  {
     slug: "demo-muffin",
     category: "bakery",
     fr: "Muffin",
@@ -231,6 +246,10 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
       prepMinutes: 10,
       slotMinutes: 15,
       daysAhead: 2,
+      orderCutoffMinutes: 15,
+      maxOrdersPerSlot: 6,
+      autoAccept: false,
+      unpaidTtlMinutes: 15,
       isDemo: true,
     });
     await tx.insert(openingHours).values(
@@ -313,6 +332,16 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
         })
         .returning({ id: products.id });
       productIds.set(p.slug, product!.id);
+      if (p.windows) {
+        await tx.insert(productAvailabilityWindows).values(
+          p.windows.map((w) => ({
+            productId: product!.id,
+            weekday: w.weekday,
+            startMinute: w.start,
+            endMinute: w.end,
+          })),
+        );
+      }
       await tx.insert(productVariants).values(
         p.variants.map((v, i) => ({
           productId: product!.id,
@@ -333,6 +362,28 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
         );
       }
     }
+
+    // --- Size-specific rules: small latte → extra shot 0,50 $, and no iced small latte ----------
+    const [latteSmall] = await tx
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(
+        and(
+          eq(productVariants.productId, productIds.get("demo-latte")!),
+          eq(productVariants.nameEn, "Small"),
+        ),
+      );
+    const groupOptions = (key: GroupKey) =>
+      tx
+        .select({ id: modifierOptions.id, nameEn: modifierOptions.nameEn })
+        .from(modifierOptions)
+        .where(eq(modifierOptions.groupId, groupIds.get(key)!));
+    const [shot] = await groupOptions("shots");
+    const iced = (await groupOptions("temperature")).find((o) => o.nameEn === "Iced");
+    await tx.insert(variantOptionRules).values([
+      { variantId: latteSmall!.id, optionId: shot!.id, priceDeltaCents: 50 },
+      { variantId: latteSmall!.id, optionId: iced!.id, excluded: true },
+    ]);
 
     // --- Growth config (inactive placeholders) ---------------------------------------------------
     await tx.insert(promotions).values({

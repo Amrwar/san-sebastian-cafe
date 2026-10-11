@@ -65,3 +65,21 @@ export async function signIn(
   await page.getByRole("button", { name: labels.verify, exact: true }).click();
   await page.waitForURL((url) => !url.pathname.endsWith("/sign-in"));
 }
+
+/** Empties the signed-in customer's saved cart so tests don't inherit each other's lines. */
+export async function clearSavedCart(page: Page): Promise<void> {
+  const response = await page.request.put("/api/v1/me/cart", { data: { lines: [] } });
+  expect(response.ok()).toBe(true);
+}
+
+/** Picks ASAP when the (demo) hours allow it right now, otherwise the first offered time slot. */
+export async function choosePickupTime(page: Page): Promise<void> {
+  const asap = page.getByRole("radio", { name: /^Dès que possible/ });
+  await expect(asap).toBeVisible();
+  if (await asap.isDisabled()) {
+    await page.getByRole("radio", { name: /^Choisir une heure/ }).check();
+    await page.getByLabel("Heure", { exact: true }).selectOption({ index: 1 });
+  } else {
+    await asap.check();
+  }
+}

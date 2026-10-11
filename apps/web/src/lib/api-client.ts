@@ -7,6 +7,9 @@ export type ApiFailure =
   | { kind: "unauthenticated" }
   | { kind: "not_found" }
   | { kind: "validation"; fields: string[] }
+  | { kind: "forbidden" }
+  | { kind: "conflict"; reason: string | null }
+  | { kind: "unprocessable"; reason: string | null }
   | { kind: "rate_limited" }
   | { kind: "server"; requestId: string | null };
 
@@ -59,9 +62,15 @@ export async function apiFetch<T>(
   const problem = (await response.json().catch(() => ({}))) as {
     errors?: Array<{ path: string }>;
     requestId?: string;
+    reason?: string;
   };
   if (response.status === 401) throw new ApiError({ kind: "unauthenticated" });
+  if (response.status === 403) throw new ApiError({ kind: "forbidden" });
   if (response.status === 404) throw new ApiError({ kind: "not_found" });
+  if (response.status === 409)
+    throw new ApiError({ kind: "conflict", reason: problem.reason ?? null });
+  if (response.status === 422)
+    throw new ApiError({ kind: "unprocessable", reason: problem.reason ?? null });
   if (response.status === 429) throw new ApiError({ kind: "rate_limited" });
   if (response.status === 400) {
     throw new ApiError({ kind: "validation", fields: problem.errors?.map((e) => e.path) ?? [] });

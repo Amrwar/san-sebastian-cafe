@@ -5,11 +5,13 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { SkipLink } from "@ssc/ui";
 import "../globals.css";
+import { CartSync } from "@/components/CartSync.client";
 import { BottomNav } from "@/components/Navigation.client";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration.client";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { routing, toDomainLocale } from "@/i18n/routing";
+import { getSessionUser } from "@/server/session";
 
 const display = Newsreader({
   subsets: ["latin", "latin-ext"],
@@ -46,7 +48,7 @@ export const viewport: Viewport = {
 export default async function LocaleLayout({ children, params }: LayoutProps<"/[locale]">) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
-  const t = await getTranslations("Common");
+  const [t, user] = await Promise.all([getTranslations("Common"), getSessionUser()]);
 
   return (
     <html lang={toDomainLocale(locale)} className={`${display.variable} ${sans.variable}`}>
@@ -60,6 +62,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <SiteFooter />
           <BottomNav />
           <ServiceWorkerRegistration />
+          {user ? <CartSync userId={user.userId} /> : null}
         </NextIntlClientProvider>
       </body>
     </html>
