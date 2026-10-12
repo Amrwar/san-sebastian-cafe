@@ -5,7 +5,8 @@ _2026-10-11. Migration `0003_payments.sql`. Runbook, provider comparison and lau
 
 **Status in one line:** Stripe Checkout is fully integrated behind a provider interface and tested
 against Stripe's own request and signature formats plus a scripted Stripe double. It has **not** been
-verified in the Stripe sandbox (no test keys yet), and **production payments are not enabled**.
+verified in the Stripe sandbox, and **production payments are not enabled**. The owner closed the
+phase on 2026-10-11 and deferred sandbox verification to the pre-launch stage (see §6).
 
 ## 1. Provider decision
 
@@ -124,7 +125,7 @@ sandbox checklist in [13 §7](13-payments.md#7-testing). Both need your test key
 
 ## 6. Decisions and inputs needed
 
-1. **Stripe test keys** in `.env` (`STRIPE_SECRET_KEY=sk_test_…`, `STRIPE_WEBHOOK_SECRET=whsec_…`,
+1. **Deferred to pre-launch:** Stripe test keys in `.env` (`STRIPE_SECRET_KEY=sk_test_…`, `STRIPE_WEBHOOK_SECRET=whsec_…`,
    `PAYMENT_PROVIDER=stripe`) so the sandbox verification can run.
 2. **D1:** the café's POS (Square would change the recommendation).
 3. **D16:** cancellation and refund policy (defaults implemented). **D13:** tips.
