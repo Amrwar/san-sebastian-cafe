@@ -136,6 +136,40 @@ test.describe("loyalty rules", () => {
   });
 });
 
+test.describe("team", () => {
+  test.use({ storageState: "e2e/.auth/owner.json" });
+
+  test("the owner gives a new person access, changes their role and removes it", async ({
+    page,
+  }) => {
+    await page.goto("/fr/admin/team");
+    await expect(page.getByRole("heading", { level: 1, name: "Équipe" })).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    const email = "e2e.barista@example.test";
+    await page.getByLabel("Courriel").fill(email);
+    await page.getByRole("button", { name: "Donner l’accès" }).click();
+    await expect(
+      page.getByText(`Accès donné. La personne peut se connecter avec ${email}.`),
+    ).toBeVisible();
+
+    const member = page.getByRole("listitem").filter({ hasText: email });
+    await expect(member.getByText("Jamais connecté")).toBeVisible();
+    await member.getByLabel(`Rôle de ${email}`).selectOption("shift_lead");
+    await member.getByRole("button", { name: "Enregistrer" }).click();
+    await expect(page.getByText("Rôle mis à jour.")).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByRole("listitem").filter({ hasText: email }).getByLabel(`Rôle de ${email}`),
+    ).toHaveValue("shift_lead");
+
+    const updated = page.getByRole("listitem").filter({ hasText: email });
+    await updated.getByRole("button", { name: "Retirer l’accès" }).click();
+    await updated.getByRole("button", { name: "Confirmer" }).click();
+    await expect(page.getByRole("listitem").filter({ hasText: email })).toHaveCount(0);
+  });
+});
+
 test.describe("admin access", () => {
   test.use({ storageState: "e2e/.auth/staff.json" });
 

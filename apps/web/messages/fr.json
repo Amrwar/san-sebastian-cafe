@@ -895,7 +895,8 @@
     "menu": "Menu",
     "options": "Options",
     "store": "Café",
-    "loyalty": "Fidélité"
+    "loyalty": "Fidélité",
+    "team": "Équipe"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1126,6 +1127,41 @@
       "no_changes": "Les règles sont identiques à la version en vigueur.",
       "forbidden": "Seul le propriétaire peut modifier les règles.",
       "generic": "L’enregistrement a échoué. Vérifiez les champs et réessayez."
+    }
+  },
+  "AdminTeam": {
+    "title": "Équipe",
+    "intro": "Donnez un rôle à une adresse courriel : la personne se connecte avec un code reçu à cette adresse. Un changement de rôle s’applique tout de suite.",
+    "rolesHelp": {
+      "staff": "Barista : file de commandes, disponibilité des produits, tampons au comptoir.",
+      "shift_lead": "Chef d’équipe : en plus, annulations, remboursements, corrections de fidélité, pause des commandes.",
+      "manager": "Gérant : en plus, menu, réglages du café, promotions, rapports, journal d’audit."
+    },
+    "inviteTitle": "Ajouter une personne",
+    "email": "Courriel",
+    "role": "Rôle",
+    "invite": "Donner l’accès",
+    "invited": "Accès donné. La personne peut se connecter avec {email}.",
+    "updated": "Rôle mis à jour.",
+    "removed": "Accès retiré. La personne a été déconnectée.",
+    "membersTitle": "Membres",
+    "you": "vous",
+    "noName": "Nom à compléter",
+    "lastSignIn": "Dernière connexion : {date}",
+    "neverSignedIn": "Jamais connecté",
+    "changeRole": "Rôle de {name}",
+    "save": "Enregistrer",
+    "removeAccess": "Retirer l’accès",
+    "confirmRemove": "Retirer l’accès de {name} ? La personne gardera un compte client.",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "errors": {
+      "email": "Entrez une adresse courriel valide.",
+      "own_account": "Vous ne pouvez pas changer votre propre rôle.",
+      "owner_account": "Le rôle de propriétaire ne se modifie pas ici.",
+      "not_staff": "Cette personne n’a pas d’accès d’équipe.",
+      "forbidden": "Seul le propriétaire gère l’équipe.",
+      "generic": "La modification a échoué. Réessayez."
     }
   }
 }

@@ -3,8 +3,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   auditEvents,
   eq,
+  loyaltyAccounts,
   orderItems,
   productVariants,
+  sessions,
   sql,
   users,
   type Database,
@@ -39,6 +41,7 @@ import {
   saveOpeningHours,
   saveStoreSettings,
 } from "./admin/store";
+import { listTeam, setTeamRole } from "./admin/team";
 
 /*
  * Menu administration: permissions, validation, audit, and the guarantee that editing the menu
@@ -54,6 +57,7 @@ let staff: Actor;
 let lead: Actor;
 let manager: Actor;
 let customer: Actor;
+let owner: Actor;
 
 beforeAll(async () => {
   handle = await createTestDatabase();
@@ -79,6 +83,7 @@ beforeEach(async () => {
   lead = { userId: (await byEmail("lead")).id, role: "shift_lead" };
   manager = { userId: (await byEmail("manager")).id, role: "manager" };
   customer = { userId: (await byEmail("customer")).id, role: "customer" };
+  owner = { userId: (await byEmail("owner")).id, role: "owner" };
 });
 
 async function failure(promise: Promise<unknown>): Promise<string | null> {
@@ -498,6 +503,88 @@ describe("store settings", () => {
     expect(await failure(removeClosure(db, manager, "2026-10-12"))).toBe("not_found");
     expect((await computeAvailability(db, await loadStoreConfig(db), NOW)).asapAvailable).toBe(
       true,
+    );
+  });
+});
+
+describe("team", () => {
+  const roleOf = async (email: string) =>
+    (await db.select().from(users).where(eq(users.email, email)))[0]?.role;
+
+  it("only the owner sees and manages the team", async () => {
+    expect(await failure(listTeam(db, manager))).toBe("forbidden");
+    expect(
+      await failure(setTeamRole(db, manager, { email: "x@example.test", role: "staff" })),
+    ).toBe("forbidden");
+    const team = await listTeam(db, owner);
+    expect(team.map((m) => m.role)).toEqual(["owner", "manager", "shift_lead", "staff"]);
+    expect(team.every((m) => m.role !== "customer")).toBe(true);
+  });
+
+  it("inviting an unknown email creates a ready-to-sign-in staff account", async () => {
+    const result = await setTeamRole(db, owner, {
+      email: "  New.Barista@Example.test ",
+      role: "staff",
+    });
+    expect(result.created).toBe(true);
+    expect(await roleOf("new.barista@example.test")).toBe("staff");
+    // Provisioned like any account (loyalty card included).
+    const [card] = await db
+      .select()
+      .from(loyaltyAccounts)
+      .where(eq(loyaltyAccounts.userId, result.userId));
+    expect(card).toBeDefined();
+    const [audit] = await db
+      .select()
+      .from(auditEvents)
+      .where(eq(auditEvents.action, "staff.invited"));
+    expect(audit).toMatchObject({ entityId: result.userId, metadata: { role: "staff" } });
+    // Removing access from someone who was never staff is refused.
+    expect(
+      await failure(setTeamRole(db, owner, { email: "nobody@example.test", role: "customer" })),
+    ).toBe("not_staff");
+  });
+
+  it("promotes and demotes; a demotion signs the person out everywhere", async () => {
+    const email = `staff@${DEMO_EMAIL_DOMAIN}`;
+    await setTeamRole(db, owner, { email, role: "shift_lead" });
+    expect(await roleOf(email)).toBe("shift_lead");
+
+    await db.insert(sessions).values({
+      id: randomUUID(),
+      token: randomUUID(),
+      userId: staff.userId,
+      expiresAt: new Date(Date.now() + 86_400_000),
+    });
+    await setTeamRole(db, owner, { email, role: "customer" });
+    expect(await roleOf(email)).toBe("customer");
+    expect(await db.select().from(sessions).where(eq(sessions.userId, staff.userId))).toEqual([]);
+    const actions = (await db.select().from(auditEvents)).map((a) => a.action);
+    expect(actions).toEqual(expect.arrayContaining(["staff.role_changed", "staff.access_removed"]));
+  });
+
+  it("can't change the owner or the caller's own account", async () => {
+    expect(
+      await failure(
+        setTeamRole(db, owner, { email: `owner@${DEMO_EMAIL_DOMAIN}`, role: "manager" }),
+      ),
+    ).toBe("own_account");
+    const secondOwner = { ...manager };
+    await db.update(users).set({ role: "owner" }).where(eq(users.id, manager.userId));
+    expect(
+      await failure(
+        setTeamRole(
+          db,
+          { userId: secondOwner.userId, role: "owner" },
+          { email: `owner@${DEMO_EMAIL_DOMAIN}`, role: "staff" },
+        ),
+      ),
+    ).toBe("owner_account");
+    expect(await failure(setTeamRole(db, owner, { email: "not-an-email", role: "staff" }))).toBe(
+      "validation_failed",
+    );
+    expect(await failure(setTeamRole(db, owner, { email: "a@example.test", role: "owner" }))).toBe(
+      "validation_failed",
     );
   });
 });

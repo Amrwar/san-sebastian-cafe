@@ -895,7 +895,8 @@
     "menu": "Menu",
     "options": "Options",
     "store": "Café",
-    "loyalty": "Loyalty"
+    "loyalty": "Loyalty",
+    "team": "Team"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1126,6 +1127,41 @@
       "no_changes": "The rules are the same as the version in force.",
       "forbidden": "Only the owner can change the rules.",
       "generic": "Saving failed. Check the fields and try again."
+    }
+  },
+  "AdminTeam": {
+    "title": "Team",
+    "intro": "Give a role to an email address: the person signs in with a code sent to that address. A role change applies immediately.",
+    "rolesHelp": {
+      "staff": "Barista: order queue, product availability, counter stamps.",
+      "shift_lead": "Shift lead: also cancellations, refunds, loyalty corrections, pausing orders.",
+      "manager": "Manager: also menu, café settings, promotions, reports, audit log."
+    },
+    "inviteTitle": "Add a person",
+    "email": "Email",
+    "role": "Role",
+    "invite": "Give access",
+    "invited": "Access given. They can sign in with {email}.",
+    "updated": "Role updated.",
+    "removed": "Access removed. They were signed out.",
+    "membersTitle": "Members",
+    "you": "you",
+    "noName": "Name not set yet",
+    "lastSignIn": "Last sign-in: {date}",
+    "neverSignedIn": "Never signed in",
+    "changeRole": "Role of {name}",
+    "save": "Save",
+    "removeAccess": "Remove access",
+    "confirmRemove": "Remove {name}’s access? They keep a customer account.",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "errors": {
+      "email": "Enter a valid email address.",
+      "own_account": "You can’t change your own role.",
+      "owner_account": "The owner role isn’t changed here.",
+      "not_staff": "This person has no team access.",
+      "forbidden": "Only the owner manages the team.",
+      "generic": "The change failed. Try again."
     }
   }
 }
