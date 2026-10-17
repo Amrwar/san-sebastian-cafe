@@ -193,6 +193,7 @@ export async function openCheckout(
       amountCents: order.totalCents,
       checkoutUrl: created.url,
       expiresAt: created.expiresAt,
+      createdAt: now,
     });
     // Hold the order (and its pickup slot) while the payment page can still be paid.
     const holdUntil = new Date(created.expiresAt.getTime() + HOLD_GRACE_MS);
@@ -390,6 +391,7 @@ export async function applyCheckoutInTx(
         reason: RECONCILIATION_REASONS[decision.reconciliation],
         source: "system",
         actor: system,
+        now,
       });
       return { outcome, orderStatus: order.status, refundIds: [refundId] };
     }

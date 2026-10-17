@@ -222,7 +222,7 @@ test.describe("signed-in customer", () => {
       page.getByText("Encore 3 tampons avant votre prochaine boisson gratuite"),
     ).toBeVisible();
     await expect(page.getByText("Boisson gratuite", { exact: true })).toBeVisible();
-    await expect(page.getByText("Échangé contre une boisson gratuite")).toBeVisible();
+    await expect(page.getByText("Échangés contre une boisson gratuite")).toBeVisible();
     await expectNoSeriousA11yViolations(page);
   });
 

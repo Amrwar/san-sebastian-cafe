@@ -2,8 +2,11 @@ import {
   and,
   deliveryZones,
   eq,
+  gt,
+  isNull,
   loadCatalog,
   loyaltyAccounts,
+  or,
   promotions,
   rewards,
   sql,
@@ -23,6 +26,7 @@ import {
 import { z } from "zod";
 import type { Actor } from "../../authz";
 import { fromZodError } from "../../errors";
+import { currentRules } from "../loyalty/program";
 
 /** Canadian postal code (A1A 1A1), case-insensitive, optional space. */
 export const POSTAL_CODE = /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z] ?\d[ABCEGHJ-NPRSTV-Z]\d$/i;
@@ -115,11 +119,17 @@ function displayFor(
   };
 }
 
+interface OwnedReward {
+  id: string;
+  valueCapCents: number | null;
+  coversModifiers: boolean;
+}
+
 /** Everything order placement needs besides the public quote result. */
 export interface PricedCart {
   result: CartQuoteResult;
   promotion: PromotionRule | null;
-  reward: { id: string; valueCapCents: number | null } | null;
+  reward: OwnedReward | null;
   deliveryZoneId: string | null;
   catalog: Map<string, CatalogProduct & { unavailableReason: UnavailableReason | null }>;
 }
@@ -165,13 +175,24 @@ export async function priceCart(
   }
 
   let availableRewardIds: string[] | null = null;
-  let ownedReward: { id: string; valueCapCents: number | null } | undefined;
+  let ownedReward: OwnedReward | undefined;
   if (actor) {
+    // Unexpired available rewards only (expiry exists only if the owner enabled it).
     const rows = await db
-      .select({ id: rewards.id, valueCapCents: rewards.valueCapCents })
+      .select({
+        id: rewards.id,
+        valueCapCents: rewards.valueCapCents,
+        coversModifiers: rewards.coversModifiers,
+      })
       .from(rewards)
       .innerJoin(loyaltyAccounts, eq(loyaltyAccounts.id, rewards.accountId))
-      .where(and(eq(loyaltyAccounts.userId, actor.userId), eq(rewards.status, "available")))
+      .where(
+        and(
+          eq(loyaltyAccounts.userId, actor.userId),
+          eq(rewards.status, "available"),
+          or(isNull(rewards.expiresAt), gt(rewards.expiresAt, now)),
+        ),
+      )
       .orderBy(rewards.issuedAt);
     availableRewardIds = rows.map((r) => r.id);
     ownedReward = input.useReward ? rows[0] : undefined;
@@ -207,6 +228,7 @@ export async function priceCart(
     }
   }
 
+  const rules = ownedReward ? await currentRules(db) : null;
   const quote = computeQuote({
     lines: input.lines,
     catalog,
@@ -216,7 +238,10 @@ export async function priceCart(
       ? {
           rewardId: ownedReward.id,
           valueCapCents: ownedReward.valueCapCents,
+          coversModifiers: ownedReward.coversModifiers,
           lineId: input.rewardLineId,
+          excludedProductIds: rules?.rewardExcludedProductIds,
+          excludedVariantIds: rules?.rewardExcludedVariantIds,
         }
       : null,
     fulfilment,

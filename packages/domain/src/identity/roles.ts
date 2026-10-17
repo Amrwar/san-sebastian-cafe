@@ -23,6 +23,7 @@ export const PERMISSIONS = [
   "orders:transition",
   "catalog:toggle_availability",
   "customers:lookup",
+  "loyalty:in_store",
   // shift lead
   "orders:cancel",
   "orders:refund",
@@ -55,6 +56,7 @@ const STAFF: readonly Permission[] = [
   "orders:transition",
   "catalog:toggle_availability",
   "customers:lookup",
+  "loyalty:in_store",
 ];
 const SHIFT_LEAD: readonly Permission[] = [
   ...STAFF,

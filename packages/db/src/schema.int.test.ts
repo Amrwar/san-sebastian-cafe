@@ -254,13 +254,15 @@ describe("integrity constraints", () => {
       expect(await pgErrorCode(update)).toBe("23514");
     });
 
-    it("earns at most once per order line", async () => {
-      const { account, item } = await setup();
+    it("records each ledger operation at most once (idempotency key)", async () => {
+      const { account, order } = await setup();
       const earn = {
         accountId: account.id,
         kind: "earn" as const,
         stamps: 2,
-        orderItemId: item.id,
+        balanceAfter: 2,
+        orderId: order.id,
+        idempotencyKey: `earn:${order.id}`,
       };
       await db.insert(loyaltyTransactions).values(earn);
       expect(await pgErrorCode(db.insert(loyaltyTransactions).values(earn))).toBe("23505");
@@ -268,13 +270,21 @@ describe("integrity constraints", () => {
 
     it("enforces the sign of each entry kind and a reason for adjustments", async () => {
       const { account } = await setup();
-      const negativeEarn = db
-        .insert(loyaltyTransactions)
-        .values({ accountId: account.id, kind: "earn", stamps: -1 });
+      const negativeEarn = db.insert(loyaltyTransactions).values({
+        accountId: account.id,
+        kind: "earn",
+        stamps: -1,
+        balanceAfter: 0,
+        idempotencyKey: "neg",
+      });
       expect(await pgErrorCode(negativeEarn)).toBe("23514");
-      const silentAdjust = db
-        .insert(loyaltyTransactions)
-        .values({ accountId: account.id, kind: "adjust", stamps: 1 });
+      const silentAdjust = db.insert(loyaltyTransactions).values({
+        accountId: account.id,
+        kind: "adjust",
+        stamps: 1,
+        balanceAfter: 1,
+        idempotencyKey: "silent",
+      });
       expect(await pgErrorCode(silentAdjust)).toBe("23514");
     });
 
@@ -282,7 +292,14 @@ describe("integrity constraints", () => {
       const { account, order } = await setup();
       const [convert] = await db
         .insert(loyaltyTransactions)
-        .values({ accountId: account.id, kind: "adjust", stamps: 5, reason: "test" })
+        .values({
+          accountId: account.id,
+          kind: "adjust",
+          stamps: 5,
+          balanceAfter: 5,
+          reason: "test",
+          idempotencyKey: "seed-adjust",
+        })
         .returning();
       const [reward] = await db
         .insert(rewards)

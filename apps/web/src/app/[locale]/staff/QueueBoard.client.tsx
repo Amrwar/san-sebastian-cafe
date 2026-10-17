@@ -153,6 +153,9 @@ export function QueueBoard({
           <Link href="/staff/availability" className={buttonClasses("secondary")}>
             {t("availability")}
           </Link>
+          <Link href="/staff/loyalty" className={buttonClasses("secondary")}>
+            {t("loyalty")}
+          </Link>
           {canRefund ? (
             <Link href="/staff/payments" className={buttonClasses("secondary")}>
               {t("payments")}

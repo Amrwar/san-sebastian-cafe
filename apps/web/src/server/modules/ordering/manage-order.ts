@@ -211,6 +211,11 @@ export async function transitionOrderAsStaff(
 export const staffRefundInput = z.object({
   amountCents: z.number().int().positive(),
   reason: z.string().trim().min(3).max(300),
+  /** Drinks/items being paid back; their loyalty stamps are reversed when the refund succeeds. */
+  items: z
+    .array(z.object({ orderItemId: z.uuid(), quantity: z.number().int().min(1).max(20) }).strict())
+    .max(50)
+    .optional(),
 });
 
 /** Full or partial refund by a shift lead or above. */
@@ -235,6 +240,8 @@ export async function refundOrderAsStaff(
       reason: input.reason,
       source: "staff",
       actor: staffActor(actor),
+      items: input.items,
+      now,
     });
   });
   const [refundStatus] = await submitRefunds(db, [refundId], now);

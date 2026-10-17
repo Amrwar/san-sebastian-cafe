@@ -5,6 +5,7 @@ import {
   unitPriceCents,
   validateSelection,
 } from "../catalog/configuration";
+import { isRewardEligible, rewardValueCents } from "../loyalty/loyalty";
 import { applyRatePpm, cents } from "../shared/money";
 import { computeTaxes, isTaxable } from "./tax";
 
@@ -43,6 +44,11 @@ export interface RewardInput {
   valueCapCents: number | null;
   /** Line to apply the reward to; defaults to the most expensive eligible line. */
   lineId?: string | undefined;
+  /** Paid extras on the free drink are free too (snapshotted on the reward). Default false. */
+  coversModifiers?: boolean | undefined;
+  /** Program exclusions for the free drink (current loyalty rules). */
+  excludedProductIds?: readonly string[] | undefined;
+  excludedVariantIds?: readonly string[] | undefined;
 }
 
 export type FulfilmentInput =
@@ -182,12 +188,16 @@ export function computeQuote(input: QuoteInput): Quote {
   const validLines = lines.filter((l) => l.valid);
   const subtotalCents = validLines.reduce((s, l) => s + l.lineTotalCents, 0);
 
-  // 2. Reward: one free eligible drink (variant price, up to the cap; extras stay charged).
+  // 2. Reward: one free eligible drink (size price, extras only if covered, up to the cap).
   let reward: Quote["reward"] = null;
   if (input.reward) {
+    const rules = {
+      rewardExcludedProductIds: input.reward.excludedProductIds ?? [],
+      rewardExcludedVariantIds: input.reward.excludedVariantIds ?? [],
+    };
     const eligible = validLines.filter((l) => {
       const p = catalog.get(l.productId);
-      return p?.rewardEligible === true && p.isDrink;
+      return p !== undefined && isRewardEligible(p, l.variantId, rules);
     });
     const target =
       eligible.find((l) => l.lineId === input.reward?.lineId) ??
@@ -196,8 +206,10 @@ export function computeQuote(input: QuoteInput): Quote {
       const variant = catalog
         .get(target.productId)
         ?.variants.find((v) => v.id === target.variantId);
-      const cap = input.reward.valueCapCents ?? Number.POSITIVE_INFINITY;
-      const discount = Math.min(variant?.priceCents ?? 0, cap, target.unitPriceCents);
+      const discount = rewardValueCents(variant?.priceCents ?? 0, target.unitPriceCents, {
+        valueCapCents: input.reward.valueCapCents,
+        coversModifiers: input.reward.coversModifiers ?? false,
+      });
       target.rewardDiscountCents = discount;
       reward = {
         rewardId: input.reward.rewardId,

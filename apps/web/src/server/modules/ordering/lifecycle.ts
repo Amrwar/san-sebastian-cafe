@@ -1,7 +1,14 @@
 import { and, eq, lt, orderEvents, orderStatusEvents, orders, sql, type Tx } from "@ssc/db";
 import { checkTransition, type OrderStatus, type Role, type TransitionActor } from "@ssc/domain";
 import { AppError, required } from "../../errors";
-import { earnForOrder, reverseForOrder, settleRedemption } from "../loyalty/ledger";
+import {
+  commitRedemptions,
+  earnForOrder,
+  reinstateRedemptions,
+  reverseOrder,
+} from "../loyalty/earning";
+import { releaseReservations } from "../loyalty/ledger";
+import { currentRules } from "../loyalty/program";
 
 /** Who is acting on an order, as the services see it. */
 export type OrderActor =
@@ -132,28 +139,22 @@ export async function applyTransition(
     ...(options.reason ? { reason: options.reason } : {}),
   });
 
-  // Loyalty side effects.
+  // Loyalty side effects (same transaction; see modules/loyalty/earning.ts).
   if (to === "paid") {
-    await settleRedemption(tx, order.id, "commit");
-    if (order.userId) {
-      const rewarded =
-        (order.pricingSnapshot as { rewardedOrderItemId?: string | null }).rewardedOrderItemId ??
-        null;
-      await earnForOrder(tx, order.id, order.userId, rewarded);
-    }
-  } else if (
-    to === "expired" ||
-    ((to === "cancelled" || to === "rejected") && order.paidAt === null)
-  ) {
-    await settleRedemption(tx, order.id, "release");
-  } else if (
-    to === "refunded" ||
-    // An order fully covered by discounts was "paid" without money; stopping it gives back
-    // the free drink and the stamps just as a refund would.
-    ((to === "cancelled" || to === "rejected") && order.paidAt !== null && order.totalCents === 0)
-  ) {
-    await settleRedemption(tx, order.id, "release");
-    if (order.userId) await reverseForOrder(tx, order.id, order.userId);
+    await commitRedemptions(tx, updated, now);
+    if ((await currentRules(tx)).earnOn === "paid") await earnForOrder(tx, updated, now);
+  } else if (to === "completed") {
+    if ((await currentRules(tx)).earnOn === "completed") await earnForOrder(tx, updated, now);
+  } else if (to === "expired" || ((to === "cancelled" || to === "rejected") && !order.paidAt)) {
+    await releaseReservations(tx, order.id, now);
+  } else if (to === "cancelled" || to === "rejected") {
+    // A paid order that is stopped: the drinks were never handed over, so the stamps are taken
+    // back and the free drink is given back now, whether or not the refund has settled yet.
+    await reverseOrder(tx, updated, to, now);
+    await reinstateRedemptions(tx, updated, to, now);
+  } else if (to === "refunded") {
+    await reverseOrder(tx, updated, "refund", now);
+    await reinstateRedemptions(tx, updated, "refund", now);
   }
   return updated;
 }

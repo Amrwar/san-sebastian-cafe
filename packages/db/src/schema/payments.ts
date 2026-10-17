@@ -128,6 +128,11 @@ export const paymentEvents = pgTable(
  * called; the provider call uses the refund id as its idempotency key, so a retry after a crash
  * can never refund twice. `status` then follows the provider's answer or its webhooks.
  */
+export interface RefundItem {
+  orderItemId: string;
+  quantity: number;
+}
+
 export const refunds = pgTable(
   "refunds",
   {
@@ -146,6 +151,11 @@ export const refunds = pgTable(
     failureReason: text(),
     submittedAt: timestamp({ withTimezone: true }),
     settledAt: timestamp({ withTimezone: true }),
+    /**
+     * Order lines (and how many units) this refund gives money back for. Their stamps are reversed
+     * when the refund succeeds. Empty for an amount-only (goodwill) refund.
+     */
+    items: jsonb().$type<RefundItem[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [

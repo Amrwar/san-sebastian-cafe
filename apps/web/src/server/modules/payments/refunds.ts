@@ -1,4 +1,13 @@
-import { and, eq, payments, refunds, type Database, type Tx } from "@ssc/db";
+import {
+  and,
+  eq,
+  orderItems,
+  payments,
+  refunds,
+  type Database,
+  type RefundItem,
+  type Tx,
+} from "@ssc/db";
 import {
   paymentStatusAfterRefunds,
   REFUNDABLE_ORDER_STATUSES,
@@ -9,6 +18,7 @@ import {
 import { recordAudit } from "../../audit";
 import { AppError, required, unprocessable } from "../../errors";
 import { logger } from "../../logger";
+import { refundedUnits, reverseForRefund } from "../loyalty/earning";
 import {
   actorUserId,
   applyTransition,
@@ -58,9 +68,14 @@ export async function requestRefund(
     reason: string;
     source: RefundSource;
     actor: OrderActor;
+    /** Order lines this refund pays back (their stamps are reversed when it succeeds). */
+    items?: readonly RefundItem[];
+    /** Request time (the recovery job ages refunds by it); defaults to the database clock. */
+    now?: Date;
   },
 ): Promise<string> {
   const { payment, amountCents, reason, source, actor } = input;
+  const items = await validRefundItems(tx, payment.orderId, input.items ?? []);
   if (payment.reconciliation === null && !REFUNDABLE_ORDER_STATUSES.includes(input.orderStatus)) {
     // An order still in the kitchen is cancelled instead (which refunds it in full).
     throw unprocessable("refund_not_allowed");
@@ -85,6 +100,8 @@ export async function requestRefund(
       status: "pending",
       source,
       requestedByUserId: actorUserId(actor),
+      items,
+      ...(input.now ? { createdAt: input.now } : {}),
     })
     .returning({ id: refunds.id });
   const refundId = required(refund, "refund").id;
@@ -93,6 +110,7 @@ export async function requestRefund(
     amountCents,
     reason,
     source,
+    ...(items.length > 0 ? { items } : {}),
   });
   await recordAudit(tx, {
     actorUserId: actorUserId(actor),
@@ -102,6 +120,38 @@ export async function requestRefund(
     metadata: { refundId, amountCents, source },
   });
   return refundId;
+}
+
+/**
+ * Merges duplicate lines and checks each belongs to the order and is not refunded beyond the units
+ * bought (refunds that have not failed count).
+ */
+async function validRefundItems(
+  tx: Tx,
+  orderId: string,
+  raw: readonly RefundItem[],
+): Promise<RefundItem[]> {
+  if (raw.length === 0) return [];
+  const merged = new Map<string, number>();
+  for (const i of raw) merged.set(i.orderItemId, (merged.get(i.orderItemId) ?? 0) + i.quantity);
+  const lines = new Map(
+    (
+      await tx
+        .select({ id: orderItems.id, quantity: orderItems.quantity })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId))
+    ).map((l) => [l.id, l.quantity]),
+  );
+  const already = await refundedUnits(tx, orderId);
+  for (const [id, qty] of merged) {
+    const bought = lines.get(id);
+    if (bought === undefined || qty <= 0 || qty + (already.get(id) ?? 0) > bought) {
+      throw new AppError("validation_failed", "Refund items invalid", [
+        { path: "items", code: "quantity_invalid" },
+      ]);
+    }
+  }
+  return [...merged].map(([orderItemId, quantity]) => ({ orderItemId, quantity }));
 }
 
 /**
@@ -243,6 +293,8 @@ export async function settleRefundInTx(
     });
     // Only the order's own payment changes the order; late/duplicate money is just returned.
     if (payment.reconciliation === null && REFUNDABLE_ORDER_STATUSES.includes(order.status)) {
+      // Stamps of the refunded drinks go first; a full refund then takes back whatever is left.
+      await reverseForRefund(tx, order, refund.id, now);
       await applyTransition(
         tx,
         order,

@@ -133,6 +133,10 @@ export const orderItems = pgTable(
     /** Variant price + modifier deltas, per unit. */
     unitPriceCents: integer().notNull(),
     lineTotalCents: integer().notNull(),
+    /** Share of the promotion discount allocated to this line. */
+    discountCents: integer().notNull().default(0),
+    /** Free-drink reward applied to this line (one unit). */
+    rewardDiscountCents: integer().notNull().default(0),
     taxCategory: taxCategoryEnum().notNull(),
     isDrink: boolean().notNull(),
     loyaltyQualifying: boolean().notNull(),
@@ -146,6 +150,10 @@ export const orderItems = pgTable(
     check(
       "order_items_amounts",
       sql`${t.unitPriceCents} >= 0 and ${t.lineTotalCents} = ${t.unitPriceCents} * ${t.quantity}`,
+    ),
+    check(
+      "order_items_discounts",
+      sql`${t.discountCents} >= 0 and ${t.rewardDiscountCents} >= 0 and ${t.discountCents} + ${t.rewardDiscountCents} <= ${t.lineTotalCents}`,
     ),
   ],
 );

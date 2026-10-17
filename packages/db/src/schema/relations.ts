@@ -10,7 +10,13 @@ import {
   variantOptionRules,
 } from "./catalog";
 import { customerProfiles, notificationPreferences, users } from "./identity";
-import { loyaltyAccounts, loyaltyTransactions, rewardRedemptions, rewards } from "./loyalty";
+import {
+  loyaltyAccounts,
+  loyaltyInStoreVisits,
+  loyaltyTransactions,
+  rewardRedemptions,
+  rewards,
+} from "./loyalty";
 import { orderEvents, orderItems, orderStatusEvents, orders } from "./ordering";
 import { paymentAttempts, payments, refunds } from "./payments";
 import { favorites } from "./store";
@@ -123,6 +129,15 @@ export const loyaltyAccountsRelations = relations(loyaltyAccounts, ({ one, many 
   user: one(users, { fields: [loyaltyAccounts.userId], references: [users.id] }),
   transactions: many(loyaltyTransactions),
   rewards: many(rewards),
+  inStoreVisits: many(loyaltyInStoreVisits),
+}));
+
+export const loyaltyInStoreVisitsRelations = relations(loyaltyInStoreVisits, ({ one }) => ({
+  account: one(loyaltyAccounts, {
+    fields: [loyaltyInStoreVisits.accountId],
+    references: [loyaltyAccounts.id],
+  }),
+  staff: one(users, { fields: [loyaltyInStoreVisits.staffUserId], references: [users.id] }),
 }));
 
 export const loyaltyTransactionsRelations = relations(loyaltyTransactions, ({ one }) => ({
@@ -130,6 +145,8 @@ export const loyaltyTransactionsRelations = relations(loyaltyTransactions, ({ on
     fields: [loyaltyTransactions.accountId],
     references: [loyaltyAccounts.id],
   }),
+  order: one(orders, { fields: [loyaltyTransactions.orderId], references: [orders.id] }),
+  actor: one(users, { fields: [loyaltyTransactions.actorUserId], references: [users.id] }),
 }));
 
 export const rewardsRelations = relations(rewards, ({ one, many }) => ({
@@ -139,6 +156,7 @@ export const rewardsRelations = relations(rewards, ({ one, many }) => ({
 
 export const rewardRedemptionsRelations = relations(rewardRedemptions, ({ one }) => ({
   reward: one(rewards, { fields: [rewardRedemptions.rewardId], references: [rewards.id] }),
+  order: one(orders, { fields: [rewardRedemptions.orderId], references: [orders.id] }),
 }));
 
 export const favoritesRelations = relations(favorites, ({ one }) => ({

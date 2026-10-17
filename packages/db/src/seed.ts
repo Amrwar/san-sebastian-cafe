@@ -10,6 +10,7 @@ import {
   deliveryZones,
   favorites,
   loyaltyAccounts,
+  loyaltyPrograms,
   loyaltyTransactions,
   modifierGroups,
   modifierOptions,
@@ -426,11 +427,22 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
       };
     };
 
+    // The program's first version (also created by migration 0004; tests truncate it away).
+    await tx
+      .insert(loyaltyPrograms)
+      .values({
+        version: 1,
+        stampsPerReward: 5,
+        note: "Initial rule: 5 qualifying paid drinks = 1 free eligible drink",
+      })
+      .onConflictDoNothing();
+
     const [account] = await tx
       .insert(loyaltyAccounts)
       .values({ userId: customerId, stampBalance: 0, lifetimeStamps: 0, isDemo: true })
       .returning({ id: loyaltyAccounts.id });
     let earned = 0;
+    let balance = 0;
 
     const demoOrders = [
       {
@@ -490,6 +502,7 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
         })
         .returning({ id: orders.id });
 
+      const counted: Array<Record<string, unknown>> = [];
       for (const line of quote.lines) {
         const product = catalog.get(line.productId)!;
         const variant = product.variants.find((v) => v.id === line.variantId)!;
@@ -524,14 +537,31 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
           })
           .returning({ id: orderItems.id });
         if (product.loyaltyQualifying) {
-          await tx.insert(loyaltyTransactions).values({
-            accountId: account!.id,
-            kind: "earn",
-            stamps: line.quantity,
+          counted.push({
             orderItemId: item!.id,
+            name: { fr: product.nameFr, en: product.nameEn },
+            size: { fr: variant.nameFr, en: variant.nameEn },
+            quantity: line.quantity,
+            stamps: line.quantity,
           });
-          earned += line.quantity;
         }
+      }
+      const stamps = counted.reduce((n, l) => n + (l.stamps as number), 0);
+      if (stamps > 0) {
+        earned += stamps;
+        balance += stamps;
+        await tx.insert(loyaltyTransactions).values({
+          accountId: account!.id,
+          kind: "earn",
+          source: "online_order",
+          stamps,
+          balanceAfter: balance,
+          idempotencyKey: `earn:order:${order!.id}`,
+          orderId: order!.id,
+          programVersion: 1,
+          details: { orderNumber: o.number, lines: counted, notCounted: [] },
+          createdAt: o.placedAt,
+        });
       }
 
       let from: (typeof o.trail)[number] | "awaiting_payment" = "awaiting_payment";
@@ -557,18 +587,45 @@ export async function seedDemoData(db: Database, now = new Date()): Promise<Seed
 
     // Seed balance so the demo customer has one free drink to try (clearly labelled adjustment).
     const adjustment = 7 - earned;
+    balance += adjustment;
     await tx.insert(loyaltyTransactions).values({
       accountId: account!.id,
       kind: "adjust",
+      source: "staff",
       stamps: adjustment,
-      reason: "Development seed balance",
+      balanceAfter: balance,
+      idempotencyKey: "seed:adjust:demo-customer",
+      programVersion: 1,
+      details: { action: "stamps" },
+      reason: "Development seed balance (demo data)",
     });
+    balance -= 5;
     const [convert] = await tx
       .insert(loyaltyTransactions)
-      .values({ accountId: account!.id, kind: "convert", stamps: -5 })
+      .values({
+        accountId: account!.id,
+        kind: "convert",
+        source: "staff",
+        stamps: -5,
+        balanceAfter: balance,
+        idempotencyKey: "seed:adjust:demo-customer:convert:1",
+        programVersion: 1,
+      })
       .returning({ id: loyaltyTransactions.id });
-    await tx.insert(rewards).values({ accountId: account!.id, sourceTransactionId: convert!.id });
-    await updateBalance(tx, account!.id, 2, 7);
+    const [reward] = await tx
+      .insert(rewards)
+      .values({
+        accountId: account!.id,
+        sourceTransactionId: convert!.id,
+        stampsCost: 5,
+        programVersion: 1,
+      })
+      .returning({ id: rewards.id });
+    await tx
+      .update(loyaltyTransactions)
+      .set({ rewardId: reward!.id })
+      .where(eq(loyaltyTransactions.id, convert!.id));
+    await updateBalance(tx, account!.id, balance, earned);
 
     const fav = pick("demo-latte", 1, ["Oat beverage"]);
     await tx.insert(favorites).values({

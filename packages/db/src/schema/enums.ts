@@ -1,8 +1,10 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 import {
   AVAILABILITY,
+  EARN_TRIGGERS,
   FULFILMENT_METHODS,
   LOCALES,
+  LOYALTY_SOURCES,
   LOYALTY_TRANSACTION_KINDS,
   MODIFIER_SELECTION,
   NOTIFICATION_CHANNELS,
@@ -13,7 +15,9 @@ import {
   PROMOTION_KINDS,
   PROMOTION_SCOPES,
   REDEMPTION_STATUSES,
+  REFUND_SHORTFALL_POLICIES,
   REFUND_STATUSES,
+  REWARD_REFUND_POLICIES,
   REWARD_STATUSES,
   ROLES,
   TAX_CATEGORIES,
@@ -36,6 +40,16 @@ export const paymentAttemptStatusEnum = pgEnum("payment_attempt_status", PAYMENT
 export const loyaltyTransactionKindEnum = pgEnum(
   "loyalty_transaction_kind",
   LOYALTY_TRANSACTION_KINDS,
+);
+export const loyaltySourceEnum = pgEnum("loyalty_source", LOYALTY_SOURCES);
+export const earnTriggerEnum = pgEnum("loyalty_earn_trigger", EARN_TRIGGERS);
+export const refundShortfallPolicyEnum = pgEnum(
+  "loyalty_refund_shortfall_policy",
+  REFUND_SHORTFALL_POLICIES,
+);
+export const rewardRefundPolicyEnum = pgEnum(
+  "loyalty_reward_refund_policy",
+  REWARD_REFUND_POLICIES,
 );
 export const rewardStatusEnum = pgEnum("reward_status", REWARD_STATUSES);
 export const redemptionStatusEnum = pgEnum("redemption_status", REDEMPTION_STATUSES);

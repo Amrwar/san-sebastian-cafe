@@ -378,6 +378,8 @@ export async function placeOrder(
             quantity: line.quantity,
             unitPriceCents: line.unitPriceCents,
             lineTotalCents: line.lineTotalCents,
+            discountCents: line.discountCents,
+            rewardDiscountCents: line.rewardDiscountCents,
             taxCategory: product.taxCategory,
             isDrink: product.isDrink,
             loyaltyQualifying: product.loyaltyQualifying,
@@ -397,6 +399,7 @@ export async function placeOrder(
           order.id,
           itemId,
           quote.reward.discountCents,
+          now,
         );
         if (!reserved) throw unprocessable("reward_unavailable");
         await tx

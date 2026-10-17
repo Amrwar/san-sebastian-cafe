@@ -244,7 +244,6 @@ describe("customer orders and loyalty", () => {
     expect(summary).toMatchObject({
       stampsPerReward: 5,
       stampBalance: 2,
-      lifetimeStamps: 7,
       isDemo: true,
     });
     expect(summary.availableRewards).toHaveLength(1);
@@ -253,6 +252,10 @@ describe("customer orders and loyalty", () => {
     );
     // Ledger invariant: the cached balance equals the sum of entries.
     expect(summary.history.reduce((s, h) => s + h.stamps, 0)).toBe(summary.stampBalance);
+    // Lifetime counts earned stamps only — not manual adjustments.
+    const earned = summary.history.filter((h) => h.kind === "earn");
+    expect(earned.length).toBeGreaterThan(0);
+    expect(earned.reduce((s, h) => s + h.stamps, 0)).toBe(summary.lifetimeStamps);
   });
 });
 
