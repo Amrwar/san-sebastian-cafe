@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { can } from "@ssc/domain";
 import { Alert, Container, EmptyState, PageHeader, Surface } from "@ssc/ui";
+import { AdminNav } from "@/components/AdminNav";
 import { Forbidden } from "@/components/Forbidden";
 import { db } from "@/server/db";
 import { getCatalogOverview, listRecentAuditEvents } from "@/server/modules/admin/overview";
@@ -38,6 +39,7 @@ export default async function AdminPage({ params }: PageProps<"/[locale]/admin">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")}>
         <p>{t("intro")}</p>
       </PageHeader>
+      <AdminNav current="overview" role={user.role} />
 
       {overview.products.demo > 0 ? (
         <Alert tone="warning" className="mb-6" role="note">
