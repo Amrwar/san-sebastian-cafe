@@ -893,7 +893,8 @@
     "label": "Sections de l’administration",
     "overview": "Aperçu",
     "menu": "Menu",
-    "options": "Options"
+    "options": "Options",
+    "store": "Café"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1029,6 +1030,49 @@
     "errors": {
       "rules": "Vérifiez le minimum, le maximum et les options par défaut.",
       "price": "Entrez un supplément entre −100 et 100 $."
+    }
+  },
+  "AdminStore": {
+    "title": "Réglages du café",
+    "intro": "Commandes en ligne, heures d’ouverture et fermetures. Les commandes déjà passées gardent leur heure de cueillette.",
+    "demoWarning": "Ces réglages sont encore des valeurs de démonstration. Enregistrez les vôtres avant la mise en ligne.",
+    "settingsTitle": "Commandes en ligne",
+    "onlineOrderingEnabled": "Accepter les commandes en ligne",
+    "autoAccept": "Accepter automatiquement les commandes payées",
+    "prepMinutes": "Temps de préparation (min)",
+    "slotMinutes": "Durée d’une plage de cueillette (min)",
+    "daysAhead": "Commandes planifiées jusqu’à (jours à l’avance)",
+    "orderCutoffMinutes": "Dernières commandes avant la fermeture (min)",
+    "minLeadMinutes": "Délai minimum d’une commande planifiée (min)",
+    "maxOrdersPerSlot": "Commandes maximum par plage",
+    "maxOrdersPerSlotHint": "Laissez vide pour ne pas limiter.",
+    "unpaidTtlMinutes": "Délai de paiement avant expiration (min)",
+    "saveSettings": "Enregistrer les réglages",
+    "hoursTitle": "Heures d’ouverture",
+    "hoursHint": "Ajoutez deux périodes pour une pause. Un jour sans période est fermé.",
+    "closedDay": "Fermé",
+    "opens": "Ouverture",
+    "closes": "Fermeture",
+    "addPeriod": "Ajouter une période",
+    "removePeriod": "Retirer la période",
+    "saveHours": "Enregistrer les heures",
+    "closuresTitle": "Fermetures",
+    "closuresHint": "Jours fériés, inventaire, événements privés…",
+    "noClosures": "Aucune fermeture prévue.",
+    "date": "Date",
+    "reasonFr": "Motif (français)",
+    "reasonEn": "Motif (anglais)",
+    "optional": "facultatif",
+    "addClosure": "Fermer ce jour",
+    "reopen": "Rouvrir",
+    "bookedWarning": "{count, plural, one {# commande est déjà prévue ce jour-là. Contactez le client.} other {# commandes sont déjà prévues ce jour-là. Contactez les clients.}}",
+    "saved": "Enregistré.",
+    "errors": {
+      "number": "Entrez un nombre entre {min} et {max}.",
+      "hours": "Vérifiez les heures : la fermeture doit suivre l’ouverture et les périodes d’un même jour ne doivent pas se chevaucher.",
+      "date": "Choisissez une date à venir.",
+      "generic": "L’enregistrement a échoué. Réessayez.",
+      "forbidden": "Votre rôle ne permet pas cette action."
     }
   }
 }

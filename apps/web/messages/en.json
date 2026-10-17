@@ -893,7 +893,8 @@
     "label": "Administration sections",
     "overview": "Overview",
     "menu": "Menu",
-    "options": "Options"
+    "options": "Options",
+    "store": "Café"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1029,6 +1030,49 @@
     "errors": {
       "rules": "Check the minimum, maximum and default options.",
       "price": "Enter an extra charge between −$100 and $100."
+    }
+  },
+  "AdminStore": {
+    "title": "Café settings",
+    "intro": "Online ordering, opening hours and closures. Orders already placed keep their pickup time.",
+    "demoWarning": "These settings are still demonstration values. Save your own before going live.",
+    "settingsTitle": "Online ordering",
+    "onlineOrderingEnabled": "Accept online orders",
+    "autoAccept": "Accept paid orders automatically",
+    "prepMinutes": "Preparation time (min)",
+    "slotMinutes": "Pickup slot length (min)",
+    "daysAhead": "Scheduled orders up to (days ahead)",
+    "orderCutoffMinutes": "Last orders before closing (min)",
+    "minLeadMinutes": "Minimum notice for a scheduled order (min)",
+    "maxOrdersPerSlot": "Maximum orders per slot",
+    "maxOrdersPerSlotHint": "Leave empty for no limit.",
+    "unpaidTtlMinutes": "Time to pay before an order expires (min)",
+    "saveSettings": "Save settings",
+    "hoursTitle": "Opening hours",
+    "hoursHint": "Add two periods for a break. A day with no period is closed.",
+    "closedDay": "Closed",
+    "opens": "Opens",
+    "closes": "Closes",
+    "addPeriod": "Add a period",
+    "removePeriod": "Remove the period",
+    "saveHours": "Save hours",
+    "closuresTitle": "Closures",
+    "closuresHint": "Holidays, stocktaking, private events…",
+    "noClosures": "No closures planned.",
+    "date": "Date",
+    "reasonFr": "Reason (French)",
+    "reasonEn": "Reason (English)",
+    "optional": "optional",
+    "addClosure": "Close this day",
+    "reopen": "Reopen",
+    "bookedWarning": "{count, plural, one {# order is already booked that day. Contact the customer.} other {# orders are already booked that day. Contact the customers.}}",
+    "saved": "Saved.",
+    "errors": {
+      "number": "Enter a number between {min} and {max}.",
+      "hours": "Check the hours: closing must come after opening, and periods on the same day can’t overlap.",
+      "date": "Choose an upcoming date.",
+      "generic": "Saving failed. Try again.",
+      "forbidden": "Your role can’t do this."
     }
   }
 }

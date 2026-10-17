@@ -75,6 +75,28 @@ test.describe("admin menu", () => {
   });
 });
 
+test.describe("store settings", () => {
+  test.use({ storageState: "e2e/.auth/manager.json" });
+
+  // Other specs share this database and need the café open: only a far-off closure is added.
+  test("a manager closes a future date and reopens it", async ({ page }) => {
+    await page.goto("/fr/admin/store");
+    await expect(page.getByRole("heading", { level: 1, name: "Réglages du café" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Heures d’ouverture" })).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    const day = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+    await page.getByLabel("Date").fill(day);
+    await page.getByLabel("Motif (français)").fill("Inventaire E2E");
+    await page.getByRole("button", { name: "Fermer ce jour" }).click();
+    await expect(page.getByText("Enregistré.")).toBeVisible();
+    await expect(page.getByText(/Inventaire E2E/)).toBeVisible();
+
+    await page.getByRole("button", { name: /^Rouvrir/ }).click();
+    await expect(page.getByText(/Inventaire E2E/)).toHaveCount(0);
+  });
+});
+
 test.describe("admin access", () => {
   test.use({ storageState: "e2e/.auth/staff.json" });
 

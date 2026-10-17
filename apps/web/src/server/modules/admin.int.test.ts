@@ -31,6 +31,14 @@ import { getPublishedMenu } from "./catalog/menu";
 import { getProductBySlug } from "./catalog/storefront";
 import { quoteCart } from "./ordering/cart-quote";
 import { placeOrder } from "./ordering/place-order";
+import { computeAvailability, loadStoreConfig } from "./store/pickup";
+import {
+  addClosure,
+  getStoreAdmin,
+  removeClosure,
+  saveOpeningHours,
+  saveStoreSettings,
+} from "./admin/store";
 
 /*
  * Menu administration: permissions, validation, audit, and the guarantee that editing the menu
@@ -381,5 +389,115 @@ describe("option groups", () => {
     await archiveProduct(db, manager, product.id);
     await archiveModifierGroup(db, manager, id);
     expect((await listModifierGroups(db, manager)).some((g) => g.id === id)).toBe(false);
+  });
+});
+
+describe("store settings", () => {
+  const settings = {
+    onlineOrderingEnabled: true,
+    prepMinutes: 12,
+    slotMinutes: 10,
+    daysAhead: 7,
+    orderCutoffMinutes: 15,
+    minLeadMinutes: 20,
+    maxOrdersPerSlot: 8,
+    autoAccept: true,
+    unpaidTtlMinutes: 15,
+  };
+
+  it("saves ordering settings (managers only), replacing the demo values, audited", async () => {
+    expect(await failure(saveStoreSettings(db, lead, settings))).toBe("forbidden");
+    expect(await failure(saveStoreSettings(db, manager, { ...settings, slotMinutes: 2 }))).toBe(
+      "validation_failed",
+    );
+    await saveStoreSettings(db, manager, settings);
+    const config = await loadStoreConfig(db);
+    expect(config.settings).toMatchObject(settings);
+    const [audit] = await db
+      .select()
+      .from(auditEvents)
+      .where(eq(auditEvents.action, "store.settings_changed"));
+    expect(audit!.metadata).toMatchObject({ changed: { prepMinutes: { to: 12 } } });
+  });
+
+  it("replaces opening hours; a day without hours is closed", async () => {
+    const overlap = {
+      hours: [
+        { weekday: 1, opensAtMinute: 420, closesAtMinute: 720 },
+        { weekday: 1, opensAtMinute: 700, closesAtMinute: 1080 },
+      ],
+    };
+    expect(await failure(saveOpeningHours(db, manager, overlap))).toBe("validation_failed");
+    // Monday closed, Tuesday split around lunch.
+    await saveOpeningHours(db, manager, {
+      hours: [
+        { weekday: 2, opensAtMinute: 420, closesAtMinute: 690 },
+        { weekday: 2, opensAtMinute: 780, closesAtMinute: 1080 },
+      ],
+    });
+    const admin = await getStoreAdmin(db, manager, NOW);
+    expect(admin.hours).toHaveLength(2);
+    expect(admin.usesDemoValues).toBe(false);
+    // NOW is a Monday morning: nothing can be ordered for today.
+    const availability = await computeAvailability(db, await loadStoreConfig(db), NOW);
+    expect(availability.asapAvailable).toBe(false);
+  });
+
+  it("closes a date, warning about orders already booked for it", async () => {
+    const latte = (await getProductBySlug(db, "demo-latte"))!;
+    const lines = [
+      {
+        lineId: "l1",
+        productId: latte.id,
+        variantId: latte.variants[0]!.id,
+        optionIds: latte.groups
+          .flatMap((g) => g.options)
+          .filter((o) => o.nameEn === "Hot" || o.nameEn === "Whole milk")
+          .map((o) => o.id),
+        quantity: 1,
+      },
+    ];
+    const quote = await quoteCart(db, null, { lines }, NOW);
+    await placeOrder(
+      db,
+      null,
+      {
+        idempotencyKey: randomUUID(),
+        lines,
+        fulfilment: { method: "pickup", when: { kind: "asap" } },
+        contact: { name: "Alex", email: "alex@example.test" },
+        expectedTotalCents: quote.quote.totalCents,
+        locale: "fr-CA",
+      },
+      { provider: "fake", now: NOW },
+    );
+
+    expect(
+      await failure(addClosure(db, manager, { localDate: "2026-10-11", reasonFr: null }, NOW)),
+    ).toBe("validation_failed");
+    expect(
+      await addClosure(
+        db,
+        manager,
+        { localDate: "2026-10-12", reasonFr: "Inventaire", reasonEn: "Stocktaking" },
+        NOW,
+      ),
+    ).toEqual({ upcomingOrders: 1 });
+    const availability = await computeAvailability(db, await loadStoreConfig(db), NOW);
+    expect(availability.asapAvailable).toBe(false);
+    expect((await getStoreAdmin(db, manager, NOW)).closures).toEqual([
+      {
+        localDate: "2026-10-12",
+        reasonFr: "Inventaire",
+        reasonEn: "Stocktaking",
+        upcomingOrders: 1,
+      },
+    ]);
+
+    await removeClosure(db, manager, "2026-10-12");
+    expect(await failure(removeClosure(db, manager, "2026-10-12"))).toBe("not_found");
+    expect((await computeAvailability(db, await loadStoreConfig(db), NOW)).asapAvailable).toBe(
+      true,
+    );
   });
 });

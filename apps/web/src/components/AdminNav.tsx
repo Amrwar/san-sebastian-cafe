@@ -3,7 +3,7 @@ import { can, type Role } from "@ssc/domain";
 import { cn } from "@ssc/ui";
 import { Link } from "@/i18n/navigation";
 
-type Section = "overview" | "menu" | "options";
+type Section = "overview" | "menu" | "options" | "store";
 
 /** Secondary navigation between administration pages; shows only what the role may open. */
 export async function AdminNav({ current, role }: { current: Section; role: Role }) {
@@ -16,6 +16,12 @@ export async function AdminNav({ current, role }: { current: Section; role: Role
       href: "/admin/menu/options",
       label: t("options"),
       visible: can(role, "catalog:manage"),
+    },
+    {
+      key: "store",
+      href: "/admin/store",
+      label: t("store"),
+      visible: can(role, "store:configure"),
     },
   ];
 
