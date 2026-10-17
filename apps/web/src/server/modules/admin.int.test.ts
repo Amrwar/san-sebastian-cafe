@@ -635,3 +635,37 @@ describe("audit log", () => {
     expect((await listAuditLog(db, manager, { page: 2 })).entries).toEqual([]);
   });
 });
+
+describe("every admin mutation is permission-checked", () => {
+  const id = "00000000-0000-4000-8000-000000000000";
+  // Each runs with an empty payload: the permission check must come before any validation.
+  const managerOnly: Array<[string, (a: Actor) => Promise<unknown>]> = [
+    ["saveCategory", (a) => saveCategory(db, a, {})],
+    ["saveCategory (edit)", (a) => saveCategory(db, a, {}, id)],
+    ["archiveCategory", (a) => archiveCategory(db, a, id)],
+    ["reorderMenu", (a) => reorderMenu(db, a, {})],
+    ["saveProduct", (a) => saveProduct(db, a, {})],
+    ["archiveProduct", (a) => archiveProduct(db, a, id)],
+    ["saveModifierGroup", (a) => saveModifierGroup(db, a, {})],
+    ["archiveModifierGroup", (a) => archiveModifierGroup(db, a, id)],
+    ["saveStoreSettings", (a) => saveStoreSettings(db, a, {})],
+    ["saveOpeningHours", (a) => saveOpeningHours(db, a, {})],
+    ["addClosure", (a) => addClosure(db, a, {})],
+    ["removeClosure", (a) => removeClosure(db, a, "2030-01-01")],
+  ];
+  const ownerOnly: Array<[string, (a: Actor) => Promise<unknown>]> = [
+    ["setTeamRole", (a) => setTeamRole(db, a, {})],
+  ];
+
+  it.each(managerOnly)("%s refuses everyone below manager", async (_name, run) => {
+    for (const actor of [customer, staff, lead])
+      expect(await failure(run(actor))).toBe("forbidden");
+    expect(await failure(run(manager))).not.toBe("forbidden");
+  });
+
+  it.each(ownerOnly)("%s refuses everyone below owner", async (_name, run) => {
+    for (const actor of [customer, staff, lead, manager])
+      expect(await failure(run(actor))).toBe("forbidden");
+    expect(await failure(run(owner))).not.toBe("forbidden");
+  });
+});
