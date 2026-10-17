@@ -7,7 +7,7 @@ import { signIn } from "./helpers";
  */
 const DEMO = "demo.san-sebastian.invalid";
 
-for (const role of ["customer", "staff", "manager"] as const) {
+for (const role of ["customer", "staff", "manager", "owner"] as const) {
   setup(`sign in as demo ${role}`, async ({ page }) => {
     await signIn(page, `${role}@${DEMO}`, "fr");
     await page.context().storageState({ path: `e2e/.auth/${role}.json` });

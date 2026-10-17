@@ -894,7 +894,8 @@
     "overview": "Aperçu",
     "menu": "Menu",
     "options": "Options",
-    "store": "Café"
+    "store": "Café",
+    "loyalty": "Fidélité"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1073,6 +1074,58 @@
       "date": "Choisissez une date à venir.",
       "generic": "L’enregistrement a échoué. Réessayez.",
       "forbidden": "Votre rôle ne permet pas cette action."
+    }
+  },
+  "AdminLoyalty": {
+    "title": "Règles de fidélité",
+    "intro": "Chaque enregistrement crée une nouvelle version. Les changements s’appliquent à partir de maintenant : les tampons déjà gagnés et les boissons gratuites déjà obtenues gardent leurs conditions.",
+    "readOnly": "Seul le propriétaire peut modifier les règles.",
+    "current": "Version {version} en vigueur",
+    "earning": "Gagner des tampons",
+    "stampsPerReward": "Tampons pour une boisson gratuite",
+    "earnOn": "Les tampons sont donnés",
+    "earnOnOptions": {
+      "paid": "au paiement",
+      "completed": "à la remise de la commande"
+    },
+    "minPaid": "Montant minimum payé par boisson ($)",
+    "minPaidHint": "Une boisson payée moins que ce montant (après rabais) ne donne pas de tampon.",
+    "maxPerPurchase": "Tampons maximum par achat",
+    "noLimitHint": "Laissez vide pour ne pas limiter.",
+    "excluded": "Boissons qui ne donnent pas de tampon",
+    "reward": "Boisson gratuite",
+    "valueCap": "Valeur maximale de la boisson gratuite ($)",
+    "coversModifiers": "Les extras (lait végétal, sirop…) sont aussi offerts",
+    "expiryDays": "Expiration des boissons gratuites (jours)",
+    "expiryHint": "Laissez vide : aucune expiration. Au Québec, la Loi sur la protection du consommateur encadre l’expiration; validez avec un juriste avant de l’activer.",
+    "rewardExcluded": "Boissons qui ne peuvent pas être offertes",
+    "refunds": "Remboursements",
+    "shortfall": "Si un remboursement reprend des tampons déjà utilisés",
+    "shortfallOptions": {
+      "carry_forward": "Le client les doit; ses prochains tampons les règlent",
+      "forgive": "On les annule"
+    },
+    "rewardOnRefund": "Boisson gratuite utilisée sur une commande remboursée",
+    "rewardOnRefundOptions": {
+      "reinstate": "Elle est rendue au client",
+      "keep_redeemed": "Elle reste utilisée"
+    },
+    "inStore": "Au comptoir",
+    "inStoreEnabled": "Les achats au comptoir donnent des tampons (code du client)",
+    "inStorePerVisit": "Tampons maximum par visite",
+    "inStorePerDay": "Tampons maximum par jour",
+    "note": "Note sur ce changement",
+    "noteHint": "Visible dans l’historique des versions.",
+    "save": "Enregistrer une nouvelle version",
+    "saved": "Version {version} enregistrée.",
+    "history": "Historique des versions",
+    "versionLine": "Version {version} · {date}",
+    "errors": {
+      "number": "Entrez un nombre entre {min} et {max}.",
+      "note": "Expliquez le changement (au moins 3 caractères).",
+      "no_changes": "Les règles sont identiques à la version en vigueur.",
+      "forbidden": "Seul le propriétaire peut modifier les règles.",
+      "generic": "L’enregistrement a échoué. Vérifiez les champs et réessayez."
     }
   }
 }

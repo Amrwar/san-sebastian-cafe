@@ -3,7 +3,7 @@ import { can, type Role } from "@ssc/domain";
 import { cn } from "@ssc/ui";
 import { Link } from "@/i18n/navigation";
 
-type Section = "overview" | "menu" | "options" | "store";
+type Section = "overview" | "menu" | "options" | "store" | "loyalty";
 
 /** Secondary navigation between administration pages; shows only what the role may open. */
 export async function AdminNav({ current, role }: { current: Section; role: Role }) {
@@ -23,6 +23,7 @@ export async function AdminNav({ current, role }: { current: Section; role: Role
       label: t("store"),
       visible: can(role, "store:configure"),
     },
+    { key: "loyalty", href: "/admin/loyalty", label: t("loyalty"), visible: true },
   ];
 
   return (

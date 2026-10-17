@@ -97,6 +97,45 @@ test.describe("store settings", () => {
   });
 });
 
+test.describe("loyalty rules", () => {
+  test("managers read the rules; only the owner saves a new version", async ({ browser }) => {
+    const managerContext = await browser.newContext({ storageState: "e2e/.auth/manager.json" });
+    const ownerContext = await browser.newContext({ storageState: "e2e/.auth/owner.json" });
+    try {
+      const manager = await managerContext.newPage();
+      await manager.goto("/fr/admin/loyalty");
+      await expect(
+        manager.getByText("Seul le propriétaire peut modifier les règles."),
+      ).toBeVisible();
+      await expect(manager.getByLabel("Tampons pour une boisson gratuite")).toBeDisabled();
+      await expect(manager.getByRole("button", { name: /nouvelle version/ })).toHaveCount(0);
+
+      const owner = await ownerContext.newPage();
+      await owner.goto("/fr/admin/loyalty");
+      await expect(owner.getByText(/^Version \d+ en vigueur$/)).toBeVisible();
+      await expectNoSeriousA11yViolations(owner);
+
+      // Unchanged rules are refused.
+      await owner.getByLabel("Note sur ce changement").fill("Essai sans changement");
+      await owner.getByRole("button", { name: "Enregistrer une nouvelle version" }).click();
+      await expect(
+        owner.getByText("Les règles sont identiques à la version en vigueur."),
+      ).toBeVisible();
+
+      // A small, harmless change for the other specs sharing this database.
+      const perDay = owner.getByLabel("Tampons maximum par jour");
+      await perDay.fill(String(Number(await perDay.inputValue()) + 1));
+      await owner.getByLabel("Note sur ce changement").fill("Un tampon de plus par jour (E2E)");
+      await owner.getByRole("button", { name: "Enregistrer une nouvelle version" }).click();
+      await expect(owner.getByText(/^Version \d+ enregistrée\.$/)).toBeVisible();
+      await expect(owner.getByText("Un tampon de plus par jour (E2E)")).toBeVisible();
+    } finally {
+      await managerContext.close();
+      await ownerContext.close();
+    }
+  });
+});
+
 test.describe("admin access", () => {
   test.use({ storageState: "e2e/.auth/staff.json" });
 

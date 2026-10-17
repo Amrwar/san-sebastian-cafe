@@ -894,7 +894,8 @@
     "overview": "Overview",
     "menu": "Menu",
     "options": "Options",
-    "store": "Café"
+    "store": "Café",
+    "loyalty": "Loyalty"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1073,6 +1074,58 @@
       "date": "Choose an upcoming date.",
       "generic": "Saving failed. Try again.",
       "forbidden": "Your role can’t do this."
+    }
+  },
+  "AdminLoyalty": {
+    "title": "Loyalty rules",
+    "intro": "Each save creates a new version. Changes apply from now on: stamps already earned and free drinks already issued keep their terms.",
+    "readOnly": "Only the owner can change the rules.",
+    "current": "Version {version} in force",
+    "earning": "Earning stamps",
+    "stampsPerReward": "Stamps for a free drink",
+    "earnOn": "Stamps are given",
+    "earnOnOptions": {
+      "paid": "on payment",
+      "completed": "when the order is handed over"
+    },
+    "minPaid": "Minimum paid per drink ($)",
+    "minPaidHint": "A drink paid less than this (after discounts) earns no stamp.",
+    "maxPerPurchase": "Maximum stamps per purchase",
+    "noLimitHint": "Leave empty for no limit.",
+    "excluded": "Drinks that don’t earn a stamp",
+    "reward": "Free drink",
+    "valueCap": "Maximum value of the free drink ($)",
+    "coversModifiers": "Extras (plant milk, syrup…) are free too",
+    "expiryDays": "Free drinks expire after (days)",
+    "expiryHint": "Leave empty: no expiry. In Québec, the Consumer Protection Act regulates expiry; check with a lawyer before turning it on.",
+    "rewardExcluded": "Drinks that can’t be the free drink",
+    "refunds": "Refunds",
+    "shortfall": "If a refund takes back stamps already used",
+    "shortfallOptions": {
+      "carry_forward": "The customer owes them; their next stamps settle it",
+      "forgive": "They are written off"
+    },
+    "rewardOnRefund": "A free drink used on a refunded order",
+    "rewardOnRefundOptions": {
+      "reinstate": "Is given back to the customer",
+      "keep_redeemed": "Stays used"
+    },
+    "inStore": "At the counter",
+    "inStoreEnabled": "Counter purchases earn stamps (customer code)",
+    "inStorePerVisit": "Maximum stamps per visit",
+    "inStorePerDay": "Maximum stamps per day",
+    "note": "Note about this change",
+    "noteHint": "Shown in the version history.",
+    "save": "Save as a new version",
+    "saved": "Version {version} saved.",
+    "history": "Version history",
+    "versionLine": "Version {version} · {date}",
+    "errors": {
+      "number": "Enter a number between {min} and {max}.",
+      "note": "Explain the change (at least 3 characters).",
+      "no_changes": "The rules are the same as the version in force.",
+      "forbidden": "Only the owner can change the rules.",
+      "generic": "Saving failed. Check the fields and try again."
     }
   }
 }
