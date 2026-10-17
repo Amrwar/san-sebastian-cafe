@@ -170,6 +170,22 @@ test.describe("team", () => {
   });
 });
 
+test.describe("audit log", () => {
+  test.use({ storageState: "e2e/.auth/manager.json" });
+
+  test("a manager reads the log and filters it by area", async ({ page }) => {
+    await page.goto("/fr/admin/audit");
+    await expect(page.getByRole("heading", { level: 1, name: "Journal d’audit" })).toBeVisible();
+    await expect(page.getByText("Produit créé").first()).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    await page.getByRole("link", { name: "Équipe", exact: true }).click();
+    await expect(page).toHaveURL(/area=staff/);
+    await expect(page.getByText("Produit créé")).toHaveCount(0);
+    await expect(page.getByText("Accès donné").first()).toBeVisible();
+  });
+});
+
 test.describe("admin access", () => {
   test.use({ storageState: "e2e/.auth/staff.json" });
 

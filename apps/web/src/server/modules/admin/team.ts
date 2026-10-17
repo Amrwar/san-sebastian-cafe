@@ -36,20 +36,31 @@ export interface TeamMember {
 
 export async function listTeam(db: Database, actor: Actor | null): Promise<TeamMember[]> {
   authorize(actor, "staff:manage");
-  const rows = await db
-    .select({
-      userId: users.id,
-      name: users.name,
-      email: users.email,
-      role: users.role,
-      createdAt: users.createdAt,
-      lastSignInAt: sql<Date | null>`(select max(${sessions.createdAt}) from ${sessions} where ${sessions.userId} = ${users.id})`,
-    })
-    .from(users)
-    .where(ne(users.role, "customer"))
-    .orderBy(asc(users.name), asc(users.email));
+  const [rows, signIns] = await Promise.all([
+    db
+      .select({
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(ne(users.role, "customer"))
+      .orderBy(asc(users.name), asc(users.email)),
+    db
+      .select({
+        userId: sessions.userId,
+        last: sql<string>`max(${sessions.createdAt})`,
+      })
+      .from(sessions)
+      .innerJoin(users, eq(users.id, sessions.userId))
+      .where(ne(users.role, "customer"))
+      .groupBy(sessions.userId),
+  ]);
+  const last = new Map(signIns.map((s) => [s.userId, new Date(s.last)]));
   return rows
-    .map((r) => ({ ...r, lastSignInAt: r.lastSignInAt ? new Date(r.lastSignInAt) : null }))
+    .map((r) => ({ ...r, lastSignInAt: last.get(r.userId) ?? null }))
     .sort((a, b) => rank(b.role) - rank(a.role));
 }
 

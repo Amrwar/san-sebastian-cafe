@@ -4,6 +4,7 @@ import { can } from "@ssc/domain";
 import { Alert, Container, EmptyState, PageHeader, Surface } from "@ssc/ui";
 import { AdminNav } from "@/components/AdminNav";
 import { Forbidden } from "@/components/Forbidden";
+import { Link } from "@/i18n/navigation";
 import { db } from "@/server/db";
 import { getCatalogOverview, listRecentAuditEvents } from "@/server/modules/admin/overview";
 import { requirePermissionForPage } from "@/server/session";
@@ -77,7 +78,14 @@ export default async function AdminPage({ params }: PageProps<"/[locale]/admin">
         </Surface>
 
         <Surface>
-          <h2 className="font-display text-2xl text-espresso">{t("auditTitle")}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-2xl text-espresso">{t("auditTitle")}</h2>
+            {can(user.role, "audit:read") ? (
+              <Link href="/admin/audit" className="text-sm underline underline-offset-4">
+                {t("auditAll")}
+              </Link>
+            ) : null}
+          </div>
           {audit.length === 0 ? (
             <div className="mt-4">
               <EmptyState title={t("auditEmpty")} />

@@ -581,7 +581,8 @@
     "auditEmpty": "Aucune action enregistrée pour le moment.",
     "auditWhen": "Date",
     "auditAction": "Action",
-    "auditEntity": "Élément"
+    "auditEntity": "Élément",
+    "auditAll": "Voir tout le journal"
   },
   "Errors": {
     "notFoundTitle": "Page introuvable",
@@ -896,7 +897,8 @@
     "options": "Options",
     "store": "Café",
     "loyalty": "Fidélité",
-    "team": "Équipe"
+    "team": "Équipe",
+    "audit": "Journal"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1162,6 +1164,77 @@
       "not_staff": "Cette personne n’a pas d’accès d’équipe.",
       "forbidden": "Seul le propriétaire gère l’équipe.",
       "generic": "La modification a échoué. Réessayez."
+    }
+  },
+  "AdminAudit": {
+    "title": "Journal d’audit",
+    "intro": "Toutes les actions sensibles : prix, menu, réglages, fidélité, équipe, remboursements et consentements. Le journal ne peut pas être modifié.",
+    "filterLabel": "Filtrer par domaine",
+    "all": "Tout",
+    "areas": {
+      "catalog": "Menu",
+      "store": "Café",
+      "loyalty": "Fidélité",
+      "staff": "Équipe",
+      "payment": "Paiements",
+      "consent": "Consentements"
+    },
+    "when": "Date",
+    "who": "Par",
+    "what": "Action",
+    "details": "Détails",
+    "customer": "Un client",
+    "system": "Système",
+    "empty": "Aucune action enregistrée.",
+    "previous": "Plus récent",
+    "next": "Plus ancien",
+    "pageOf": "Page {page} sur {pages}",
+    "actions": {
+      "catalog": {
+        "category_created": "Catégorie créée",
+        "category_updated": "Catégorie modifiée",
+        "category_archived": "Catégorie archivée",
+        "categories_reordered": "Ordre des catégories modifié",
+        "products_reordered": "Ordre des produits modifié",
+        "product_created": "Produit créé",
+        "product_updated": "Produit modifié",
+        "product_archived": "Produit archivé",
+        "modifier_group_created": "Groupe d’options créé",
+        "modifier_group_updated": "Groupe d’options modifié",
+        "modifier_group_archived": "Groupe d’options archivé",
+        "product_availability_changed": "Disponibilité d’un produit",
+        "option_availability_changed": "Disponibilité d’une option"
+      },
+      "store": {
+        "settings_changed": "Réglages des commandes modifiés",
+        "hours_changed": "Heures d’ouverture modifiées",
+        "closure_added": "Fermeture ajoutée",
+        "closure_removed": "Fermeture retirée",
+        "ordering_paused": "Commandes en pause",
+        "ordering_resumed": "Commandes reprises"
+      },
+      "loyalty": {
+        "rules_changed": "Règles de fidélité modifiées",
+        "adjusted": "Carte de fidélité corrigée",
+        "in_store_visit": "Tampons au comptoir",
+        "in_store_visit_voided": "Achat au comptoir annulé"
+      },
+      "staff": {
+        "invited": "Accès donné",
+        "role_changed": "Rôle modifié",
+        "access_removed": "Accès retiré"
+      },
+      "payment": {
+        "refund_requested": "Remboursement demandé",
+        "refund_failed": "Remboursement échoué",
+        "dispute_updated": "Contestation mise à jour"
+      },
+      "consent": {
+        "marketing_email": {
+          "granted": "Consentement aux courriels promotionnels",
+          "withdrawn": "Retrait du consentement aux courriels promotionnels"
+        }
+      }
     }
   }
 }

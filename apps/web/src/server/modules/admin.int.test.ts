@@ -42,6 +42,8 @@ import {
   saveStoreSettings,
 } from "./admin/store";
 import { listTeam, setTeamRole } from "./admin/team";
+import { listAuditLog } from "./admin/overview";
+import { updateAccountSettings } from "./identity/account-settings";
 
 /*
  * Menu administration: permissions, validation, audit, and the guarantee that editing the menu
@@ -516,9 +518,21 @@ describe("team", () => {
     expect(
       await failure(setTeamRole(db, manager, { email: "x@example.test", role: "staff" })),
     ).toBe("forbidden");
+    const signedIn = new Date("2026-10-10T12:00:00Z");
+    for (const createdAt of [new Date("2026-10-01T12:00:00Z"), signedIn]) {
+      await db.insert(sessions).values({
+        id: randomUUID(),
+        token: randomUUID(),
+        userId: lead.userId,
+        expiresAt: new Date(Date.now() + 86_400_000),
+        createdAt,
+      });
+    }
     const team = await listTeam(db, owner);
     expect(team.map((m) => m.role)).toEqual(["owner", "manager", "shift_lead", "staff"]);
-    expect(team.every((m) => m.role !== "customer")).toBe(true);
+    // The latest session start; never signed in → null.
+    expect(team.find((m) => m.role === "shift_lead")?.lastSignInAt).toEqual(signedIn);
+    expect(team.find((m) => m.role === "staff")?.lastSignInAt).toBeNull();
   });
 
   it("inviting an unknown email creates a ready-to-sign-in staff account", async () => {
@@ -586,5 +600,38 @@ describe("team", () => {
     expect(await failure(setTeamRole(db, owner, { email: "a@example.test", role: "owner" }))).toBe(
       "validation_failed",
     );
+  });
+});
+
+describe("audit log", () => {
+  it("managers read the trail by area; customers are never named in it", async () => {
+    await newDrink();
+    await saveStoreSettings(db, manager, {
+      onlineOrderingEnabled: true,
+      prepMinutes: 12,
+      slotMinutes: 10,
+      daysAhead: 7,
+      orderCutoffMinutes: 15,
+      minLeadMinutes: 20,
+      maxOrdersPerSlot: 8,
+      autoAccept: true,
+      unpaidTtlMinutes: 15,
+    });
+    await updateAccountSettings(db, customer, { marketingEmail: true });
+
+    expect(await failure(listAuditLog(db, lead))).toBe("forbidden");
+    const all = await listAuditLog(db, manager);
+    expect(all.total).toBe(3);
+    expect(all.entries.map((e) => e.action)).toEqual([
+      "consent.marketing_email.granted",
+      "store.settings_changed",
+      "catalog.product_created",
+    ]);
+    expect(all.entries[0]).toMatchObject({ actorName: null, actorRole: "customer" });
+    expect(all.entries[1]).toMatchObject({ actorName: "Demo Manager", actorRole: "manager" });
+
+    const catalog = await listAuditLog(db, manager, { area: "catalog" });
+    expect(catalog.entries.map((e) => e.action)).toEqual(["catalog.product_created"]);
+    expect((await listAuditLog(db, manager, { page: 2 })).entries).toEqual([]);
   });
 });
