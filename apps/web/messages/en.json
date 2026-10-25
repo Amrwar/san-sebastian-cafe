@@ -629,7 +629,7 @@
   },
   "StaffQueue": {
     "title": "Order queue",
-    "live": "Updates automatically",
+    "live": "Live",
     "updatedAt": "Updated at {time}",
     "reconnecting": "Connection lost. Retrying…",
     "columns": {
@@ -1695,5 +1695,58 @@
       "scheduled": "The retention job is enabled (CRON_SECRET set); schedule a daily call to /api/cron/retention.",
       "notScheduled": "The retention job isn’t enabled: set CRON_SECRET and schedule a daily call to /api/cron/retention."
     }
+  },
+  "OrderMessages": {
+    "hello": "Hello,",
+    "track": "Track my order",
+    "trackLine": "Track my order: {url}",
+    "reason": "Reason: {reason}",
+    "refundComing": "The amount paid ({total}) will be refunded to your payment method; it will show on your statement within 5 to 10 business days.",
+    "footerAccount": "Email about your order. You can turn these notices off in My account → Communications.",
+    "footerGuest": "You are receiving this email because you placed this order.",
+    "confirmed": {
+      "subject": "Order {number} confirmed",
+      "body": "Thank you! Your order {number} is confirmed.",
+      "total": "Total paid: {total}.",
+      "pickup": "Pickup planned: {time}.",
+      "pushTitle": "Order {number} confirmed",
+      "pushBody": "We’re preparing it."
+    },
+    "ready": {
+      "subject": "Your order {number} is ready",
+      "body": "Your order {number} is ready: it’s waiting for you at the counter.",
+      "pushTitle": "Order {number} ready",
+      "pushBody": "It’s waiting for you at the counter."
+    },
+    "cancelled": {
+      "subject": "Order {number} cancelled",
+      "body": "Your order {number} has been cancelled.",
+      "pushTitle": "Order {number} cancelled",
+      "pushBody": "Open the order for details."
+    },
+    "rejected": {
+      "subject": "Order {number} declined",
+      "body": "Sorry: the café couldn’t prepare your order {number}.",
+      "pushTitle": "Order {number} declined",
+      "pushBody": "Open the order for details."
+    },
+    "refunded": {
+      "subject": "Refund for order {number}",
+      "body": "We refunded {amount} for order {number}. It will show on your statement within 5 to 10 business days.",
+      "pushTitle": "Refund for order {number}",
+      "pushBody": "Open the order for details."
+    }
+  },
+  "Push": {
+    "title": "Notifications on this device",
+    "body": "Get a notification when your order is ready, or if it is cancelled.",
+    "enable": "Turn on for this device",
+    "disable": "Turn off for this device",
+    "enabled": "On for this device.",
+    "disabled": "Off for this device.",
+    "unsupported": "This browser doesn’t support notifications. On iPhone, add the site to your Home Screen first.",
+    "denied": "Notifications are blocked for this site. Allow them in the browser settings, then try again.",
+    "error": "Turning notifications on failed. Try again.",
+    "readyCta": "Notify me when it’s ready"
   }
 }

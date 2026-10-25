@@ -1,10 +1,11 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import type { z } from "zod";
 import { AppError, fromZodError, toProblem } from "./errors";
 import { env } from "./env";
 import { logger } from "./logger";
+import { drainOutbox } from "./notifications/deliver";
 
 export const REQUEST_ID_HEADER = "x-request-id";
 
@@ -54,6 +55,8 @@ export function apiRoute<P = Record<string, never>>(handler: Handler<P>) {
         headers: { "content-type": "application/problem+json" },
       });
     }
+    // A change may have queued customer notifications: send them once the response is out.
+    if (!SAFE_METHODS.has(req.method) && response.status < 400) after(() => drainOutbox());
     response.headers.set(REQUEST_ID_HEADER, requestId);
     log.debug(
       { status: response.status, ms: Math.round(performance.now() - started) },

@@ -17,5 +17,13 @@ services:
       interval: 2s
       timeout: 3s
       retries: 20
+  # Catches every email the app sends with EMAIL_TRANSPORT=smtp and SMTP_URL=smtp://localhost:1025.
+  # Read them at http://localhost:8025. Start it with: docker compose up -d mailpit
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: ssc-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 volumes:
   ssc-pgdata:

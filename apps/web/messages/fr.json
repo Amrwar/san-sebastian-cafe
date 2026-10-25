@@ -629,7 +629,7 @@
   },
   "StaffQueue": {
     "title": "File de commandes",
-    "live": "Actualisation automatique",
+    "live": "En direct",
     "updatedAt": "Mise à jour à {time}",
     "reconnecting": "Connexion perdue. Nouvel essai…",
     "columns": {
@@ -1695,5 +1695,58 @@
       "scheduled": "La tâche de conservation est activée (CRON_SECRET configuré); planifiez un appel quotidien à /api/cron/retention.",
       "notScheduled": "La tâche de conservation n’est pas activée : configurez CRON_SECRET et planifiez un appel quotidien à /api/cron/retention."
     }
+  },
+  "OrderMessages": {
+    "hello": "Bonjour,",
+    "track": "Suivre ma commande",
+    "trackLine": "Suivre ma commande : {url}",
+    "reason": "Motif : {reason}",
+    "refundComing": "Le montant payé ({total}) vous sera remboursé sur votre mode de paiement; il apparaîtra sur votre relevé d’ici 5 à 10 jours ouvrables.",
+    "footerAccount": "Courriel au sujet de votre commande. Vous pouvez désactiver ces avis dans Mon compte → Communications.",
+    "footerGuest": "Vous recevez ce courriel parce que vous avez passé cette commande.",
+    "confirmed": {
+      "subject": "Commande {number} confirmée",
+      "body": "Merci! Votre commande {number} est confirmée.",
+      "total": "Total payé : {total}.",
+      "pickup": "Cueillette prévue : {time}.",
+      "pushTitle": "Commande {number} confirmée",
+      "pushBody": "Nous la préparons."
+    },
+    "ready": {
+      "subject": "Votre commande {number} est prête",
+      "body": "Votre commande {number} est prête : elle vous attend au comptoir.",
+      "pushTitle": "Commande {number} prête",
+      "pushBody": "Elle vous attend au comptoir."
+    },
+    "cancelled": {
+      "subject": "Commande {number} annulée",
+      "body": "Votre commande {number} a été annulée.",
+      "pushTitle": "Commande {number} annulée",
+      "pushBody": "Ouvrez la commande pour les détails."
+    },
+    "rejected": {
+      "subject": "Commande {number} refusée",
+      "body": "Désolés : le café n’a pas pu préparer votre commande {number}.",
+      "pushTitle": "Commande {number} refusée",
+      "pushBody": "Ouvrez la commande pour les détails."
+    },
+    "refunded": {
+      "subject": "Remboursement pour la commande {number}",
+      "body": "Nous vous avons remboursé {amount} pour la commande {number}. Le montant apparaîtra sur votre relevé d’ici 5 à 10 jours ouvrables.",
+      "pushTitle": "Remboursement pour la commande {number}",
+      "pushBody": "Ouvrez la commande pour les détails."
+    }
+  },
+  "Push": {
+    "title": "Avis sur cet appareil",
+    "body": "Recevez une notification quand votre commande est prête, ou si elle est annulée.",
+    "enable": "Activer sur cet appareil",
+    "disable": "Désactiver sur cet appareil",
+    "enabled": "Activé sur cet appareil.",
+    "disabled": "Désactivé sur cet appareil.",
+    "unsupported": "Ce navigateur ne permet pas les notifications. Sur iPhone, ajoutez d’abord le site à l’écran d’accueil.",
+    "denied": "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages du navigateur, puis réessayez.",
+    "error": "L’activation a échoué. Réessayez.",
+    "readyCta": "Me prévenir quand c’est prêt"
   }
 }

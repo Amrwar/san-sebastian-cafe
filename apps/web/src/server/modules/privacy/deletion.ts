@@ -6,6 +6,7 @@ import {
   loyaltyInStoreVisits,
   orderItems,
   orders,
+  outboxMessages,
   refunds,
   rewardRedemptions,
   rewards,
@@ -55,6 +56,8 @@ export async function anonymizeOrders(tx: Tx, orderIds: string[]): Promise<numbe
     .where(inArray(orders.id, orderIds))
     .returning({ id: orders.id });
   await tx.update(orderItems).set({ notes: null }).where(inArray(orderItems.orderId, orderIds));
+  // Notifications about these orders hold the email address: sent or not, they go.
+  await tx.delete(outboxMessages).where(inArray(outboxMessages.orderId, orderIds));
   return updated.length;
 }
 

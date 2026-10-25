@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Badge, Container, PageHeader, Surface } from "@ssc/ui";
 import { AccountNav } from "@/components/AccountNav";
+import { PushToggle } from "@/components/PushToggle.client";
 import { SettingsForm } from "@/components/SettingsForm.client";
 import { db } from "@/server/db";
+import { env } from "@/server/env";
 import { getAccountSettings } from "@/server/modules/identity/account-settings";
 import { requireSessionUser } from "@/server/session";
 
@@ -20,11 +22,13 @@ export default async function NotificationsPage({
 }: PageProps<"/[locale]/account/notifications">) {
   const { locale } = await params;
   const user = await requireSessionUser(locale, `/${locale}/account/notifications`);
-  const [t, tCommon, settings] = await Promise.all([
+  const [t, tCommon, tPush, settings] = await Promise.all([
     getTranslations("Notifications"),
     getTranslations("Common"),
+    getTranslations("Push"),
     getAccountSettings(db(), user),
   ]);
+  const pushKey = env().VAPID_PUBLIC_KEY ?? null;
 
   return (
     <Container className="max-w-3xl">
@@ -37,8 +41,15 @@ export default async function NotificationsPage({
 
       {/* Channels that don't exist yet are shown as unavailable, never as working switches. */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        {pushKey ? (
+          <Surface className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold text-espresso">{tPush("title")}</h2>
+            <p className="text-sm text-espresso-muted">{tPush("body")}</p>
+            <PushToggle publicKey={pushKey} />
+          </Surface>
+        ) : null}
         {[
-          { title: t("pushTitle"), body: t("pushBody") },
+          ...(pushKey ? [] : [{ title: t("pushTitle"), body: t("pushBody") }]),
           { title: t("smsTitle"), body: t("smsBody") },
         ].map((c) => (
           <Surface

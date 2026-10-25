@@ -93,6 +93,30 @@ describe("parseServerEnv", () => {
     ).not.toThrow();
   });
 
+  it("sends email through SMTP when configured, and takes VAPID keys as a set", () => {
+    const smtp = { ...valid, EMAIL_TRANSPORT: "smtp" };
+    expect(() => parseServerEnv(smtp)).toThrow(/SMTP_URL/);
+    expect(parseServerEnv({ ...smtp, SMTP_URL: "smtp://localhost:1025" }).EMAIL_TRANSPORT).toBe(
+      "smtp",
+    );
+    const deployed = {
+      ...smtp,
+      APP_ENV: "staging",
+      BETTER_AUTH_URL: "https://cafe.example",
+      STORAGE_DRIVER: "vercel-blob",
+      BLOB_STORE_ID: "store_abc",
+    };
+    expect(() => parseServerEnv({ ...deployed, SMTP_URL: "smtp://relay.example:25" })).toThrow(
+      /SMTP_URL/,
+    );
+    expect(() =>
+      parseServerEnv({ ...deployed, SMTP_URL: "smtps://u:p@relay.example:465" }),
+    ).not.toThrow();
+    expect(() => parseServerEnv({ ...valid, VAPID_SUBJECT: "mailto:a@b.c" })).toThrow(
+      /VAPID_PUBLIC_KEY/,
+    );
+  });
+
   it("forbids development-only settings in production", () => {
     expect(() =>
       parseServerEnv({

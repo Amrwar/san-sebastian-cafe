@@ -26,7 +26,7 @@ interface StatusResponse {
 /**
  * Live order status. Polls the server (the only source of truth); backs off after failures,
  * pauses while offline or while the tab is hidden, and stops once the order is finished.
- * Real-time push (SSE) replaces polling in Phase 7.
+ * Changes arrive over server-sent events; polling takes over while the stream is down.
  */
 export function Tracking({
   orderId,
@@ -58,8 +58,30 @@ export function Tracking({
       const delay = Math.min(MAX_INTERVAL_MS, BASE_INTERVAL_MS * 2 ** failures.current);
       timer = setTimeout(() => void poll(), delay);
     };
+    // Live updates over server-sent events; the polling below only runs while the stream is down.
+    let streaming = false;
+    const source = new EventSource(
+      `/api/v1/orders/${orderId}/stream${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    );
+    source.addEventListener("update", (event) => {
+      streaming = true;
+      failures.current = 0;
+      const next = JSON.parse((event as MessageEvent<string>).data) as StatusResponse;
+      setStatus(next.status);
+      setUpdatedAt(new Date());
+      setConnection("live");
+      if (FINAL.includes(next.status)) source.close();
+    });
+    source.addEventListener("error", () => {
+      streaming = false;
+    });
+
     const poll = async () => {
       if (isAborted()) return;
+      if (streaming) {
+        schedule();
+        return;
+      }
       if (document.visibilityState === "hidden") {
         schedule();
         return;
@@ -103,6 +125,7 @@ export function Tracking({
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       controller.abort();
+      source.close();
       clearTimeout(timer);
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisible);

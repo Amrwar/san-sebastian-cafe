@@ -19,7 +19,8 @@ const FORWARD: Partial<Record<OrderStatus, OrderStatus>> = {
   in_preparation: "ready",
   ready: "completed",
 };
-const POLL_MS = 5000;
+/** Polling while the live stream is unavailable. */
+const POLL_MS = 10_000;
 
 /** Short two-tone chime generated in the browser (no audio file). Requires a prior user tap. */
 function chime(context: AudioContext) {
@@ -37,8 +38,9 @@ function chime(context: AudioContext) {
 }
 
 /**
- * Tablet-first live queue for busy service. Polls the server every 5 s (real-time push arrives in
- * Phase 7); every action carries the order version so two baristas can't double-apply a change.
+ * Tablet-first live queue for busy service. Changes arrive within seconds over server-sent events
+ * (polling while the stream is down); every action carries the order version so two baristas
+ * can't double-apply a change.
  */
 export function QueueBoard({
   initial,
@@ -67,9 +69,9 @@ export function QueueBoard({
   const seen = useRef(new Set(initial.orders.map((o) => o.id)));
   const [announcement, setAnnouncement] = useState("");
 
-  const refresh = useCallback(async () => {
-    try {
-      const next = await apiFetch<StaffQueue>("/api/v1/staff/orders", { timeoutMs: 8000 });
+  /** Shows a new state of the queue, announcing (and chiming for) orders not seen before. */
+  const apply = useCallback(
+    (next: StaffQueue) => {
       const fresh = next.orders.filter((o) => o.status === "paid" && !seen.current.has(o.id));
       for (const o of next.orders) seen.current.add(o.id);
       if (fresh.length > 0) {
@@ -78,18 +80,43 @@ export function QueueBoard({
       }
       setQueue(next);
       setUpdatedAt(new Date(next.serverTime));
-      setConnection("live");
+    },
+    [t],
+  );
+
+  const refresh = useCallback(async () => {
+    try {
+      apply(await apiFetch<StaffQueue>("/api/v1/staff/orders", { timeoutMs: 8000 }));
     } catch {
       setConnection("retrying");
     }
-  }, [t]);
+  }, [apply]);
 
+  // Live updates by server-sent events; while the stream is down, poll instead. The browser
+  // reconnects the stream by itself (it also ends on purpose every few minutes).
   useEffect(() => {
-    const timer = setInterval(() => void refresh(), POLL_MS);
+    let streaming = false;
+    const source = new EventSource("/api/v1/staff/orders/stream");
+    source.addEventListener("open", () => {
+      streaming = true;
+      setConnection("live");
+    });
+    source.addEventListener("update", (event) => {
+      streaming = true;
+      setConnection("live");
+      apply(JSON.parse((event as MessageEvent<string>).data) as StaffQueue);
+    });
+    source.addEventListener("error", () => {
+      streaming = false;
+    });
+    const fallback = setInterval(() => {
+      if (!streaming) void refresh();
+    }, POLL_MS);
     return () => {
-      clearInterval(timer);
+      clearInterval(fallback);
+      source.close();
     };
-  }, [refresh]);
+  }, [apply, refresh]);
 
   const act = async (order: QueueOrder, to: OrderStatus, reason?: string) => {
     setBusyId(order.id);

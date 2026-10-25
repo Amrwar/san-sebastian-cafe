@@ -28,8 +28,29 @@ export const serverEnvSchema = z
     DATABASE_URL_TEST: postgresUrl.optional(),
     BETTER_AUTH_URL: z.url(),
     BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
-    EMAIL_TRANSPORT: z.enum(["console"]).default("console"),
+    /**
+     * "console": development only, emails are printed and saved under apps/web/.dev-mail.
+     * "smtp": sent through SMTP_URL (Mailpit locally; any provider's SMTP relay when deployed).
+     */
+    EMAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
     EMAIL_FROM: z.string().min(3),
+    /** smtp://user:pass@host:port (or smtps://). Server-only; never logged. */
+    SMTP_URL: optional(
+      z.url().refine((v) => v.startsWith("smtp://") || v.startsWith("smtps://"), {
+        message: "must be an smtp:// or smtps:// URL",
+      }),
+    ),
+    /** Web Push (VAPID) key pair; generate with `npx web-push generate-vapid-keys`. Unset = no push. */
+    VAPID_PUBLIC_KEY: optional(
+      z.string().regex(/^[A-Za-z0-9_-]{80,100}$/, "must be a VAPID public key"),
+    ),
+    VAPID_PRIVATE_KEY: optional(
+      z.string().regex(/^[A-Za-z0-9_-]{40,50}$/, "must be a VAPID private key"),
+    ),
+    /** Contact for push services, e.g. mailto:owner@example.com. */
+    VAPID_SUBJECT: optional(
+      z.string().regex(/^(mailto:|https:\/\/)/, "must start with mailto: or https://"),
+    ),
     /**
      * Payment boundary. "none": orders can't be placed. "fake": development simulator (no money
      * moves). "stripe": Stripe Checkout — test-mode keys everywhere except production.
@@ -66,12 +87,37 @@ export const serverEnvSchema = z
         message: "placeholder secret is not allowed outside development",
       });
     }
-    // "console" is currently the only transport; a real provider is added in Phase 7.
-    if (deployed) {
+    if (deployed && env.EMAIL_TRANSPORT === "console") {
       ctx.addIssue({
         code: "custom",
         path: ["EMAIL_TRANSPORT"],
         message: "console email transport is development-only; configure a real provider",
+      });
+    }
+    if (env.EMAIL_TRANSPORT === "smtp" && !env.SMTP_URL) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_URL"],
+        message: "required when EMAIL_TRANSPORT=smtp",
+      });
+    }
+    if (
+      deployed &&
+      env.SMTP_URL?.startsWith("smtp://") &&
+      !/:(587|2525)(\/|$)/.test(env.SMTP_URL)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_URL"],
+        message: "use smtps:// (or STARTTLS on port 587) outside development",
+      });
+    }
+    const vapid = [env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT];
+    if (vapid.some(Boolean) && !vapid.every(Boolean)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["VAPID_PUBLIC_KEY"],
+        message: "set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT together",
       });
     }
     if (deployed && env.PAYMENT_PROVIDER === "fake") {

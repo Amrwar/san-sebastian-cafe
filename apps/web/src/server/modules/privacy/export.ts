@@ -16,6 +16,7 @@ import {
   orderStatusEvents,
   payments,
   privacyRequests,
+  pushSubscriptions,
   refunds,
   rewards,
   sessions,
@@ -73,6 +74,7 @@ export async function exportPersonalData(db: Database, actor: Actor | null, now 
     [cart],
     requestRows,
     consentRows,
+    deviceRows,
   ] = await Promise.all([
     db.select().from(customerProfiles).where(eq(customerProfiles.userId, user.id)),
     db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, user.id)),
@@ -101,6 +103,7 @@ export async function exportPersonalData(db: Database, actor: Actor | null, now 
         and(eq(auditEvents.actorUserId, user.id), sql`${auditEvents.action} like ${"consent.%"}`),
       )
       .orderBy(asc(auditEvents.createdAt)),
+    db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, user.id)),
   ]);
   const [ledger, rewardRows, visits] = account
     ? await Promise.all([
@@ -148,6 +151,11 @@ export async function exportPersonalData(db: Database, actor: Actor | null, now 
       expiresAt: iso(s.expiresAt),
       ipAddress: s.ipAddress,
       userAgent: s.userAgent,
+    })),
+    notificationDevices: deviceRows.map((d) => ({
+      browser: d.userAgent,
+      addedAt: iso(d.createdAt),
+      lastNotifiedAt: iso(d.lastSuccessAt),
     })),
     orders: orderRows.map((o) => ({
       number: o.number,

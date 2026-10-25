@@ -37,24 +37,26 @@ npm run dev                          # http://localhost:3000 → redirects to /f
 All variables are validated at startup by [`packages/env`](packages/env/src/index.ts); the app refuses to
 start with a clear message naming the invalid variable (values are never printed).
 
-| Variable                | Purpose                                                                                                                             |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_ENV`               | `development` \| `test` \| `staging` \| `production`                                                                                |
-| `LOG_LEVEL`             | pino level (`debug` locally)                                                                                                        |
-| `DATABASE_URL`          | Application database                                                                                                                |
-| `DATABASE_URL_TEST`     | Integration tests — **wiped on every run**; name must contain `test`                                                                |
-| `DATABASE_URL_E2E`      | Playwright — **wiped and re-seeded on every run**; name must contain `e2e`                                                          |
-| `BETTER_AUTH_URL`       | Public base URL (must be `https` in staging/production)                                                                             |
-| `BETTER_AUTH_SECRET`    | ≥ 32 random chars; the placeholder is rejected in staging/production                                                                |
-| `EMAIL_TRANSPORT`       | `console` only (development) — rejected in staging/production until Phase 7                                                         |
-| `EMAIL_FROM`            | Sender shown on emails                                                                                                              |
-| `PAYMENT_PROVIDER`      | `none` (default: orders can't be placed) · `fake` (development simulator, no money moves; refused in staging/production) · `stripe` |
-| `STRIPE_SECRET_KEY`     | Stripe secret/restricted key — test mode except in production (live keys refused elsewhere)                                         |
-| `STRIPE_WEBHOOK_SECRET` | Signing secret of the webhook endpoint or of `stripe listen`                                                                        |
-| `CRON_SECRET`           | Enables the scheduled jobs (Bearer): `GET /api/cron/payments` (every 5–10 min) and `GET /api/cron/retention` (daily)                |
-| `STORAGE_DRIVER`        | Product photos: `local` (default; `apps/web/.dev-uploads`, refused in staging/production) · `vercel-blob`                           |
-| `BLOB_STORE_ID`         | Set by Vercel when a Blob store is connected (with `vercel-blob`; authenticates through the deployment's OIDC token)                |
-| `BLOB_READ_WRITE_TOKEN` | Alternative to `BLOB_STORE_ID` for using the Blob store outside Vercel                                                              |
+| Variable                                                   | Purpose                                                                                                                             |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENV`                                                  | `development` \| `test` \| `staging` \| `production`                                                                                |
+| `LOG_LEVEL`                                                | pino level (`debug` locally)                                                                                                        |
+| `DATABASE_URL`                                             | Application database                                                                                                                |
+| `DATABASE_URL_TEST`                                        | Integration tests — **wiped on every run**; name must contain `test`                                                                |
+| `DATABASE_URL_E2E`                                         | Playwright — **wiped and re-seeded on every run**; name must contain `e2e`                                                          |
+| `BETTER_AUTH_URL`                                          | Public base URL (must be `https` in staging/production)                                                                             |
+| `BETTER_AUTH_SECRET`                                       | ≥ 32 random chars; the placeholder is rejected in staging/production                                                                |
+| `EMAIL_TRANSPORT`                                          | `console` (development only: printed and saved in `apps/web/.dev-mail`) · `smtp` (via `SMTP_URL`; required when deployed)           |
+| `SMTP_URL`                                                 | `smtp://localhost:1025` for Mailpit (`docker compose up -d mailpit`, inbox at http://localhost:8025); `smtps://…` when deployed     |
+| `EMAIL_FROM`                                               | Sender shown on emails                                                                                                              |
+| `PAYMENT_PROVIDER`                                         | `none` (default: orders can't be placed) · `fake` (development simulator, no money moves; refused in staging/production) · `stripe` |
+| `STRIPE_SECRET_KEY`                                        | Stripe secret/restricted key — test mode except in production (live keys refused elsewhere)                                         |
+| `STRIPE_WEBHOOK_SECRET`                                    | Signing secret of the webhook endpoint or of `stripe listen`                                                                        |
+| `CRON_SECRET`                                              | Enables the scheduled jobs (Bearer): `/api/cron/payments` (5–10 min), `/api/cron/outbox` (1 min), `/api/cron/retention` (daily)     |
+| `STORAGE_DRIVER`                                           | Product photos: `local` (default; `apps/web/.dev-uploads`, refused in staging/production) · `vercel-blob`                           |
+| `BLOB_STORE_ID`                                            | Set by Vercel when a Blob store is connected (with `vercel-blob`; authenticates through the deployment's OIDC token)                |
+| `BLOB_READ_WRITE_TOKEN`                                    | Alternative to `BLOB_STORE_ID` for using the Blob store outside Vercel                                                              |
+| `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` | Web Push (order ready/cancelled notices); generate with `npx web-push generate-vapid-keys`. All three or none                       |
 
 ## Signing in locally
 
@@ -149,6 +151,7 @@ docs/               planning and phase documentation
 | [16 Phase 6 report](docs/16-phase-6-report.md)               | Admin console, product photos (Vercel Blob)                                   |
 | [17 Phase 7 report](docs/17-phase-7-report.md)               | Reporting: sales, taxes, tips, refunds, loyalty, CSV exports                  |
 | [18 Phase 8 report](docs/18-phase-8-report.md)               | Privacy (Law 25): data export, deletion, requests, incidents, retention       |
+| [19 Phase 9 report](docs/19-phase-9-report.md)               | Live queue and tracking, order emails, Web Push                               |
 
 ## Deployment (Vercel demo)
 

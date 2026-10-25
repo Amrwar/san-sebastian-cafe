@@ -1,6 +1,7 @@
 import { and, eq, lt, orderEvents, orderStatusEvents, orders, sql, type Tx } from "@ssc/db";
 import { checkTransition, type OrderStatus, type Role, type TransitionActor } from "@ssc/domain";
 import { AppError, required } from "../../errors";
+import { queueOrderNotifications } from "../../notifications/outbox";
 import {
   commitRedemptions,
   earnForOrder,
@@ -156,6 +157,8 @@ export async function applyTransition(
     await reverseOrder(tx, updated, "refund", now);
     await reinstateRedemptions(tx, updated, "refund", now);
   }
+  // Customer emails and push notices (outbox, same transaction).
+  await queueOrderNotifications(tx, order, updated, now);
   return updated;
 }
 

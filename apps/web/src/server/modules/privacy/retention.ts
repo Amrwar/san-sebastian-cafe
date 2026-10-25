@@ -6,6 +6,7 @@ import {
   lt,
   ne,
   orders,
+  outboxMessages,
   paymentEvents,
   rateLimits,
   sessions,
@@ -28,6 +29,8 @@ export const RETENTION = {
   guestContactDays: 365,
   /** Payment provider webhook payloads (they contain the payer's email and address). */
   paymentEventPayloadDays: 90,
+  /** Notifications already sent (or given up): their recipient address and content. */
+  outboxDays: 30,
   /** Sign-in rate-limit counters. */
   rateLimitDays: 1,
 } as const;
@@ -50,6 +53,7 @@ export interface RetentionSummary {
   rateLimits: number;
   guestOrdersAnonymized: number;
   paymentEventsRedacted: number;
+  notificationsDeleted: number;
 }
 
 export async function runRetention(db: Database, now = new Date()): Promise<RetentionSummary> {
@@ -100,6 +104,16 @@ export async function runRetention(db: Database, now = new Date()): Promise<Rete
       )
       .returning({ id: paymentEvents.id });
 
+    const notifications = await tx
+      .delete(outboxMessages)
+      .where(
+        and(
+          inArray(outboxMessages.status, ["sent", "failed", "skipped"]),
+          lt(outboxMessages.updatedAt, daysBefore(now, RETENTION.outboxDays)),
+        ),
+      )
+      .returning({ id: outboxMessages.id });
+
     const summary: RetentionSummary = {
       sessions: sessionRows.length,
       verifications: verificationRows.length,
@@ -107,6 +121,7 @@ export async function runRetention(db: Database, now = new Date()): Promise<Rete
       rateLimits: limitRows.length,
       guestOrdersAnonymized,
       paymentEventsRedacted: redacted.length,
+      notificationsDeleted: notifications.length,
     };
     if (guestOrdersAnonymized > 0 || redacted.length > 0) {
       await recordAudit(tx, {

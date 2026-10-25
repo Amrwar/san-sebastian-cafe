@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Alert, Badge, buttonClasses, Container, PageHeader, Surface } from "@ssc/ui";
 import { ArrowLeftIcon } from "@/components/icons";
+import { PushToggle } from "@/components/PushToggle.client";
 import { Link } from "@/i18n/navigation";
 import { money } from "@/lib/format";
 import { db } from "@/server/db";
+import { env } from "@/server/env";
 import { AppError } from "@/server/errors";
 import { getOrderDetail, type OrderDetail } from "@/server/modules/ordering/customer-orders";
 import { orderPaymentSummary } from "@/server/modules/payments/history";
@@ -54,6 +56,7 @@ export default async function OrderDetailPage({
     orderPaymentSummary(db(), order.id),
   ]);
   const en = locale === "en";
+  const pushKey = env().VAPID_PUBLIC_KEY ?? null;
   const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
   const totals = order.totals;
   const rows = [
@@ -139,6 +142,15 @@ export default async function OrderDetailPage({
               initialStatus={order.status}
               token={token}
             />
+            {/* The customer who owns it (signed in, no guest link) can ask to be notified. */}
+            {pushKey &&
+            !token &&
+            user?.role === "customer" &&
+            ["paid", "accepted", "in_preparation"].includes(order.status) ? (
+              <div className="mt-4">
+                <PushToggle publicKey={pushKey} compact />
+              </div>
+            ) : null}
           </Surface>
         ) : null}
 
