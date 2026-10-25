@@ -40,7 +40,9 @@ export async function apiFetch<T>(
 
   const headers = new Headers(init.headers);
   headers.set("accept", "application/json");
-  if (init.body) headers.set("content-type", "application/json");
+  // Form data sets its own multipart content type (with the boundary).
+  if (init.body && !(init.body instanceof FormData))
+    headers.set("content-type", "application/json");
 
   let response: Response;
   try {

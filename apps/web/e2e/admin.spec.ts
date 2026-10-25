@@ -67,6 +67,65 @@ test.describe("admin menu", () => {
     }
   });
 
+  test("a manager adds a photo with alt text, customers see it, then it is removed", async ({
+    page,
+  }) => {
+    // A valid 1×1 PNG: the image optimiser decodes it.
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await page.goto("/fr/admin/menu");
+    await page.getByRole("link", { name: "[DÉMO] Muffin" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Modifier [DÉMO] Muffin" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Photo" })).toBeVisible();
+
+    // Both the file and the alt text are required.
+    await page.getByRole("button", { name: "Enregistrer la photo" }).click();
+    await expect(page.getByText("Choisissez une photo.")).toBeVisible();
+    await page.getByLabel("Choisir une photo").setInputFiles({
+      name: "notes.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("not a photo"),
+    });
+    await expect(page.getByText("Format non accepté. Utilisez JPEG, PNG ou WebP.")).toBeVisible();
+
+    await page
+      .getByLabel("Choisir une photo")
+      .setInputFiles({ name: "muffin.png", mimeType: "image/png", buffer: png });
+    await expect(page.getByRole("img", { name: "Aperçu de la nouvelle photo" })).toBeVisible();
+    await page.getByLabel("Texte de remplacement (français)").fill("Muffin aux bleuets doré");
+    await page.getByLabel("Texte de remplacement (anglais)").fill("Golden blueberry muffin");
+    await page.getByRole("button", { name: "Enregistrer la photo" }).click();
+    await expect(page.getByText("Photo enregistrée.")).toBeVisible();
+    await expect(page.getByText("Photo actuelle")).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    // The public menu shows the photo (served through the image optimiser) with its alt text.
+    await page.goto("/fr/menu");
+    const photo = page
+      .getByRole("article")
+      .filter({ hasText: "[DÉMO] Muffin" })
+      .getByRole("img", { name: "Muffin aux bleuets doré" });
+    await expect(photo).toBeVisible();
+    await expect
+      .poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+
+    // Removed: the illustration is back.
+    await page.goto("/fr/admin/menu");
+    await page.getByRole("link", { name: "[DÉMO] Muffin" }).click();
+    await page.getByRole("button", { name: "Retirer la photo" }).click();
+    await page.getByRole("button", { name: "Confirmer" }).click();
+    await expect(page.getByText("Photo retirée.")).toBeVisible();
+    await page.goto("/fr/menu");
+    await expect(
+      page.getByRole("article").filter({ hasText: "[DÉMO] Muffin" }).getByText("Photo à venir"),
+    ).toBeVisible();
+  });
+
   test("option groups list where each is used", async ({ page }) => {
     await page.goto("/fr/admin/menu/options");
     await expect(page.getByRole("heading", { level: 1, name: "Groupes d’options" })).toBeVisible();

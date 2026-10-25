@@ -18,6 +18,7 @@
     "@ssc/domain": "*",
     "@ssc/env": "*",
     "@ssc/ui": "*",
+    "@vercel/blob": "2.8.1",
     "better-auth": "^1.7.7",
     "next": "^16.4.0",
     "next-intl": "^4.14.9",

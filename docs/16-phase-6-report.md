@@ -4,8 +4,8 @@ _2026-10-17. No migration (the schema already had what the admin needed).
 Scope: [04 Phase 9](04-implementation-plan.md#phase-9--admin)._
 
 **Status in one line:** the café can now run its own menu, store settings, loyalty rules and team
-from the admin console, and every change is audited and permission-tested. **Photo upload is not
-built yet**: it needs a storage decision (§5). Tax rates stay in code (§4).
+from the admin console, and every change is audited and permission-tested. Photo upload followed
+on 2026-10-25, on Vercel Blob (§6). Tax rates stay in code (§4).
 
 ## 1. What was built
 
@@ -76,8 +76,7 @@ reviewed at desktop and phone widths.
 
 ## 4. Known limitations
 
-- **No photo upload** (§5). Products show the existing illustration. The menu marks products with
-  "Sans photo".
+- ~~No photo upload~~: built 2026-10-25 (§6).
 - **Tax rates stay in code**, effective-dated in `packages/domain/src/pricing/tax.ts`. GST/QST
   rates change by law, rarely, and a mistake would mis-tax every order, so a reviewed code change
   is the safer route. Each product's tax category _is_ editable.
@@ -90,11 +89,59 @@ reviewed at desktop and phone widths.
 
 ## 5. Decisions and inputs needed
 
-1. **Photo storage.** Product photos need somewhere to live. The app runs on Vercel (D21), so the
-   natural fit is **Vercel Blob**, a public store with a CDN, set up from the Vercel dashboard.
-   Choose:
-   - **Vercel Blob:** I'll add a storage interface, use it in development with local files, and
-     build the upload (required FR/EN alt text, size and type checks).
-   - **Another host:** tell me which.
+1. ~~Photo storage~~: **decided 2026-10-25 by owner: Vercel Blob** (§6).
 2. **Demo data.** Real menu, hours and settings can now be entered from the console. Purging the
    demo data (`npm run db:purge-demo`) is the last step before going live.
+
+## 6. Addendum (2026-10-25): product photos
+
+**What was built.** The product edit page has a **Photo** section. A manager picks a photo, sees a
+preview, and saves it with **required French and English alt text**. They can then change the alt
+text alone, replace the photo, or remove it (the illustration comes back). The public menu and
+product pages already displayed photos through `next/image`; they now show the uploaded ones.
+
+**How it works.**
+
+- **Storage interface** (`apps/web/src/server/storage.ts`) with two drivers:
+  - **`local`** (development and tests): files in `apps/web/.dev-uploads`, served by
+    `/api/dev/uploads`. On Vercel, where the filesystem is read-only, an upload is refused with
+    "storage not set up" instead of failing silently.
+  - **`vercel-blob`**: a public Vercel Blob store. Authentication uses `BLOB_STORE_ID` with the
+    deployment's OIDC token, or `BLOB_READ_WRITE_TOKEN` elsewhere.
+- **Checks on the server:**
+  - JPEG, PNG or WebP only, recognised from the file's own bytes (the declared type isn't
+    trusted, and SVG is refused).
+  - 4 MB at most, to stay under Vercel's 4.5 MB request limit.
+  - Alt text required in both languages, 200 characters each.
+- **No broken images and no stray files.**
+  - The file is stored first, then the product row points to it.
+  - A replaced or removed photo is deleted only after the change is saved.
+  - If the save fails, the new file is deleted.
+  - Files that aren't in our store are never deleted.
+  - Each upload gets a new address, so caches never show an old photo.
+- **Audited:** each change is logged as `catalog.product_photo_set` (added, replaced, or alt text
+  only) or `catalog.product_photo_removed`, with readable labels in the audit log.
+- **API:** `PUT /api/v1/admin/products/:id/photo` (form upload) and `DELETE` on the same address.
+  Manager and above only.
+- **Residency:** menu photos contain no personal information, so the Law 25 concern for the
+  database (D21) doesn't apply to them.
+
+**Tests.**
+
+| Suite       | Result                                                                                                                                                                                                   |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | Recognising file types from their bytes; settings validation (local storage refused in staging/production; Blob credentials required)                                                                    |
+| Integration | 6 photo scenarios: add (shown on the public menu), replace and alt-text-only, refusals, no stray file after a failed save or upload, remove, foreign URLs never deleted. Permission matrix +2. 155 total |
+| E2E         | A manager uploads a photo; a wrong file type is refused; the public menu loads the photo through the image optimiser; the photo is removed; axe scan of the page                                         |
+
+**To switch it on in the Vercel demo:**
+
+1. In the Vercel dashboard, create a Blob store with **Public** access.
+2. Connect it to `san-sebastian-cafe`.
+3. Set `STORAGE_DRIVER=vercel-blob` and redeploy.
+
+**Limitations.**
+
+- **Photos aren't resized or compressed before storage.** The image optimiser resizes them when
+  they're shown.
+- **The file picker's own text** ("Choose File") follows the browser's language, not the site's.

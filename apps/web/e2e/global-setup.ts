@@ -24,4 +24,5 @@ export default async function globalSetup(): Promise<void> {
     await close();
   }
   await rm(join(process.cwd(), ".dev-mail"), { recursive: true, force: true });
+  await rm(join(process.cwd(), ".dev-uploads"), { recursive: true, force: true });
 }

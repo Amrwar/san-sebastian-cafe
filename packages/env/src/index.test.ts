@@ -77,6 +77,22 @@ describe("parseServerEnv", () => {
     );
   });
 
+  it("stores photos locally in development and needs Blob credentials for Vercel Blob", () => {
+    expect(parseServerEnv(valid).STORAGE_DRIVER).toBe("local");
+    expect(() => parseServerEnv({ ...valid, APP_ENV: "staging" })).toThrow(/STORAGE_DRIVER/);
+    const blob = { ...valid, STORAGE_DRIVER: "vercel-blob" };
+    expect(() => parseServerEnv(blob)).toThrow(/BLOB_STORE_ID/);
+    expect(parseServerEnv({ ...blob, BLOB_STORE_ID: "store_abc" }).STORAGE_DRIVER).toBe(
+      "vercel-blob",
+    );
+    expect(() => parseServerEnv({ ...blob, BLOB_READ_WRITE_TOKEN: "nope" })).toThrow(
+      /BLOB_READ_WRITE_TOKEN/,
+    );
+    expect(() =>
+      parseServerEnv({ ...blob, BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_abc_123" }),
+    ).not.toThrow();
+  });
+
   it("forbids development-only settings in production", () => {
     expect(() =>
       parseServerEnv({

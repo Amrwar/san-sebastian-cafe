@@ -19,6 +19,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .dev-mail/
+.dev-uploads/
 next-env.d.ts
 
 .vercel

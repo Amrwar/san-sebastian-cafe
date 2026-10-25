@@ -47,6 +47,15 @@ export const serverEnvSchema = z
     ),
     /** Bearer secret for the payment recovery job (/api/cron/payments). Unset = job disabled. */
     CRON_SECRET: optional(z.string().min(32, "must be at least 32 characters")),
+    /**
+     * Where product photos live. "local": files under apps/web/.dev-uploads (development only;
+     * hosted filesystems are read-only). "vercel-blob": a public Vercel Blob store.
+     */
+    STORAGE_DRIVER: z.enum(["local", "vercel-blob"]).default("local"),
+    /** Set by Vercel when a Blob store is connected (used with the deployment's OIDC token). */
+    BLOB_STORE_ID: optional(z.string().min(1)),
+    /** Read-write token of a Blob store, for running against the store outside Vercel. */
+    BLOB_READ_WRITE_TOKEN: optional(z.string().regex(/^vercel_blob_rw_/, "must be a Blob token")),
   })
   .superRefine((env, ctx) => {
     const deployed = env.APP_ENV === "staging" || env.APP_ENV === "production";
@@ -95,6 +104,20 @@ export const serverEnvSchema = z
           path: ["STRIPE_SECRET_KEY"],
           message: "production requires a live-mode key",
         });
+    }
+    if (deployed && env.STORAGE_DRIVER === "local") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["STORAGE_DRIVER"],
+        message: "local file storage is development-only; use vercel-blob",
+      });
+    }
+    if (env.STORAGE_DRIVER === "vercel-blob" && !env.BLOB_STORE_ID && !env.BLOB_READ_WRITE_TOKEN) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["BLOB_STORE_ID"],
+        message: "required (or BLOB_READ_WRITE_TOKEN) when STORAGE_DRIVER=vercel-blob",
+      });
     }
     if (deployed && !env.BETTER_AUTH_URL.startsWith("https://")) {
       ctx.addIssue({

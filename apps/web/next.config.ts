@@ -19,6 +19,11 @@ const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@ssc/ui", "@ssc/domain", "@ssc/db", "@ssc/env"],
   serverExternalPackages: ["pino"],
+  images: {
+    // Product photos: the Vercel Blob store, or the development storage route.
+    remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
+    localPatterns: [{ pathname: "/api/dev/uploads/**", search: "" }],
+  },
   headers: () => Promise.resolve([{ source: "/:path*", headers: securityHeaders }]),
 };
 

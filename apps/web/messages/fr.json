@@ -1005,6 +1005,31 @@
       "price": "Entrez un prix entre 0 et 1 000 $.",
       "defaultSize": "Choisissez un format par défaut.",
       "window": "L’heure de fin doit suivre l’heure de début."
+    },
+    "photo": {
+      "title": "Photo",
+      "intro": "JPEG, PNG ou WebP, 4 Mo au plus. Format paysage 4:3 conseillé; la photo est recadrée sur les fiches du menu.",
+      "newProduct": "Enregistrez d’abord le produit pour ajouter une photo.",
+      "current": "Photo actuelle",
+      "preview": "Aperçu de la nouvelle photo",
+      "none": "Aucune photo : le menu affiche l’illustration « Photo à venir ».",
+      "file": "Choisir une photo",
+      "replaceFile": "Remplacer la photo",
+      "altFr": "Texte de remplacement (français)",
+      "altEn": "Texte de remplacement (anglais)",
+      "altHint": "Décrit la photo pour les personnes qui ne la voient pas. Ex. : « Latté avec motif de feuille dans une tasse blanche ».",
+      "save": "Enregistrer la photo",
+      "saved": "Photo enregistrée.",
+      "remove": "Retirer la photo",
+      "removeConfirm": "Retirer la photo ? Le menu affichera de nouveau l’illustration.",
+      "removed": "Photo retirée.",
+      "errors": {
+        "required": "Choisissez une photo.",
+        "tooLarge": "Cette photo dépasse 4 Mo. Réduisez-la et réessayez.",
+        "type": "Format non accepté. Utilisez JPEG, PNG ou WebP.",
+        "file": "Ce fichier n’a pas pu être lu comme une photo JPEG, PNG ou WebP.",
+        "storage": "Le stockage des photos n’est pas encore configuré sur ce serveur."
+      }
     }
   },
   "AdminOptions": {
@@ -1203,7 +1228,9 @@
         "modifier_group_updated": "Groupe d’options modifié",
         "modifier_group_archived": "Groupe d’options archivé",
         "product_availability_changed": "Disponibilité d’un produit",
-        "option_availability_changed": "Disponibilité d’une option"
+        "option_availability_changed": "Disponibilité d’une option",
+        "product_photo_set": "Photo du produit enregistrée",
+        "product_photo_removed": "Photo du produit retirée"
       },
       "store": {
         "settings_changed": "Réglages des commandes modifiés",

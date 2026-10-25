@@ -1005,6 +1005,31 @@
       "price": "Enter a price between $0 and $1,000.",
       "defaultSize": "Choose a default size.",
       "window": "The end time must be after the start time."
+    },
+    "photo": {
+      "title": "Photo",
+      "intro": "JPEG, PNG or WebP, up to 4 MB. A 4:3 landscape photo works best; menu cards crop it.",
+      "newProduct": "Save the product first to add a photo.",
+      "current": "Current photo",
+      "preview": "Preview of the new photo",
+      "none": "No photo: the menu shows the “Photo coming soon” illustration.",
+      "file": "Choose a photo",
+      "replaceFile": "Replace the photo",
+      "altFr": "Alt text (French)",
+      "altEn": "Alt text (English)",
+      "altHint": "Describes the photo for people who can’t see it. E.g. “Latte with leaf art in a white cup”.",
+      "save": "Save photo",
+      "saved": "Photo saved.",
+      "remove": "Remove photo",
+      "removeConfirm": "Remove the photo? The menu will show the illustration again.",
+      "removed": "Photo removed.",
+      "errors": {
+        "required": "Choose a photo.",
+        "tooLarge": "This photo is over 4 MB. Make it smaller and try again.",
+        "type": "Format not accepted. Use JPEG, PNG or WebP.",
+        "file": "This file couldn’t be read as a JPEG, PNG or WebP photo.",
+        "storage": "Photo storage isn’t set up on this server yet."
+      }
     }
   },
   "AdminOptions": {
@@ -1203,7 +1228,9 @@
         "modifier_group_updated": "Option group edited",
         "modifier_group_archived": "Option group archived",
         "product_availability_changed": "Product availability",
-        "option_availability_changed": "Option availability"
+        "option_availability_changed": "Option availability",
+        "product_photo_set": "Product photo saved",
+        "product_photo_removed": "Product photo removed"
       },
       "store": {
         "settings_changed": "Ordering settings changed",

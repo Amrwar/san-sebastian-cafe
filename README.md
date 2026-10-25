@@ -52,6 +52,9 @@ start with a clear message naming the invalid variable (values are never printed
 | `STRIPE_SECRET_KEY`     | Stripe secret/restricted key — test mode except in production (live keys refused elsewhere)                                         |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret of the webhook endpoint or of `stripe listen`                                                                        |
 | `CRON_SECRET`           | Enables the payment recovery job `GET /api/cron/payments` (Bearer)                                                                  |
+| `STORAGE_DRIVER`        | Product photos: `local` (default; `apps/web/.dev-uploads`, refused in staging/production) · `vercel-blob`                           |
+| `BLOB_STORE_ID`         | Set by Vercel when a Blob store is connected (with `vercel-blob`; authenticates through the deployment's OIDC token)                |
+| `BLOB_READ_WRITE_TOKEN` | Alternative to `BLOB_STORE_ID` for using the Blob store outside Vercel                                                              |
 
 ## Signing in locally
 
@@ -151,5 +154,9 @@ docs/               planning and phase documentation
 - Vercel variables: `APP_ENV=development` (required explicitly; sign-in codes appear in the function logs
   because no email provider exists yet), `BETTER_AUTH_SECRET` (sensitive), `BETTER_AUTH_URL` (production;
   previews derive it from `VERCEL_URL`), `EMAIL_FROM`, `LOG_LEVEL`.
+- Product photos: create a **public** Blob store (Vercel dashboard → Storage → Create → Blob, access
+  _Public_) and connect it to the project, which sets the Blob credentials. Then add
+  `STORAGE_DRIVER=vercel-blob` and redeploy. Until then, photo uploads on Vercel are refused with a
+  "storage not set up" message; the rest of the app is unaffected.
 - Migrations are not run during the build. After a schema change, run `npm run db:migrate` against
   `DATABASE_URL_UNPOOLED` before (or right after) deploying.

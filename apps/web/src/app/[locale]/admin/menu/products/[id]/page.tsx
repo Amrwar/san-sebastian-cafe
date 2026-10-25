@@ -14,6 +14,7 @@ import {
   type AdminProduct,
 } from "@/server/modules/admin/menu";
 import { requirePermissionForPage } from "@/server/session";
+import { PhotoForm } from "../PhotoForm.client";
 import { ProductForm } from "../ProductForm.client";
 
 export async function generateMetadata({
@@ -88,6 +89,9 @@ export default async function AdminProductPage({
         groups={groups}
         defaultCategoryId={defaultCategoryId}
       />
+      <div className="mt-6">
+        {product ? <PhotoForm product={product} /> : <Alert>{t("photo.newProduct")}</Alert>}
+      </div>
     </Container>
   );
 }

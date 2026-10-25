@@ -5,6 +5,7 @@ import {
   eq,
   loyaltyAccounts,
   orderItems,
+  products,
   productVariants,
   sessions,
   sql,
@@ -29,6 +30,8 @@ import {
   saveProduct,
   type AdminProduct,
 } from "./admin/menu";
+import { PHOTO_MAX_BYTES, removeProductPhoto, setProductPhoto } from "./admin/product-photo";
+import type { FileStorage } from "../storage";
 import { getPublishedMenu } from "./catalog/menu";
 import { getProductBySlug } from "./catalog/storefront";
 import { quoteCart } from "./ordering/cart-quote";
@@ -636,8 +639,172 @@ describe("audit log", () => {
   });
 });
 
+describe("product photos", () => {
+  /** In-memory storage that records what it holds; `failPut` simulates an unreachable store. */
+  function memoryStorage() {
+    const files = new Map<string, string>();
+    let n = 0;
+    const storage: FileStorage & { files: Map<string, string>; failPut: boolean } = {
+      files,
+      failPut: false,
+      put(key, _bytes, contentType) {
+        if (this.failPut) return Promise.reject(new Error("store unreachable"));
+        const url = `https://store.test/${key}?v=${++n}`;
+        files.set(url, contentType);
+        return Promise.resolve({ url });
+      },
+      remove(url) {
+        files.delete(url);
+        return Promise.resolve();
+      },
+      owns: (url) => url.startsWith("https://store.test/"),
+    };
+    return storage;
+  }
+  const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+  const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]);
+  const alt = { imageAltFr: "Latté dans une tasse blanche", imageAltEn: "Latte in a white cup" };
+
+  it("adds a photo with alt text in both languages; the public menu shows it", async () => {
+    const storage = memoryStorage();
+    const { id, slug } = await newDrink();
+    const { imageUrl } = await setProductPhoto(db, storage, manager, id, { file: JPEG, ...alt });
+    expect(imageUrl).toMatch(
+      new RegExp(`^https://store\\.test/products/${id}/${slug}-[0-9a-f]{12}\\.jpg`),
+    );
+    expect(storage.files.get(imageUrl)).toBe("image/jpeg");
+    expect(await getProductBySlug(db, slug)).toMatchObject({ imageUrl, ...alt });
+    const card = (await getPublishedMenu(db, NOW))
+      .flatMap((c) => c.products)
+      .find((p) => p.id === id);
+    expect(card).toMatchObject({ imageUrl, imageAltEn: alt.imageAltEn });
+    const row = (await listAdminMenu(db, manager))
+      .flatMap((c) => c.products)
+      .find((p) => p.id === id);
+    expect(row).toMatchObject({ hasImage: true });
+    const [audit] = await db
+      .select()
+      .from(auditEvents)
+      .where(eq(auditEvents.action, "catalog.product_photo_set"));
+    expect(audit).toMatchObject({ actorUserId: manager.userId, entityId: id });
+    expect(audit!.metadata).toMatchObject({ photo: "added" });
+  });
+
+  it("replacing a photo deletes the old file; changing only the alt text keeps it", async () => {
+    const storage = memoryStorage();
+    const { id } = await newDrink();
+    await setProductPhoto(db, storage, manager, id, { file: JPEG, ...alt });
+    const second = await setProductPhoto(db, storage, manager, id, { file: PNG, ...alt });
+    expect(second.imageUrl).toMatch(/\.png/);
+    expect([...storage.files.keys()]).toEqual([second.imageUrl]);
+    const third = await setProductPhoto(db, storage, manager, id, {
+      file: null,
+      imageAltFr: "Nouveau texte",
+      imageAltEn: "New text",
+    });
+    expect(third.imageUrl).toBe(second.imageUrl);
+    expect(storage.files.has(second.imageUrl)).toBe(true);
+    expect(await getAdminProduct(db, manager, id)).toMatchObject({
+      imageAltFr: "Nouveau texte",
+      imageAltEn: "New text",
+    });
+    const kinds = (
+      await db.select().from(auditEvents).where(eq(auditEvents.action, "catalog.product_photo_set"))
+    ).map((a) => (a.metadata as { photo: string }).photo);
+    expect(kinds.sort()).toEqual(["added", "alt_text_only", "replaced"]);
+  });
+
+  it("refuses missing alt text, unsupported or oversized files, and alt text alone", async () => {
+    const storage = memoryStorage();
+    const { id } = await newDrink();
+    const set = (raw: Parameters<typeof setProductPhoto>[4]) =>
+      failure(setProductPhoto(db, storage, manager, id, raw));
+    expect(await set({ file: JPEG, imageAltFr: "Latté", imageAltEn: " " })).toBe(
+      "validation_failed",
+    );
+    expect(await set({ file: JPEG, imageAltFr: "Latté" })).toBe("validation_failed");
+    const svg = new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'/>");
+    expect(await set({ file: svg, ...alt })).toBe("validation_failed");
+    const huge = new Uint8Array(PHOTO_MAX_BYTES + 1);
+    huge.set(JPEG);
+    expect(await set({ file: huge, ...alt })).toBe("validation_failed");
+    expect(await set({ file: new Uint8Array(), ...alt })).toBe("validation_failed");
+    // Alt text with no photo to describe.
+    expect(await set({ file: null, ...alt })).toBe("validation_failed");
+    expect(storage.files.size).toBe(0);
+    expect(
+      await failure(setProductPhoto(db, storage, manager, randomUUID(), { file: JPEG, ...alt })),
+    ).toBe("not_found");
+    expect(await getAdminProduct(db, manager, id)).toMatchObject({ imageUrl: null });
+  });
+
+  it("a failed save leaves no stray file; a failed upload leaves the product unchanged", async () => {
+    const storage = memoryStorage();
+    const { id } = await newDrink();
+    // The product is archived between the upload and the save.
+    const put = storage.put.bind(storage);
+    storage.put = async (...args) => {
+      const out = await put(...args);
+      await archiveProduct(db, manager, id);
+      return out;
+    };
+    expect(await failure(setProductPhoto(db, storage, manager, id, { file: JPEG, ...alt }))).toBe(
+      "not_found",
+    );
+    expect(storage.files.size).toBe(0);
+
+    const other = await newDrink();
+    storage.put = put;
+    storage.failPut = true;
+    await expect(
+      setProductPhoto(db, storage, manager, other.id, { file: JPEG, ...alt }),
+    ).rejects.toThrow("store unreachable");
+    expect(await getAdminProduct(db, manager, other.id)).toMatchObject({ imageUrl: null });
+  });
+
+  it("removing a photo restores the illustration and deletes the file", async () => {
+    const storage = memoryStorage();
+    const { id, slug } = await newDrink();
+    const { imageUrl } = await setProductPhoto(db, storage, manager, id, { file: JPEG, ...alt });
+    await removeProductPhoto(db, storage, manager, id);
+    expect(storage.files.has(imageUrl)).toBe(false);
+    expect(await getProductBySlug(db, slug)).toMatchObject({
+      imageUrl: null,
+      imageAltFr: null,
+      imageAltEn: null,
+    });
+    const removedEvents = () =>
+      db.select().from(auditEvents).where(eq(auditEvents.action, "catalog.product_photo_removed"));
+    expect(await removedEvents()).toMatchObject([{ entityId: id }]);
+    // Nothing left to remove: no change and no second audit entry.
+    await removeProductPhoto(db, storage, manager, id);
+    expect(await removedEvents()).toHaveLength(1);
+  });
+
+  it("never deletes a file it does not own", async () => {
+    const storage = memoryStorage();
+    const { id } = await newDrink();
+    await db
+      .update(products)
+      .set({ imageUrl: "https://elsewhere.test/photo.jpg", ...alt })
+      .where(eq(products.id, id));
+    const removed: string[] = [];
+    storage.remove = (url) => {
+      removed.push(url);
+      return Promise.resolve();
+    };
+    await setProductPhoto(db, storage, manager, id, { file: PNG, ...alt });
+    expect(removed).toEqual([]);
+  });
+});
+
 describe("every admin mutation is permission-checked", () => {
   const id = "00000000-0000-4000-8000-000000000000";
+  const unusedStorage: FileStorage = {
+    put: () => Promise.reject(new Error("unused")),
+    remove: () => Promise.resolve(),
+    owns: () => false,
+  };
   // Each runs with an empty payload: the permission check must come before any validation.
   const managerOnly: Array<[string, (a: Actor) => Promise<unknown>]> = [
     ["saveCategory", (a) => saveCategory(db, a, {})],
@@ -646,6 +813,8 @@ describe("every admin mutation is permission-checked", () => {
     ["reorderMenu", (a) => reorderMenu(db, a, {})],
     ["saveProduct", (a) => saveProduct(db, a, {})],
     ["archiveProduct", (a) => archiveProduct(db, a, id)],
+    ["setProductPhoto", (a) => setProductPhoto(db, unusedStorage, a, id, { file: null })],
+    ["removeProductPhoto", (a) => removeProductPhoto(db, unusedStorage, a, id)],
     ["saveModifierGroup", (a) => saveModifierGroup(db, a, {})],
     ["archiveModifierGroup", (a) => archiveModifierGroup(db, a, id)],
     ["saveStoreSettings", (a) => saveStoreSettings(db, a, {})],
