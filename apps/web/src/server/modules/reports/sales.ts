@@ -463,7 +463,10 @@ export async function getSalesReport(
     taxCategories: taxRows.sort(bySales),
     reconciliation: {
       paymentsCents: paymentCheck.reduce((s, p) => s + (p.paidCents ?? 0), 0),
-      mismatches: paymentCheck.filter((p) => p.paidCents !== p.totalCents),
+      // A 0,00 $ order (a free drink covering it all) is confirmed without any payment.
+      mismatches: paymentCheck.filter(
+        (p) => p.paidCents !== p.totalCents && !(p.totalCents === 0 && p.paidCents === null),
+      ),
       extraPayments: extra ?? { count: 0, receivedCents: 0, refundedCents: 0 },
     },
     loyalty,

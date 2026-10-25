@@ -44,7 +44,9 @@
     "city": "Montréal, Québec",
     "promotions": "Promotions",
     "giftCards": "Gift cards",
-    "help": "Sign-in help"
+    "help": "Sign-in help",
+    "privacy": "Privacy",
+    "terms": "Terms"
   },
   "Welcome": {
     "eyebrow": "Welcome",
@@ -348,7 +350,8 @@
       "name": "Enter a name between 1 and 80 characters.",
       "generic": "Couldn’t save. Please try again."
     },
-    "paymentsTab": "Payments"
+    "paymentsTab": "Payments",
+    "dataTab": "My data"
   },
   "Notifications": {
     "eyebrow": "My account",
@@ -899,7 +902,8 @@
     "loyalty": "Loyalty",
     "team": "Team",
     "audit": "Audit log",
-    "reports": "Reports"
+    "reports": "Reports",
+    "privacy": "Privacy"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1204,7 +1208,8 @@
       "staff": "Team",
       "payment": "Payments",
       "consent": "Consents",
-      "report": "Reports"
+      "report": "Reports",
+      "privacy": "Privacy"
     },
     "when": "Date",
     "who": "By",
@@ -1266,6 +1271,16 @@
       },
       "report": {
         "exported": "Report exported"
+      },
+      "privacy": {
+        "data_exported": "Copy of data downloaded",
+        "account_deleted": "Account deleted",
+        "request_logged": "Request logged",
+        "request_closed": "Request closed",
+        "incident_recorded": "Incident recorded",
+        "incident_updated": "Incident edited",
+        "officer_changed": "Person in charge changed",
+        "retention_applied": "Retention periods applied"
       }
     }
   },
@@ -1392,5 +1407,293 @@
       "unpaid": "Unpaid, expired and demo orders don’t count."
     },
     "periodShown": "{from} to {to}"
+  },
+  "AccountData": {
+    "eyebrow": "My account",
+    "title": "My data",
+    "intro": "Your personal information belongs to you. Download a copy, or delete your account. Details in our <policy>privacy policy</policy>.",
+    "export": {
+      "title": "Download my data",
+      "body": "A JSON file with everything the café keeps about you, readable by you and reusable elsewhere:",
+      "includes": {
+        "account": "your account, profile and communication preferences, with the history of your consents;",
+        "orders": "your orders (including those placed as a guest with the same email), their payments and refunds;",
+        "loyalty": "your loyalty card: stamps, free drinks and counter visits;",
+        "preferences": "your favorites and your cart;",
+        "signIns": "your active sign-ins (date, IP address, browser)."
+      },
+      "button": "Download (JSON)"
+    },
+    "delete": {
+      "title": "Delete my account",
+      "body": "Deletion is immediate and permanent.",
+      "removed": "Deleted: your account, profile, preferences, loyalty card (including stamps and unused free drinks), favorites, cart and sign-ins.",
+      "kept": "Kept without your contact details: your orders and their payments, which the law requires the café to keep for its books (6 years). They are no longer linked to you.",
+      "final": "You can create a new account later with the same address, but without your history.",
+      "staff": "This is a team account. Ask the owner to remove your access from the Team page; you can then delete the account here.",
+      "start": "Delete my account…",
+      "confirmLabel": "To confirm, type your email address ({email})",
+      "confirm": "Delete permanently",
+      "cancel": "Cancel",
+      "errors": {
+        "mismatch": "That address doesn’t match the account’s.",
+        "orders_in_progress": "An order is still in progress. You can delete your account once it is finished or cancelled.",
+        "refund_pending": "A refund is being processed. Try again once it has settled (a few days at most).",
+        "staff_account": "A team account can’t be deleted here.",
+        "generic": "Deletion failed. Try again or write to the privacy officer."
+      }
+    }
+  },
+  "AccountDeleted": {
+    "title": "Your account has been deleted",
+    "body": "Your personal information has been erased. Your past orders remain in the café’s books, without your contact details. Thank you for having been a customer.",
+    "home": "Back to the home page"
+  },
+  "Privacy": {
+    "eyebrow": "Personal information",
+    "title": "Privacy policy",
+    "updated": "Last updated: October 25, 2026",
+    "draft": "Draft written from how the platform actually works. The café’s lawyer must review it before launch.",
+    "officerMissing": "[to be named in the admin]",
+    "rightsSelfService": "From your account, you can at any time <link>download your data or delete your account</link>.",
+    "officer": {
+      "title": "Person in charge of the protection of personal information",
+      "body": "The person in charge of the protection of personal information at the café is: {officer}. For any question, complaint or request about your information, write to {officerEmail}. We answer within {responseDays} days."
+    },
+    "sections": {
+      "controller": {
+        "title": "Who we are",
+        "body": "San Sebastian Café, in Montréal (Québec), runs this ordering site and app. This policy explains what personal information we collect, why, who we share it with, how long we keep it and what your rights are."
+      },
+      "collected": {
+        "title": "What we collect",
+        "body": "Only what we need to serve you:\n\n- Account: your name, email address and preferred language; your phone number if you give it.\n- Orders: the products chosen, your instructions, the pickup time, the amounts and the order’s status. If you order without an account: the name, email and phone given for the order.\n- Payments: payment happens at Stripe; we never see or keep your card number, only its brand and last 4 digits.\n- Loyalty: your stamps, free drinks and the counter purchases recorded on your card.\n- Sign-in: the date, IP address and browser of your active sessions, to keep your account secure.\n- Communications: your email notification choices and when you consented."
+      },
+      "purposes": {
+        "title": "Why",
+        "body": "- To prepare and hand over your orders, and keep you informed.\n- To take payments and make refunds.\n- To keep your loyalty card.\n- To protect your account (one-time sign-in codes, attempt limits).\n- To meet our legal obligations, including tax.\n- To send you news and promotions, only if you consented."
+      },
+      "consent": {
+        "title": "Your consent",
+        "body": "Promotional emails are off by default. You can consent, then withdraw your consent at any time from your account (My account → Notifications); every change is recorded. We use your information for no other purpose without your consent, except where the law allows."
+      },
+      "sharing": {
+        "title": "Who we share it with",
+        "body": "We never sell or rent your information. We use service providers who process it on our behalf, under contract:\n\n- Vercel Inc.: hosting of the site and app.\n- Neon: database.\n- Stripe: payment and refund processing.\n- A transactional email provider (to be confirmed): sign-in codes and order notices.\n\nWe may also disclose information where the law requires it."
+      },
+      "location": {
+        "title": "Where your information is kept",
+        "body": "At this stage, hosting and the database are in the United States (East Coast). Before keeping real information outside Québec, the café carries out a privacy impact assessment, as the law requires, to make sure it is adequately protected."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "body": "- Your account and its data: as long as the account exists. You can delete it at any time.\n- Orders, payments and refunds: 6 years, as tax rules require. If you delete your account, they are kept without your contact details.\n- Contact details of an order placed without an account: {guestDays} days, then erased.\n- Details received from Stripe at payment: {webhookDays} days.\n- Sessions and sign-in codes: until they expire."
+      },
+      "rights": {
+        "title": "Your rights",
+        "body": "You can ask to see your information, to get a copy in a structured technological format, to have it corrected, to withdraw a consent or to have your information deleted. You can also complain to Québec’s Commission d’accès à l’information. Write to the person in charge above; we answer within {responseDays} days."
+      },
+      "security": {
+        "title": "Security",
+        "body": "Connections are encrypted (HTTPS). Sign-in uses a one-time code sent by email, with no password. Team access is limited by role and every sensitive action is recorded. Technical logs hide contact details."
+      },
+      "incidents": {
+        "title": "Confidentiality incidents",
+        "body": "The café keeps a register of confidentiality incidents. If an incident presents a risk of serious injury, we promptly notify the Commission d’accès à l’information and the people concerned."
+      },
+      "changes": {
+        "title": "Changes",
+        "body": "We will publish any change to this policy here, with its date. If an important change affects how your information is used, we will let you know."
+      }
+    },
+    "cookies": {
+      "title": "Cookies and browser storage",
+      "body": "We only use cookies the site needs to work: no advertising or analytics cookies. So there is nothing to accept or refuse.",
+      "name": "Name",
+      "purpose": "Purpose",
+      "duration": "Duration",
+      "kinds": {
+        "cookie": "Cookie",
+        "storage": "Local storage"
+      },
+      "purposes": {
+        "session": "Keeps you signed in to your account.",
+        "language": "Remembers the language you chose.",
+        "welcome": "Doesn’t show the first-visit welcome page again.",
+        "cart": "Keeps your cart on this device.",
+        "cartExtras": "Keeps the tip and pickup choices of your cart."
+      },
+      "durations": {
+        "days30": "30 days (extended on each visit)",
+        "session": "Until the browser is closed",
+        "year": "1 year",
+        "untilCleared": "Until you empty the cart"
+      }
+    }
+  },
+  "Terms": {
+    "eyebrow": "Terms",
+    "title": "Terms of use and sale",
+    "updated": "Last updated: October 25, 2026",
+    "draft": "Draft to be reviewed by the café’s lawyer before launch. The French version prevails.",
+    "sections": {
+      "about": {
+        "title": "Scope",
+        "body": "These terms apply to orders placed on San Sebastian Café’s site and app, in Montréal (Québec), and to the use of your account and loyalty card."
+      },
+      "ordering": {
+        "title": "Orders",
+        "body": "An order is confirmed when its payment is accepted. The café may refuse an order it can’t prepare (sold out, unexpected closure); it is then refunded in full."
+      },
+      "prices": {
+        "title": "Prices and taxes",
+        "body": "Prices are in Canadian dollars and include all mandatory fees except GST and QST, which are added at payment. The price that applies is the one shown when you order."
+      },
+      "payment": {
+        "title": "Payment and tip",
+        "body": "Payment is made online through Stripe. Tipping is optional; suggestions are calculated on the price before taxes and you can enter any amount or no tip."
+      },
+      "pickup": {
+        "title": "Pickup",
+        "body": "Come to the counter at the chosen time with your order number. An order not collected the same day may be discarded, without refund, for hygiene reasons."
+      },
+      "cancellation": {
+        "title": "Cancellation and refunds",
+        "body": "You can cancel a paid order until the café accepts it; it is refunded in full. After that, speak to the counter: the café may grant a full or partial refund. Refunds go back to the payment method used."
+      },
+      "loyalty": {
+        "title": "Loyalty card",
+        "body": "Each eligible paid drink earns a stamp; a full card earns an eligible free drink. Stamps and free drinks don’t expire and have no cash value. The rules in force are shown on the Rewards page; a change of rules doesn’t take away what you have already earned."
+      },
+      "account": {
+        "title": "Your account",
+        "body": "Sign-in uses a code sent to your email address; keep access to that address. You can delete your account at any time from My account → My data."
+      },
+      "liability": {
+        "title": "Allergies and liability",
+        "body": "Allergen information is supplied by the café; our products are prepared in a kitchen where allergens are present. If you have a severe allergy, speak to the counter before ordering. Nothing in these terms limits your rights under Québec’s Consumer Protection Act."
+      },
+      "law": {
+        "title": "Governing law",
+        "body": "These terms are governed by the laws of Québec and the laws of Canada that apply there."
+      },
+      "changes": {
+        "title": "Changes",
+        "body": "The café may change these terms; the version published when you order applies to that order."
+      }
+    }
+  },
+  "AdminPrivacy": {
+    "title": "Privacy",
+    "intro": "Law 25 tools: the person in charge, people’s requests, the incident register and retention. See also the published <policy>privacy policy</policy>.",
+    "officer": {
+      "title": "Person in charge of the protection of personal information",
+      "hint": "By default, the person with the highest authority (the owner), who may delegate the role in writing. Their title and a contact address are published in the privacy policy.",
+      "name": "Name or title",
+      "nameHint": "For example “Owner” or a name.",
+      "email": "Contact email",
+      "save": "Save",
+      "saved": "Person in charge saved.",
+      "invalid": "Enter a name and a valid email address."
+    },
+    "requests": {
+      "title": "People’s requests",
+      "hint": "Access, a copy, a correction, deletion or withdrawing a consent: the law gives {days} days to answer. Copies and deletions customers make themselves are added here automatically.",
+      "empty": "No requests.",
+      "new": "Log a request",
+      "log": "Log",
+      "logged": "Request logged.",
+      "kind": "Type of request",
+      "channel": "Received by",
+      "contact": "Requester’s contact",
+      "contactHint": "Email or phone, to answer them. A customer’s email is linked to their account.",
+      "receivedOn": "Received on",
+      "details": "Details",
+      "optional": "optional",
+      "received": "received {date}",
+      "due": "answer due {date}",
+      "overdue": "Overdue",
+      "hasAccount": "customer account",
+      "outcome": "Outcome: {outcome}",
+      "close": "Close",
+      "closeAs": "Outcome",
+      "outcomeLabel": "What was done",
+      "outcomeHint": "What was done, or why the request is refused.",
+      "closed": "Request closed.",
+      "kinds": {
+        "access": "Access",
+        "export": "Copy of data",
+        "rectification": "Correction",
+        "deletion": "Deletion",
+        "withdrawal": "Consent withdrawal",
+        "other": "Other"
+      },
+      "channels": {
+        "self_service": "Self-service",
+        "email": "Email",
+        "phone": "Phone",
+        "in_person": "In person",
+        "mail": "Mail"
+      },
+      "statuses": {
+        "open": "Open",
+        "completed": "Done",
+        "refused": "Refused"
+      },
+      "errors": {
+        "future": "The date received can’t be in the future."
+      }
+    },
+    "incidents": {
+      "title": "Register of confidentiality incidents",
+      "hint": "Record any unauthorized access to, use, disclosure or loss of personal information, however minor. If there is a risk of serious injury, promptly notify the Commission d’accès à l’information and the people concerned. Entries are corrected, never deleted.",
+      "empty": "No incidents recorded.",
+      "new": "Record an incident",
+      "edit": "Edit",
+      "save": "Save incident",
+      "saved": "Incident saved.",
+      "discovered": "Discovered {date}",
+      "openBadge": "Open",
+      "closedBadge": "Closed",
+      "serious": "Risk of serious injury",
+      "notAssessed": "Risk not assessed",
+      "dataSummary": "{count, plural, =-1 {{data}} one {{data} · # person affected} other {{data} · # people affected}}",
+      "notices": "Commission notified: {commission} · people notified: {people}",
+      "notYet": "not yet",
+      "discoveredOn": "Discovered on",
+      "occurredOn": "Happened on",
+      "ifKnown": "if known",
+      "optional": "optional",
+      "description": "Description",
+      "descriptionHint": "What happened and how the incident was discovered.",
+      "dataInvolved": "Information involved",
+      "dataInvolvedHint": "For example “names and emails of 12 customers”.",
+      "peopleAffected": "People affected",
+      "risk": "Risk of serious injury",
+      "riskHint": "Based on how sensitive the information is, the possible consequences and their likelihood.",
+      "riskUnknown": "Not assessed yet",
+      "riskYes": "Yes",
+      "riskNo": "No",
+      "riskAssessment": "Risk assessment",
+      "measuresTaken": "Measures taken",
+      "commissionNotifiedOn": "Commission d’accès à l’information notified on",
+      "peopleNotifiedOn": "People concerned notified on",
+      "closedLabel": "Incident closed",
+      "closedHint": "Only once the risk is assessed and, if serious, the notices given.",
+      "errors": {
+        "notify": "A serious incident can only be closed once the Commission and the people are notified (dates required).",
+        "assess": "Assess the risk before closing the incident.",
+        "fields": "Check the fields: a description of at least 10 characters, past dates."
+      }
+    },
+    "retention": {
+      "title": "Retention",
+      "guests": "Contact details of orders without an account: erased after {days} days.",
+      "webhooks": "Payment details received from Stripe: erased after {days} days.",
+      "sessions": "Sessions, sign-in codes and attempt counters: erased when they expire.",
+      "books": "Orders, payments and refunds: kept for the books, without contact details once these periods pass or the account is deleted.",
+      "scheduled": "The retention job is enabled (CRON_SECRET set); schedule a daily call to /api/cron/retention.",
+      "notScheduled": "The retention job isn’t enabled: set CRON_SECRET and schedule a daily call to /api/cron/retention."
+    }
   }
 }

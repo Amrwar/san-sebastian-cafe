@@ -36,6 +36,7 @@ export const PERMISSIONS = [
   "store:configure",
   "reports:read",
   "audit:read",
+  "privacy:manage",
   // owner
   "staff:manage",
   "loyalty:configure",
@@ -73,6 +74,7 @@ const MANAGER: readonly Permission[] = [
   "store:configure",
   "reports:read",
   "audit:read",
+  "privacy:manage",
 ];
 const OWNER: readonly Permission[] = [...PERMISSIONS];
 

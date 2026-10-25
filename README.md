@@ -51,7 +51,7 @@ start with a clear message naming the invalid variable (values are never printed
 | `PAYMENT_PROVIDER`      | `none` (default: orders can't be placed) · `fake` (development simulator, no money moves; refused in staging/production) · `stripe` |
 | `STRIPE_SECRET_KEY`     | Stripe secret/restricted key — test mode except in production (live keys refused elsewhere)                                         |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret of the webhook endpoint or of `stripe listen`                                                                        |
-| `CRON_SECRET`           | Enables the payment recovery job `GET /api/cron/payments` (Bearer)                                                                  |
+| `CRON_SECRET`           | Enables the scheduled jobs (Bearer): `GET /api/cron/payments` (every 5–10 min) and `GET /api/cron/retention` (daily)                |
 | `STORAGE_DRIVER`        | Product photos: `local` (default; `apps/web/.dev-uploads`, refused in staging/production) · `vercel-blob`                           |
 | `BLOB_STORE_ID`         | Set by Vercel when a Blob store is connected (with `vercel-blob`; authenticates through the deployment's OIDC token)                |
 | `BLOB_READ_WRITE_TOKEN` | Alternative to `BLOB_STORE_ID` for using the Blob store outside Vercel                                                              |
@@ -148,6 +148,7 @@ docs/               planning and phase documentation
 | [15 Phase 5 report](docs/15-phase-5-report.md)               | Loyalty engine, counter stamps, staff support                                 |
 | [16 Phase 6 report](docs/16-phase-6-report.md)               | Admin console, product photos (Vercel Blob)                                   |
 | [17 Phase 7 report](docs/17-phase-7-report.md)               | Reporting: sales, taxes, tips, refunds, loyalty, CSV exports                  |
+| [18 Phase 8 report](docs/18-phase-8-report.md)               | Privacy (Law 25): data export, deletion, requests, incidents, retention       |
 
 ## Deployment (Vercel demo)
 

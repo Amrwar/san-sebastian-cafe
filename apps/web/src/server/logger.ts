@@ -1,5 +1,5 @@
 import "server-only";
-import pino, { type Logger } from "pino";
+import pino, { type DestinationStream, type Logger } from "pino";
 import { env } from "./env";
 
 /**
@@ -19,19 +19,30 @@ export const REDACTED_KEYS = [
   "address",
   "deliveryAddress",
   "guestEmail",
+  "guestName",
+  "guestPhone",
+  "confirmEmail",
+  "contact",
+  "subjectContact",
+  "ipAddress",
+  "userAgent",
 ];
 
-function createLogger(): Logger {
-  return pino({
-    level: env().LOG_LEVEL,
+/** The app logger; tests pass their own `destination` to read what would be written. */
+export function createLogger(
+  options: { level?: string; destination?: DestinationStream } = {},
+): Logger {
+  const config = {
+    level: options.level ?? env().LOG_LEVEL,
     base: { service: "web", env: env().APP_ENV },
     timestamp: pino.stdTimeFunctions.isoTime,
     redact: {
       paths: REDACTED_KEYS.flatMap((k) => [k, `*.${k}`, `*.*.${k}`]),
       censor: "[redacted]",
     },
-    formatters: { level: (label) => ({ level: label }) },
-  });
+    formatters: { level: (label: string) => ({ level: label }) },
+  };
+  return options.destination ? pino(config, options.destination) : pino(config);
 }
 
 const globalForLogger = globalThis as unknown as { __sscLogger?: Logger };

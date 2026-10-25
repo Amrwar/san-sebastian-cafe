@@ -43,6 +43,12 @@ export const storeSettings = pgTable(
     autoAccept: boolean().notNull().default(false),
     /** Unpaid orders release their slot and reward after this many minutes. */
     unpaidTtlMinutes: integer().notNull().default(15),
+    /**
+     * Person in charge of the protection of personal information (Law 25): their title or name and
+     * a contact address, published on the privacy page.
+     */
+    privacyOfficerName: text(),
+    privacyOfficerEmail: text(),
     ...demoFlag,
     ...timestamps,
   },

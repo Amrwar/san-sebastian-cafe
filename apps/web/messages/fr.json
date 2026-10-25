@@ -44,7 +44,9 @@
     "city": "Montréal (Québec)",
     "promotions": "Promotions",
     "giftCards": "Cartes-cadeaux",
-    "help": "Aide à la connexion"
+    "help": "Aide à la connexion",
+    "privacy": "Confidentialité",
+    "terms": "Conditions"
   },
   "Welcome": {
     "eyebrow": "Bienvenue",
@@ -348,7 +350,8 @@
       "name": "Entrez un nom de 1 à 80 caractères.",
       "generic": "Impossible d’enregistrer. Réessayez."
     },
-    "paymentsTab": "Paiements"
+    "paymentsTab": "Paiements",
+    "dataTab": "Mes données"
   },
   "Notifications": {
     "eyebrow": "Mon compte",
@@ -899,7 +902,8 @@
     "loyalty": "Fidélité",
     "team": "Équipe",
     "audit": "Journal",
-    "reports": "Rapports"
+    "reports": "Rapports",
+    "privacy": "Confidentialité"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1204,7 +1208,8 @@
       "staff": "Équipe",
       "payment": "Paiements",
       "consent": "Consentements",
-      "report": "Rapports"
+      "report": "Rapports",
+      "privacy": "Confidentialité"
     },
     "when": "Date",
     "who": "Par",
@@ -1266,6 +1271,16 @@
       },
       "report": {
         "exported": "Rapport exporté"
+      },
+      "privacy": {
+        "data_exported": "Copie des données téléchargée",
+        "account_deleted": "Compte supprimé",
+        "request_logged": "Demande consignée",
+        "request_closed": "Demande close",
+        "incident_recorded": "Incident consigné",
+        "incident_updated": "Incident modifié",
+        "officer_changed": "Responsable modifié",
+        "retention_applied": "Délais de conservation appliqués"
       }
     }
   },
@@ -1392,5 +1407,293 @@
       "unpaid": "Les commandes impayées, expirées et de démonstration ne comptent pas."
     },
     "periodShown": "Du {from} au {to}"
+  },
+  "AccountData": {
+    "eyebrow": "Mon compte",
+    "title": "Mes données",
+    "intro": "Vos renseignements personnels vous appartiennent. Téléchargez-en une copie ou supprimez votre compte. Détails dans notre <policy>politique de confidentialité</policy>.",
+    "export": {
+      "title": "Télécharger mes données",
+      "body": "Un fichier JSON avec tout ce que le café conserve à votre sujet, lisible par vous et réutilisable ailleurs :",
+      "includes": {
+        "account": "votre compte, votre profil et vos préférences de communication, avec l’historique de vos consentements;",
+        "orders": "vos commandes (y compris celles passées comme invité avec la même adresse courriel), leurs paiements et remboursements;",
+        "loyalty": "votre carte fidélité : tampons, boissons gratuites et visites au comptoir;",
+        "preferences": "vos favoris et votre panier;",
+        "signIns": "vos connexions actives (date, adresse IP, navigateur)."
+      },
+      "button": "Télécharger (JSON)"
+    },
+    "delete": {
+      "title": "Supprimer mon compte",
+      "body": "La suppression est immédiate et définitive.",
+      "removed": "Supprimés : votre compte, votre profil, vos préférences, votre carte fidélité (tampons et boissons gratuites non utilisées comprises), vos favoris, votre panier et vos connexions.",
+      "kept": "Conservées sans vos coordonnées : vos commandes et leurs paiements, que la loi oblige le café à garder pour sa comptabilité (6 ans). Elles ne sont plus liées à vous.",
+      "final": "Vous pourrez créer un nouveau compte plus tard avec la même adresse, mais sans votre historique.",
+      "staff": "Ce compte est un compte d’équipe. Demandez au propriétaire de retirer votre accès depuis la page Équipe; vous pourrez ensuite supprimer le compte ici.",
+      "start": "Supprimer mon compte…",
+      "confirmLabel": "Pour confirmer, tapez votre adresse courriel ({email})",
+      "confirm": "Supprimer définitivement",
+      "cancel": "Annuler",
+      "errors": {
+        "mismatch": "L’adresse ne correspond pas à celle du compte.",
+        "orders_in_progress": "Une commande est encore en cours. Vous pourrez supprimer votre compte une fois qu’elle sera terminée ou annulée.",
+        "refund_pending": "Un remboursement est en cours de traitement. Réessayez quand il sera réglé (quelques jours au plus).",
+        "staff_account": "Un compte d’équipe ne peut pas être supprimé ici.",
+        "generic": "La suppression a échoué. Réessayez ou écrivez au responsable de la protection des renseignements personnels."
+      }
+    }
+  },
+  "AccountDeleted": {
+    "title": "Votre compte a été supprimé",
+    "body": "Vos renseignements personnels ont été effacés. Vos commandes passées restent dans la comptabilité du café, sans vos coordonnées. Merci d’avoir été client.",
+    "home": "Retour à l’accueil"
+  },
+  "Privacy": {
+    "eyebrow": "Renseignements personnels",
+    "title": "Politique de confidentialité",
+    "updated": "Dernière mise à jour : 25 octobre 2026",
+    "draft": "Ébauche rédigée à partir du fonctionnement réel de la plateforme. Elle doit être révisée par l’avocat du café avant la mise en service.",
+    "officerMissing": "[à désigner dans l’administration]",
+    "rightsSelfService": "Depuis votre compte, vous pouvez en tout temps <link>télécharger vos données ou supprimer votre compte</link>.",
+    "officer": {
+      "title": "Responsable de la protection des renseignements personnels",
+      "body": "La personne responsable de la protection des renseignements personnels au café est : {officer}. Pour toute question, plainte ou demande concernant vos renseignements, écrivez-lui à {officerEmail}. Nous répondons dans un délai de {responseDays} jours."
+    },
+    "sections": {
+      "controller": {
+        "title": "Qui sommes-nous",
+        "body": "San Sebastian Café, à Montréal (Québec), exploite ce site et cette application de commande. Cette politique explique quels renseignements personnels nous recueillons, pourquoi, avec qui nous les partageons, combien de temps nous les gardons et quels sont vos droits."
+      },
+      "collected": {
+        "title": "Ce que nous recueillons",
+        "body": "Seulement ce qui est nécessaire pour vous servir :\n\n- Compte : votre nom, votre adresse courriel et votre langue préférée; votre numéro de téléphone si vous le donnez.\n- Commandes : les produits choisis, vos instructions, l’heure de cueillette, les montants et l’état de la commande. Si vous commandez sans compte : le nom, le courriel et le téléphone donnés pour la commande.\n- Paiements : le paiement est fait chez Stripe; nous ne voyons ni ne gardons votre numéro de carte, seulement la marque et les 4 derniers chiffres.\n- Fidélité : vos tampons, vos boissons gratuites et les achats au comptoir enregistrés sur votre carte.\n- Connexion : la date, l’adresse IP et le navigateur de vos sessions actives, pour la sécurité de votre compte.\n- Communications : vos choix d’avis par courriel et la date de vos consentements."
+      },
+      "purposes": {
+        "title": "Pourquoi",
+        "body": "- Préparer et vous remettre vos commandes, et vous en informer.\n- Encaisser les paiements et effectuer les remboursements.\n- Tenir votre carte fidélité.\n- Protéger votre compte (connexion par code à usage unique, limites de tentatives).\n- Respecter nos obligations légales, notamment fiscales.\n- Vous envoyer des nouvelles et des promotions, seulement si vous y avez consenti."
+      },
+      "consent": {
+        "title": "Votre consentement",
+        "body": "Les courriels promotionnels sont désactivés par défaut. Vous pouvez y consentir, puis retirer votre consentement en tout temps depuis votre compte (Mon compte → Avis); chaque changement est consigné. Nous n’utilisons vos renseignements à aucune autre fin sans votre consentement, sauf exception prévue par la loi."
+      },
+      "sharing": {
+        "title": "Avec qui nous les partageons",
+        "body": "Nous ne vendons ni ne louons vos renseignements. Nous faisons appel à des fournisseurs qui les traitent pour notre compte, sous contrat :\n\n- Vercel Inc. : hébergement du site et de l’application.\n- Neon : base de données.\n- Stripe : traitement des paiements et des remboursements.\n- Un fournisseur de courriel transactionnel (à confirmer) : envoi des codes de connexion et des avis de commande.\n\nNous pouvons aussi communiquer des renseignements lorsque la loi l’exige."
+      },
+      "location": {
+        "title": "Où sont conservés vos renseignements",
+        "body": "À ce stade, l’hébergement et la base de données sont situés aux États-Unis (côte Est). Avant de conserver des renseignements réels à l’extérieur du Québec, le café réalise une évaluation des facteurs relatifs à la vie privée, comme l’exige la loi, pour s’assurer qu’ils bénéficient d’une protection adéquate."
+      },
+      "retention": {
+        "title": "Combien de temps nous les gardons",
+        "body": "- Votre compte et ses données : tant que le compte existe. Vous pouvez le supprimer en tout temps.\n- Commandes, paiements et remboursements : 6 ans, comme l’exigent les règles fiscales. Si vous supprimez votre compte, ils sont conservés sans vos coordonnées.\n- Coordonnées d’une commande passée sans compte : {guestDays} jours, puis effacées.\n- Détails reçus de Stripe au moment d’un paiement : {webhookDays} jours.\n- Sessions et codes de connexion : jusqu’à leur expiration."
+      },
+      "rights": {
+        "title": "Vos droits",
+        "body": "Vous pouvez demander à consulter vos renseignements, à en obtenir une copie dans un format technologique structuré, à les faire corriger, à retirer un consentement ou à faire supprimer vos renseignements. Vous pouvez aussi porter plainte auprès de la Commission d’accès à l’information du Québec. Écrivez au responsable ci-dessus; nous répondons dans un délai de {responseDays} jours."
+      },
+      "security": {
+        "title": "Sécurité",
+        "body": "Les connexions sont chiffrées (HTTPS). La connexion se fait par un code à usage unique envoyé par courriel, sans mot de passe. L’accès de l’équipe est limité selon le rôle de chacun et chaque action sensible est consignée. Les journaux techniques masquent les coordonnées."
+      },
+      "incidents": {
+        "title": "Incidents de confidentialité",
+        "body": "Le café tient un registre des incidents de confidentialité. Si un incident présente un risque de préjudice sérieux, nous avisons promptement la Commission d’accès à l’information et les personnes concernées."
+      },
+      "changes": {
+        "title": "Modifications",
+        "body": "Nous publierons ici toute modification de cette politique, avec sa date. Si un changement important touche l’utilisation de vos renseignements, nous vous en informerons."
+      }
+    },
+    "cookies": {
+      "title": "Témoins (cookies) et stockage dans le navigateur",
+      "body": "Nous n’utilisons que des témoins nécessaires au fonctionnement du site : aucun témoin publicitaire ni de mesure d’audience. Il n’y a donc rien à accepter ou refuser.",
+      "name": "Nom",
+      "purpose": "Utilité",
+      "duration": "Durée",
+      "kinds": {
+        "cookie": "Témoin",
+        "storage": "Stockage local"
+      },
+      "purposes": {
+        "session": "Vous garder connecté à votre compte.",
+        "language": "Retenir la langue choisie.",
+        "welcome": "Ne pas réafficher la page d’accueil des nouveaux visiteurs.",
+        "cart": "Garder votre panier sur cet appareil.",
+        "cartExtras": "Garder le pourboire et les choix de cueillette de votre panier."
+      },
+      "durations": {
+        "days30": "30 jours (prolongée à chaque visite)",
+        "session": "Jusqu’à la fermeture du navigateur",
+        "year": "1 an",
+        "untilCleared": "Jusqu’à ce que vous vidiez le panier"
+      }
+    }
+  },
+  "Terms": {
+    "eyebrow": "Conditions",
+    "title": "Conditions d’utilisation et de vente",
+    "updated": "Dernière mise à jour : 25 octobre 2026",
+    "draft": "Ébauche à faire réviser par l’avocat du café avant la mise en service. La version française prévaut.",
+    "sections": {
+      "about": {
+        "title": "Objet",
+        "body": "Ces conditions s’appliquent aux commandes passées sur le site et l’application de San Sebastian Café, à Montréal (Québec), et à l’utilisation de votre compte et de la carte fidélité."
+      },
+      "ordering": {
+        "title": "Commandes",
+        "body": "Une commande est confirmée lorsque son paiement est accepté. Le café peut refuser une commande qu’il ne peut pas préparer (rupture, fermeture imprévue); elle est alors remboursée en entier."
+      },
+      "prices": {
+        "title": "Prix et taxes",
+        "body": "Les prix sont en dollars canadiens et incluent tous les frais obligatoires, sauf la TPS et la TVQ, ajoutées au paiement. Le prix applicable est celui affiché au moment de la commande."
+      },
+      "payment": {
+        "title": "Paiement et pourboire",
+        "body": "Le paiement se fait en ligne par l’intermédiaire de Stripe. Le pourboire est facultatif; les suggestions sont calculées sur le prix avant taxes et vous pouvez entrer le montant de votre choix ou aucun pourboire."
+      },
+      "pickup": {
+        "title": "Cueillette",
+        "body": "Présentez-vous au comptoir à l’heure choisie avec votre numéro de commande. Une commande non réclamée le jour même peut être jetée, sans remboursement, pour des raisons d’hygiène."
+      },
+      "cancellation": {
+        "title": "Annulation et remboursement",
+        "body": "Vous pouvez annuler une commande payée tant que le café ne l’a pas acceptée; elle est remboursée en entier. Ensuite, adressez-vous au comptoir : le café peut accorder un remboursement total ou partiel. Les remboursements sont versés sur le mode de paiement utilisé."
+      },
+      "loyalty": {
+        "title": "Carte fidélité",
+        "body": "Chaque boisson admissible payée donne un tampon; une carte complète donne une boisson gratuite admissible. Les tampons et les boissons gratuites n’expirent pas et n’ont aucune valeur en argent. Les règles en vigueur sont affichées dans la page Fidélité; un changement de règles ne retire pas ce que vous avez déjà gagné."
+      },
+      "account": {
+        "title": "Votre compte",
+        "body": "La connexion se fait par un code envoyé à votre adresse courriel; gardez l’accès à cette adresse. Vous pouvez supprimer votre compte en tout temps depuis Mon compte → Mes données."
+      },
+      "liability": {
+        "title": "Allergies et responsabilité",
+        "body": "Les renseignements sur les allergènes sont fournis par le café; nos produits sont préparés dans une cuisine où des allergènes sont présents. En cas d’allergie grave, parlez-en au comptoir avant de commander. Rien dans ces conditions ne limite vos droits prévus par la Loi sur la protection du consommateur."
+      },
+      "law": {
+        "title": "Droit applicable",
+        "body": "Ces conditions sont régies par les lois du Québec et les lois du Canada qui s’y appliquent."
+      },
+      "changes": {
+        "title": "Modifications",
+        "body": "Le café peut modifier ces conditions; la version publiée au moment de votre commande s’applique à celle-ci."
+      }
+    }
+  },
+  "AdminPrivacy": {
+    "title": "Confidentialité",
+    "intro": "Les outils de la Loi 25 : responsable, demandes des personnes, registre des incidents et conservation. Voir aussi la <policy>politique de confidentialité</policy> publiée.",
+    "officer": {
+      "title": "Responsable de la protection des renseignements personnels",
+      "hint": "Par défaut, c’est la personne ayant la plus haute autorité (le propriétaire), qui peut déléguer ce rôle par écrit. Son titre et une adresse de contact sont publiés dans la politique de confidentialité.",
+      "name": "Nom ou titre",
+      "nameHint": "Par exemple « Propriétaire » ou un nom.",
+      "email": "Courriel de contact",
+      "save": "Enregistrer",
+      "saved": "Responsable enregistré.",
+      "invalid": "Entrez un nom et une adresse courriel valide."
+    },
+    "requests": {
+      "title": "Demandes des personnes",
+      "hint": "Consultation, copie, correction, suppression ou retrait d’un consentement : la loi donne {days} jours pour répondre. Les copies et suppressions faites par les clients eux-mêmes s’ajoutent ici automatiquement.",
+      "empty": "Aucune demande.",
+      "new": "Consigner une demande",
+      "log": "Consigner",
+      "logged": "Demande consignée.",
+      "kind": "Type de demande",
+      "channel": "Reçue par",
+      "contact": "Coordonnées de la personne",
+      "contactHint": "Courriel ou téléphone, pour lui répondre. Un courriel de client est relié à son compte.",
+      "receivedOn": "Reçue le",
+      "details": "Précisions",
+      "optional": "facultatif",
+      "received": "reçue le {date}",
+      "due": "réponse due le {date}",
+      "overdue": "En retard",
+      "hasAccount": "compte client",
+      "outcome": "Suite donnée : {outcome}",
+      "close": "Clore",
+      "closeAs": "Issue",
+      "outcomeLabel": "Suite donnée",
+      "outcomeHint": "Ce qui a été fait, ou pourquoi la demande est refusée.",
+      "closed": "Demande close.",
+      "kinds": {
+        "access": "Consultation",
+        "export": "Copie des données",
+        "rectification": "Correction",
+        "deletion": "Suppression",
+        "withdrawal": "Retrait d’un consentement",
+        "other": "Autre"
+      },
+      "channels": {
+        "self_service": "Libre-service",
+        "email": "Courriel",
+        "phone": "Téléphone",
+        "in_person": "En personne",
+        "mail": "Courrier"
+      },
+      "statuses": {
+        "open": "Ouverte",
+        "completed": "Traitée",
+        "refused": "Refusée"
+      },
+      "errors": {
+        "future": "La date de réception ne peut pas être dans le futur."
+      }
+    },
+    "incidents": {
+      "title": "Registre des incidents de confidentialité",
+      "hint": "Consignez tout accès, utilisation, communication ou perte non autorisé de renseignements personnels, même mineur. S’il y a un risque de préjudice sérieux, avisez promptement la Commission d’accès à l’information et les personnes concernées. Les entrées se corrigent mais ne se suppriment jamais.",
+      "empty": "Aucun incident consigné.",
+      "new": "Consigner un incident",
+      "edit": "Modifier",
+      "save": "Enregistrer l’incident",
+      "saved": "Incident enregistré.",
+      "discovered": "Constaté le {date}",
+      "openBadge": "Ouvert",
+      "closedBadge": "Clos",
+      "serious": "Risque de préjudice sérieux",
+      "notAssessed": "Risque non évalué",
+      "dataSummary": "{count, plural, =-1 {{data}} one {{data} · # personne touchée} other {{data} · # personnes touchées}}",
+      "notices": "Commission avisée : {commission} · personnes avisées : {people}",
+      "notYet": "pas encore",
+      "discoveredOn": "Constaté le",
+      "occurredOn": "Survenu le",
+      "ifKnown": "si connu",
+      "optional": "facultatif",
+      "description": "Description",
+      "descriptionHint": "Ce qui s’est passé et comment l’incident a été constaté.",
+      "dataInvolved": "Renseignements touchés",
+      "dataInvolvedHint": "Par exemple « noms et courriels de 12 clients ».",
+      "peopleAffected": "Personnes touchées",
+      "risk": "Risque de préjudice sérieux",
+      "riskHint": "Selon la sensibilité des renseignements, les conséquences possibles et leur probabilité.",
+      "riskUnknown": "Pas encore évalué",
+      "riskYes": "Oui",
+      "riskNo": "Non",
+      "riskAssessment": "Évaluation du risque",
+      "measuresTaken": "Mesures prises",
+      "commissionNotifiedOn": "Commission d’accès à l’information avisée le",
+      "peopleNotifiedOn": "Personnes concernées avisées le",
+      "closedLabel": "Incident clos",
+      "closedHint": "Seulement une fois le risque évalué et, s’il est sérieux, les avis donnés.",
+      "errors": {
+        "notify": "Un incident sérieux ne peut être clos qu’une fois la Commission et les personnes avisées (dates requises).",
+        "assess": "Évaluez le risque avant de clore l’incident.",
+        "fields": "Vérifiez les champs : description d’au moins 10 caractères, dates passées."
+      }
+    },
+    "retention": {
+      "title": "Conservation",
+      "guests": "Coordonnées des commandes sans compte : effacées après {days} jours.",
+      "webhooks": "Détails de paiement reçus de Stripe : effacés après {days} jours.",
+      "sessions": "Sessions, codes de connexion et compteurs de tentatives : effacés à leur expiration.",
+      "books": "Commandes, paiements et remboursements : conservés pour la comptabilité, sans coordonnées une fois ces délais passés ou le compte supprimé.",
+      "scheduled": "La tâche de conservation est activée (CRON_SECRET configuré); planifiez un appel quotidien à /api/cron/retention.",
+      "notScheduled": "La tâche de conservation n’est pas activée : configurez CRON_SECRET et planifiez un appel quotidien à /api/cron/retention."
+    }
   }
 }

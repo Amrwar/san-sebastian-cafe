@@ -2,6 +2,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
   forwardRef,
   useId,
 } from "react";
@@ -101,6 +102,39 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     </FieldFrame>
   );
 });
+
+export type TextAreaFieldProps = FieldOwnProps &
+  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className">;
+
+/** Multi-line text, with the same label, hint and error wiring as TextField. */
+export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
+  function TextAreaField(
+    { label, hint, error, optionalLabel, className, id, rows = 4, ...input },
+    ref,
+  ) {
+    const ids = useFieldIds(id);
+    return (
+      <FieldFrame
+        ids={ids}
+        label={label}
+        hint={hint}
+        error={error}
+        optionalLabel={optionalLabel}
+        className={className}
+      >
+        <textarea
+          ref={ref}
+          id={ids.inputId}
+          rows={rows}
+          className={cn(control, "resize-y")}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(hint, error, ids)}
+          {...input}
+        />
+      </FieldFrame>
+    );
+  },
+);
 
 export type SelectFieldProps = FieldOwnProps &
   Omit<SelectHTMLAttributes<HTMLSelectElement>, "className"> & { children: ReactNode };

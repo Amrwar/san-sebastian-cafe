@@ -8,3 +8,4 @@ export * from "./payments";
 export * from "./loyalty";
 export * from "./audit";
 export * from "./store";
+export * from "./privacy";

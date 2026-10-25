@@ -6,7 +6,7 @@ export {
   type ButtonSize,
   type ButtonVariant,
 } from "./components/Button";
-export { CheckboxField, SelectField, TextField } from "./components/Field";
+export { CheckboxField, SelectField, TextAreaField, TextField } from "./components/Field";
 export { Alert, Badge, EmptyState, type Tone } from "./components/Feedback";
 export { Container, PageHeader, SkipLink, Surface } from "./components/Layout";
 export { ChoiceChip, ChoiceGroup, type ChoiceChipProps } from "./components/Choice";
