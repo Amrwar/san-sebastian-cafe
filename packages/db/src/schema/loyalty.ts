@@ -72,6 +72,8 @@ export const loyaltyPrograms = pgTable(
     inStoreEnabled: boolean().notNull().default(true),
     inStoreMaxStampsPerVisit: integer().notNull().default(10),
     inStoreMaxStampsPerDay: integer().notNull().default(10),
+    /** Days after paying during which a guest can claim the order’s stamps by signing up (0 = off). */
+    guestClaimDays: integer().notNull().default(14),
     /** Why the owner changed the rules (shown in the version history). */
     note: text(),
     createdByUserId: text().references(() => users.id, { onDelete: "set null" }),
@@ -81,6 +83,7 @@ export const loyaltyPrograms = pgTable(
     check("loyalty_programs_version_positive", sql`${t.version} > 0`),
     check("loyalty_programs_stamps", sql`${t.stampsPerReward} between 2 and 20`),
     check("loyalty_programs_min_paid", sql`${t.minPaidCentsPerDrink} >= 0`),
+    check("loyalty_programs_guest_claim", sql`${t.guestClaimDays} between 0 and 90`),
     check(
       "loyalty_programs_caps",
       sql`(${t.maxStampsPerPurchase} is null or ${t.maxStampsPerPurchase} > 0) and ${t.inStoreMaxStampsPerVisit} > 0 and ${t.inStoreMaxStampsPerDay} > 0`,

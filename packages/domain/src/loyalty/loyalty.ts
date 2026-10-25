@@ -82,6 +82,11 @@ export interface LoyaltyRules {
   inStoreEnabled: boolean;
   inStoreMaxStampsPerVisit: number;
   inStoreMaxStampsPerDay: number;
+  /**
+   * A guest who creates an account (verified email) within this many days of paying gets that
+   * order’s stamps. 0 = off.
+   */
+  guestClaimDays: number;
 }
 
 /** Version 1: the café's rule ("every five qualifying paid drinks earn one free eligible drink"). */
@@ -103,6 +108,7 @@ export const DEFAULT_LOYALTY_RULES: LoyaltyRules = {
   inStoreEnabled: true,
   inStoreMaxStampsPerVisit: 10,
   inStoreMaxStampsPerDay: 10,
+  guestClaimDays: 14,
 };
 
 /** Bounds the admin form and the server both enforce. */
@@ -114,6 +120,7 @@ export const LOYALTY_RULE_LIMITS = {
   rewardExpiryDays: { min: 30, max: 1_095 },
   inStoreMaxStampsPerVisit: { min: 1, max: 50 },
   inStoreMaxStampsPerDay: { min: 1, max: 100 },
+  guestClaimDays: { min: 0, max: 90 },
   adjustment: { min: -20, max: 20 },
 } as const;
 

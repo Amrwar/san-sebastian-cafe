@@ -9,6 +9,7 @@ import { db } from "./db";
 import { env } from "./env";
 import { logger } from "./logger";
 import { sendEmail } from "./mailer";
+import { claimGuestOrders } from "./modules/loyalty/guest-claim";
 import { provisionAccount } from "./modules/identity/provisioning";
 
 export const OTP_EXPIRES_SECONDS = 10 * 60;
@@ -65,6 +66,17 @@ function createAuth() {
           after: async (user) => {
             await provisionAccount(db(), user.id);
             logger().info({ userId: user.id }, "account created");
+            // Orders paid as a guest with this (verified) address join the account with their
+            // stamps. A failure here must never block the sign-up.
+            if (user.emailVerified) {
+              try {
+                const claim = await claimGuestOrders(db(), user.id, user.email);
+                if (claim.orders > 0)
+                  logger().info({ userId: user.id, ...claim }, "guest orders claimed");
+              } catch (err) {
+                logger().error({ err, userId: user.id }, "guest order claim failed");
+              }
+            }
           },
         },
       },

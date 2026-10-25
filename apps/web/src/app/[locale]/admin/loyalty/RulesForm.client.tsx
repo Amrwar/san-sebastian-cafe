@@ -51,6 +51,7 @@ export function RulesForm({
     expiryDays: rules.rewardExpiryDays === null ? "" : String(rules.rewardExpiryDays),
     inStorePerVisit: String(rules.inStoreMaxStampsPerVisit),
     inStorePerDay: String(rules.inStoreMaxStampsPerDay),
+    guestClaimDays: String(rules.guestClaimDays),
     note: "",
   });
   const [choices, setChoices] = useState({
@@ -100,6 +101,7 @@ export function RulesForm({
       rewardExpiryDays: whole("expiryDays", L.rewardExpiryDays, true),
       inStoreMaxStampsPerVisit: whole("inStorePerVisit", L.inStoreMaxStampsPerVisit) ?? 0,
       inStoreMaxStampsPerDay: whole("inStorePerDay", L.inStoreMaxStampsPerDay) ?? 0,
+      guestClaimDays: whole("guestClaimDays", L.guestClaimDays) ?? 0,
       excludedProductIds: excluded,
       // Size-level exclusions have no editor yet; keep whatever is in force.
       excludedVariantIds: [...rules.excludedVariantIds],
@@ -304,6 +306,15 @@ export function RulesForm({
               onChange={setField("inStorePerDay")}
             />
           </div>
+          <TextField
+            label={t("guestClaimDays")}
+            hint={t("guestClaimHint")}
+            inputMode="numeric"
+            value={text.guestClaimDays}
+            error={errors.guestClaimDays}
+            onChange={setField("guestClaimDays")}
+            className="sm:max-w-xs"
+          />
         </Surface>
 
         {canEdit ? (

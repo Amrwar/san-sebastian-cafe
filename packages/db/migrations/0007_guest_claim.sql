@@ -1,0 +1,2 @@
+ALTER TABLE "loyalty_programs" ADD COLUMN "guest_claim_days" integer DEFAULT 14 NOT NULL;--> statement-breakpoint
+ALTER TABLE "loyalty_programs" ADD CONSTRAINT "loyalty_programs_guest_claim" CHECK ("loyalty_programs"."guest_claim_days" between 0 and 90);

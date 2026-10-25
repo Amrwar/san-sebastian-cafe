@@ -152,6 +152,7 @@ docs/               planning and phase documentation
 | [17 Phase 7 report](docs/17-phase-7-report.md)               | Reporting: sales, taxes, tips, refunds, loyalty, CSV exports                  |
 | [18 Phase 8 report](docs/18-phase-8-report.md)               | Privacy (Law 25): data export, deletion, requests, incidents, retention       |
 | [19 Phase 9 report](docs/19-phase-9-report.md)               | Live queue and tracking, order emails, Web Push                               |
+| [20 Phase 10 report](docs/20-phase-10-report.md)             | Guest-order stamp claim; accounts and loyalty phases closed                   |
 
 ## Deployment (Vercel demo)
 

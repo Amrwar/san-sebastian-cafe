@@ -487,7 +487,9 @@
     "itemNote": "Note : {note}",
     "guestNotice": "Conservez ce lien pour suivre votre commande.",
     "deliveryTo": "Livraison : {address}",
-    "reason": "Raison : {reason}"
+    "reason": "Raison : {reason}",
+    "claimStamps": "Créez un compte avec l’adresse courriel de cette commande d’ici le {date} : ses tampons seront ajoutés à votre carte fidélité.",
+    "claimCta": "Créer mon compte"
   },
   "Tracking": {
     "title": "Suivi",
@@ -1159,7 +1161,9 @@
       "no_changes": "Les règles sont identiques à la version en vigueur.",
       "forbidden": "Seul le propriétaire peut modifier les règles.",
       "generic": "L’enregistrement a échoué. Vérifiez les champs et réessayez."
-    }
+    },
+    "guestClaimDays": "Jours pour réclamer une commande invitée",
+    "guestClaimHint": "Un invité qui crée un compte avec la même adresse courriel dans ce délai reçoit les tampons de ses commandes. 0 = désactivé."
   },
   "AdminTeam": {
     "title": "Équipe",

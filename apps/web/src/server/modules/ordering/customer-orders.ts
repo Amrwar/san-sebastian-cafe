@@ -91,6 +91,7 @@ export async function getOrderDetail(
       order.scheduledFor ??
       new Date((order.pricingSnapshot as { readyAt?: string }).readyAt ?? order.placedAt),
     placedAt: order.placedAt,
+    paidAt: order.paidAt,
     completedAt: order.completedAt,
     expiresAt: order.status === "awaiting_payment" ? order.expiresAt : null,
     locale: order.locale,

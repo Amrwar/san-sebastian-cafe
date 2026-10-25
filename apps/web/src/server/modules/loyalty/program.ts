@@ -54,6 +54,7 @@ function toRules(row: ProgramRow): ProgramVersion {
     inStoreEnabled: row.inStoreEnabled,
     inStoreMaxStampsPerVisit: row.inStoreMaxStampsPerVisit,
     inStoreMaxStampsPerDay: row.inStoreMaxStampsPerDay,
+    guestClaimDays: row.guestClaimDays,
     note: row.note,
     createdByUserId: row.createdByUserId,
     createdAt: row.createdAt,
@@ -100,6 +101,7 @@ export const programInput = z
     inStoreEnabled: z.boolean(),
     inStoreMaxStampsPerVisit: count(L.inStoreMaxStampsPerVisit.min, L.inStoreMaxStampsPerVisit.max),
     inStoreMaxStampsPerDay: count(L.inStoreMaxStampsPerDay.min, L.inStoreMaxStampsPerDay.max),
+    guestClaimDays: count(L.guestClaimDays.min, L.guestClaimDays.max),
     note: z.string().trim().min(3).max(300),
   })
   .strict();

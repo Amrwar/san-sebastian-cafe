@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectNoSeriousA11yViolations, signIn } from "./helpers";
+import { choosePickupTime, expectNoSeriousA11yViolations, signIn } from "./helpers";
 
 test.describe("passwordless sign-up, onboarding and account", () => {
   test("a new customer signs up with an emailed code, completes onboarding and manages preferences", async ({
@@ -74,6 +74,53 @@ test.describe("passwordless sign-up, onboarding and account", () => {
     await page.getByText("Je n’ai plus accès à mon courriel").click();
     await expect(page.getByText(/Présentez-vous au comptoir/)).toBeVisible();
     await expectNoSeriousA11yViolations(page);
+  });
+
+  test("a guest who signs up in English with the order's email gets its stamp, then signs out", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const email = `claim.${Date.now()}@example.test`;
+
+    // As a guest: an Americano (a qualifying drink), paid in the simulator.
+    await page.goto("/fr/menu/demo-americano");
+    await page.getByRole("button", { name: /^Ajouter au panier/ }).click();
+    await page.goto("/fr/checkout");
+    await choosePickupTime(page);
+    await page.getByLabel("Nom pour l’appel au comptoir").fill("Sam");
+    await page.getByLabel("Courriel pour le reçu").fill(email);
+    await page.getByRole("button", { name: "Commander et payer" }).click();
+    await page.waitForURL(/\/fr\/checkout\/pay\//);
+    await page.getByRole("button", { name: "Simuler un paiement accepté" }).click();
+    await page.waitForURL(/\/fr\/orders\/[\w-]+\?token=/);
+
+    // The order page offers to keep the stamps by creating an account.
+    await expect(
+      page.getByText(/Créez un compte avec l’adresse courriel de cette commande/),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Créer mon compte" })).toBeVisible();
+
+    // Sign-up in English, with the same address.
+    await signIn(page, email, "en", "/en/rewards");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Let’s get acquainted" }),
+    ).toBeVisible();
+    await page.getByLabel("Name").fill("Sam Gagnon");
+    await page.getByRole("button", { name: "Finish" }).click();
+    await expect(page).toHaveURL(/\/en\/rewards$/);
+    await expect(page.getByRole("list", { name: "Stamp card: 1 of 5 stamps" })).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    // The guest order is now in the account's history.
+    await page.goto("/en/orders");
+    await expect(page.getByRole("link", { name: /^View order \d{4}-\d{3}$/ })).toHaveCount(1);
+
+    // Sign out (English).
+    await page.goto("/en/account");
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/en$/);
+    await page.goto("/en/account");
+    await expect(page).toHaveURL(/\/en\/sign-in/);
   });
 });
 

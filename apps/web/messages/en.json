@@ -487,7 +487,9 @@
     "itemNote": "Note: {note}",
     "guestNotice": "Keep this link to follow your order.",
     "deliveryTo": "Delivery: {address}",
-    "reason": "Reason: {reason}"
+    "reason": "Reason: {reason}",
+    "claimStamps": "Create an account with this order’s email address by {date}: its stamps will be added to your loyalty card.",
+    "claimCta": "Create my account"
   },
   "Tracking": {
     "title": "Tracking",
@@ -1159,7 +1161,9 @@
       "no_changes": "The rules are the same as the version in force.",
       "forbidden": "Only the owner can change the rules.",
       "generic": "Saving failed. Check the fields and try again."
-    }
+    },
+    "guestClaimDays": "Days to claim a guest order",
+    "guestClaimHint": "A guest who creates an account with the same email within this time gets the stamps of their orders. 0 = off."
   },
   "AdminTeam": {
     "title": "Team",

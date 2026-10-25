@@ -9,6 +9,7 @@ import { money } from "@/lib/format";
 import { db } from "@/server/db";
 import { env } from "@/server/env";
 import { AppError } from "@/server/errors";
+import { currentRules } from "@/server/modules/loyalty/program";
 import { getOrderDetail, type OrderDetail } from "@/server/modules/ordering/customer-orders";
 import { orderPaymentSummary } from "@/server/modules/payments/history";
 import { getFulfilmentOptions } from "@/server/modules/store/pickup";
@@ -57,6 +58,14 @@ export default async function OrderDetailPage({
   ]);
   const en = locale === "en";
   const pushKey = env().VAPID_PUBLIC_KEY ?? null;
+  // A guest (order link, not signed in) can still get this order’s stamps by creating an account.
+  const claimDays = token && !user && order.paidAt ? (await currentRules(db())).guestClaimDays : 0;
+  const claimUntil =
+    claimDays > 0 &&
+    order.paidAt &&
+    ["paid", "accepted", "in_preparation", "ready", "completed"].includes(order.status)
+      ? new Date(order.paidAt.getTime() + claimDays * 86_400_000)
+      : null;
   const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
   const totals = order.totals;
   const rows = [
@@ -105,6 +114,18 @@ export default async function OrderDetailPage({
         </p>
         {token ? <p className="text-sm">{t("guestNotice")}</p> : null}
       </PageHeader>
+
+      {claimUntil ? (
+        <Alert tone="brand" className="mb-6">
+          <p>{t("claimStamps", { date: format.dateTime(claimUntil, { dateStyle: "long" }) })}</p>
+          <Link
+            href={`/sign-in?next=${encodeURIComponent(`/${locale}/rewards`)}`}
+            className={buttonClasses("secondary", "sm", "mt-2")}
+          >
+            {t("claimCta")}
+          </Link>
+        </Alert>
+      ) : null}
 
       <div className="flex flex-col gap-6">
         {order.status === "awaiting_payment" ? (
