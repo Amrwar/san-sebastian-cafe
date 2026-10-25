@@ -898,7 +898,8 @@
     "store": "Café",
     "loyalty": "Fidélité",
     "team": "Équipe",
-    "audit": "Journal"
+    "audit": "Journal",
+    "reports": "Rapports"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1202,7 +1203,8 @@
       "loyalty": "Fidélité",
       "staff": "Équipe",
       "payment": "Paiements",
-      "consent": "Consentements"
+      "consent": "Consentements",
+      "report": "Rapports"
     },
     "when": "Date",
     "who": "Par",
@@ -1261,7 +1263,134 @@
           "granted": "Consentement aux courriels promotionnels",
           "withdrawn": "Retrait du consentement aux courriels promotionnels"
         }
+      },
+      "report": {
+        "exported": "Rapport exporté"
       }
     }
+  },
+  "AdminReports": {
+    "title": "Rapports",
+    "intro": "Ventes, taxes, pourboires, remboursements et fidélité. Montants en dollars canadiens, à l’heure de Montréal.",
+    "from": "Du",
+    "to": "Au",
+    "includeDemo": "Inclure les commandes de démonstration",
+    "show": "Afficher",
+    "presets": {
+      "label": "Périodes rapides",
+      "today": "Aujourd’hui",
+      "yesterday": "Hier",
+      "last7": "7 derniers jours",
+      "thisMonth": "Ce mois-ci",
+      "lastMonth": "Mois dernier"
+    },
+    "invalidPeriod": "Période invalide : choisissez une date de fin après la date de début, sur un an au plus.",
+    "demoExcluded": "{count, plural, one {# commande de démonstration n’est pas comptée.} other {# commandes de démonstration ne sont pas comptées.}}",
+    "demoIncluded": "Les commandes de démonstration sont incluses : ces chiffres ne sont pas réels.",
+    "tiles": {
+      "sales": "Ventes",
+      "net": "Net après remboursements",
+      "orders": "Commandes payées",
+      "average": "Panier moyen",
+      "refundsNote": "Remboursements : {amount} ({count, plural, =0 {aucun} one {# remboursement} other {# remboursements}})"
+    },
+    "taxes": {
+      "title": "Taxes et pourboires",
+      "hint": "Pour vos déclarations. Les taxes remboursées sont réparties au prorata de chaque commande; à confirmer avec votre comptable.",
+      "row": "Ligne",
+      "goods": "Biens",
+      "gst": "TPS",
+      "qst": "TVQ",
+      "tips": "Pourboires",
+      "total": "Total",
+      "sales": "Ventes",
+      "refunds": "Remboursements",
+      "net": "Net",
+      "discounts": "Rabais accordés : {promo} en promotions, {reward} en boissons offertes."
+    },
+    "reconciliation": {
+      "ok": "Ventes et paiements concordent : {amount} encaissés pour ces commandes.",
+      "mismatch": "{count, plural, one {# commande payée ne concorde pas} other {# commandes payées ne concordent pas}} avec son paiement. Vérifiez :",
+      "paid": "commande {total}, paiement {paid}",
+      "missing": "commande {total}, aucun paiement",
+      "extra": "{count, plural, one {# paiement en double ou en retard} other {# paiements en double ou en retard}} ({received}) {count, plural, one {a été remboursé} other {ont été remboursés}} automatiquement ({refunded}). Ils ne comptent ni comme ventes ni comme remboursements."
+    },
+    "byDay": {
+      "title": "Ventes par jour",
+      "table": "Voir le tableau",
+      "date": "Date",
+      "orders": "Commandes",
+      "sales": "Ventes",
+      "refunds": "Remboursements",
+      "net": "Net",
+      "tooltip": "{date} : {sales}, {orders, plural, one {# commande} other {# commandes}}",
+      "chartLabel": "Ventes par jour, du {from} au {to}"
+    },
+    "byHour": {
+      "title": "Commandes par heure",
+      "hint": "Heure du paiement, tous les jours de la période ensemble.",
+      "hour": "Heure",
+      "orders": "Commandes",
+      "sales": "Ventes",
+      "tooltip": "{hour} h : {orders, plural, one {# commande} other {# commandes}}, {sales}"
+    },
+    "byProduct": {
+      "title": "Ventes par produit",
+      "hint": "Avant remboursements, après rabais. Les noms et catégories sont ceux d’aujourd’hui.",
+      "product": "Produit",
+      "category": "Catégorie",
+      "quantity": "Quantité",
+      "free": "Dont offertes",
+      "sales": "Ventes",
+      "empty": "Aucune vente pour cette période.",
+      "noCategory": "Sans catégorie"
+    },
+    "byCategory": {
+      "title": "Ventes par catégorie"
+    },
+    "byTax": {
+      "title": "Ventes par catégorie de taxe",
+      "category": "Catégorie de taxe"
+    },
+    "refunds": {
+      "title": "Remboursements par origine",
+      "source": "Origine",
+      "count": "Nombre",
+      "amount": "Montant",
+      "empty": "Aucun remboursement pour cette période.",
+      "sources": {
+        "staff": "Par l’équipe",
+        "customer_cancel": "Annulation par le client",
+        "system": "Automatique",
+        "provider": "Depuis Stripe"
+      }
+    },
+    "loyalty": {
+      "title": "Fidélité",
+      "issued": "Boissons gratuites gagnées",
+      "redeemed": "Boissons gratuites utilisées",
+      "redeemedValue": "Valeur utilisée : {amount}",
+      "revoked": "Retirées (remboursements)",
+      "outstanding": "Boissons gratuites dues aujourd’hui",
+      "liability": "Passif estimé : {amount}",
+      "liabilityHint": "Nombre dû × valeur moyenne d’une boisson gratuite utilisée ({average}).",
+      "noLiability": "Pas encore d’historique pour estimer le passif.",
+      "stamps": "Tampons en cours sur les cartes : {count}"
+    },
+    "exports": {
+      "title": "Exporter (CSV)",
+      "hint": "Fichiers pour votre comptable : virgules, montants avec un point décimal, heure de Montréal. Aucun nom ni courriel de client.",
+      "days": "Ventes par jour",
+      "orders": "Commandes",
+      "refunds": "Remboursements",
+      "products": "Ventes par produit"
+    },
+    "notes": {
+      "title": "Comment lire ce rapport",
+      "sales": "Une vente compte le jour de son paiement, même si la commande est annulée ensuite.",
+      "refunds": "Un remboursement compte le jour où il est réglé, sur sa propre ligne.",
+      "unpaid": "Les commandes impayées, expirées et de démonstration ne comptent pas."
+    },
+    "periodShown": "Du {from} au {to}"
   }
 }

@@ -70,7 +70,15 @@ export async function listRecentAuditEvents(
 }
 
 /** Audit areas: the prefix of an action name ("catalog.product_updated" → catalog). */
-export const AUDIT_AREAS = ["catalog", "store", "loyalty", "staff", "payment", "consent"] as const;
+export const AUDIT_AREAS = [
+  "catalog",
+  "store",
+  "loyalty",
+  "staff",
+  "payment",
+  "consent",
+  "report",
+] as const;
 export type AuditArea = (typeof AUDIT_AREAS)[number];
 export const AUDIT_PAGE_SIZE = 50;
 

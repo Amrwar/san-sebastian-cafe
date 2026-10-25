@@ -145,6 +145,9 @@ docs/               planning and phase documentation
 | [12 Phase 3 report](docs/12-phase-3-report.md)               | Ordering domain, staff queue, API, tests, limitations                         |
 | [13 Payments](docs/13-payments.md)                           | Provider decision, flow, setup, webhooks, refunds, recovery, launch checklist |
 | [14 Phase 4 report](docs/14-phase-4-report.md)               | Payments: what was built, tests, limitations                                  |
+| [15 Phase 5 report](docs/15-phase-5-report.md)               | Loyalty engine, counter stamps, staff support                                 |
+| [16 Phase 6 report](docs/16-phase-6-report.md)               | Admin console, product photos (Vercel Blob)                                   |
+| [17 Phase 7 report](docs/17-phase-7-report.md)               | Reporting: sales, taxes, tips, refunds, loyalty, CSV exports                  |
 
 ## Deployment (Vercel demo)
 

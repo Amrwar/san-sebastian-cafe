@@ -898,7 +898,8 @@
     "store": "Café",
     "loyalty": "Loyalty",
     "team": "Team",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "reports": "Reports"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1202,7 +1203,8 @@
       "loyalty": "Loyalty",
       "staff": "Team",
       "payment": "Payments",
-      "consent": "Consents"
+      "consent": "Consents",
+      "report": "Reports"
     },
     "when": "Date",
     "who": "By",
@@ -1261,7 +1263,134 @@
           "granted": "Consent to promotional emails",
           "withdrawn": "Consent to promotional emails withdrawn"
         }
+      },
+      "report": {
+        "exported": "Report exported"
       }
     }
+  },
+  "AdminReports": {
+    "title": "Reports",
+    "intro": "Sales, taxes, tips, refunds and loyalty. Amounts in Canadian dollars, Montréal time.",
+    "from": "From",
+    "to": "To",
+    "includeDemo": "Include demo orders",
+    "show": "Show",
+    "presets": {
+      "label": "Quick periods",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "last7": "Last 7 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month"
+    },
+    "invalidPeriod": "Invalid period: choose an end date after the start date, at most a year apart.",
+    "demoExcluded": "{count, plural, one {# demo order isn’t counted.} other {# demo orders aren’t counted.}}",
+    "demoIncluded": "Demo orders are included: these figures aren’t real.",
+    "tiles": {
+      "sales": "Sales",
+      "net": "Net after refunds",
+      "orders": "Paid orders",
+      "average": "Average order",
+      "refundsNote": "Refunds: {amount} ({count, plural, =0 {none} one {# refund} other {# refunds}})"
+    },
+    "taxes": {
+      "title": "Taxes and tips",
+      "hint": "For your returns. Refunded taxes are split pro rata to each order; to be confirmed with your accountant.",
+      "row": "Line",
+      "goods": "Goods",
+      "gst": "GST",
+      "qst": "QST",
+      "tips": "Tips",
+      "total": "Total",
+      "sales": "Sales",
+      "refunds": "Refunds",
+      "net": "Net",
+      "discounts": "Discounts given: {promo} in promotions, {reward} in free drinks."
+    },
+    "reconciliation": {
+      "ok": "Sales and payments match: {amount} collected for these orders.",
+      "mismatch": "{count, plural, one {# paid order doesn’t match} other {# paid orders don’t match}} its payment. Check:",
+      "paid": "order {total}, payment {paid}",
+      "missing": "order {total}, no payment",
+      "extra": "{count, plural, one {# duplicate or late payment} other {# duplicate or late payments}} ({received}) {count, plural, one {was} other {were}} refunded automatically ({refunded}). They count as neither sales nor refunds."
+    },
+    "byDay": {
+      "title": "Sales by day",
+      "table": "Show the table",
+      "date": "Date",
+      "orders": "Orders",
+      "sales": "Sales",
+      "refunds": "Refunds",
+      "net": "Net",
+      "tooltip": "{date}: {sales}, {orders, plural, one {# order} other {# orders}}",
+      "chartLabel": "Sales by day, {from} to {to}"
+    },
+    "byHour": {
+      "title": "Orders by hour",
+      "hint": "Hour of payment, all days of the period together.",
+      "hour": "Hour",
+      "orders": "Orders",
+      "sales": "Sales",
+      "tooltip": "{hour}:00: {orders, plural, one {# order} other {# orders}}, {sales}"
+    },
+    "byProduct": {
+      "title": "Sales by product",
+      "hint": "Before refunds, after discounts. Names and categories are today’s.",
+      "product": "Product",
+      "category": "Category",
+      "quantity": "Quantity",
+      "free": "Of which free",
+      "sales": "Sales",
+      "empty": "No sales in this period.",
+      "noCategory": "No category"
+    },
+    "byCategory": {
+      "title": "Sales by category"
+    },
+    "byTax": {
+      "title": "Sales by tax category",
+      "category": "Tax category"
+    },
+    "refunds": {
+      "title": "Refunds by source",
+      "source": "Source",
+      "count": "Count",
+      "amount": "Amount",
+      "empty": "No refunds in this period.",
+      "sources": {
+        "staff": "By the team",
+        "customer_cancel": "Customer cancellation",
+        "system": "Automatic",
+        "provider": "From Stripe"
+      }
+    },
+    "loyalty": {
+      "title": "Loyalty",
+      "issued": "Free drinks earned",
+      "redeemed": "Free drinks used",
+      "redeemedValue": "Value used: {amount}",
+      "revoked": "Withdrawn (refunds)",
+      "outstanding": "Free drinks owed today",
+      "liability": "Estimated liability: {amount}",
+      "liabilityHint": "Number owed × average value of a free drink used ({average}).",
+      "noLiability": "No history yet to estimate the liability.",
+      "stamps": "Stamps in progress on cards: {count}"
+    },
+    "exports": {
+      "title": "Export (CSV)",
+      "hint": "Files for your accountant: commas, amounts with a decimal point, Montréal time. No customer names or emails.",
+      "days": "Sales by day",
+      "orders": "Orders",
+      "refunds": "Refunds",
+      "products": "Sales by product"
+    },
+    "notes": {
+      "title": "How to read this report",
+      "sales": "A sale counts on the day it was paid, even if the order is cancelled later.",
+      "refunds": "A refund counts on the day it settles, on its own line.",
+      "unpaid": "Unpaid, expired and demo orders don’t count."
+    },
+    "periodShown": "{from} to {to}"
   }
 }

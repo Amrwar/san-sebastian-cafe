@@ -245,11 +245,66 @@ test.describe("audit log", () => {
   });
 });
 
+test.describe("reports", () => {
+  test.use({ storageState: "e2e/.auth/manager.json" });
+
+  test("a manager reads the period's figures, includes demo orders and exports a CSV", async ({
+    page,
+  }) => {
+    await page.goto("/fr/admin/menu");
+    await page
+      .getByRole("navigation", { name: "Sections de l’administration" })
+      .getByRole("link", { name: "Rapports" })
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name: "Rapports" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "7 derniers jours" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(page.getByText(/Ventes et paiements concordent/)).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    // The seeded orders are demo orders: left out until asked for.
+    await page.getByLabel("Inclure les commandes de démonstration").check();
+    await page.getByRole("button", { name: "Afficher" }).click();
+    await expect(page).toHaveURL(/demo=1/);
+    await expect(page.getByText(/Les commandes de démonstration sont incluses/)).toBeVisible();
+    // Seeded demo orders include a latte.
+    await expect(page.getByRole("rowheader", { name: "[DÉMO] Latte" }).first()).toBeVisible();
+    await expect(page.getByRole("img", { name: /Ventes par jour/ })).toBeVisible();
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator('a[href*="kind=orders"]').click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(
+      /^commandes_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.csv$/,
+    );
+
+    // Another period through the quick links keeps the demo choice.
+    await page.getByRole("link", { name: "Ce mois-ci" }).click();
+    await expect(page.getByRole("link", { name: "Ce mois-ci" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(page).toHaveURL(/demo=1/);
+  });
+});
+
 test.describe("admin access", () => {
   test.use({ storageState: "e2e/.auth/staff.json" });
 
   test("baristas can't open menu administration", async ({ page }) => {
     await page.goto("/fr/admin/menu");
     await expect(page.getByRole("heading", { level: 1, name: "Menu" })).toHaveCount(0);
+  });
+
+  test("baristas can't open reports or export them", async ({ page }) => {
+    await page.goto("/fr/admin/reports");
+    await expect(page.getByRole("heading", { level: 1, name: "Rapports" })).toHaveCount(0);
+    const response = await page.request.get(
+      "/api/v1/admin/reports/export?kind=orders&from=2026-01-01&to=2026-01-31",
+    );
+    expect(response.status()).toBe(403);
   });
 });
