@@ -1,18 +1,24 @@
 import {
   and,
+  desc,
   eq,
   gte,
   isNotNull,
+  isNull,
+  lte,
   modifierOptions,
+  or,
+  orders,
   products,
   sql,
   stockMovements,
+  users,
   type CatalogProduct,
   type Database,
   type StockMovementReason,
   type Tx,
 } from "@ssc/db";
-import { stockDemand, type StockLine } from "@ssc/domain";
+import { stockDemand, stockLevel, type StockLine } from "@ssc/domain";
 import { z } from "zod";
 import { recordAudit } from "../../audit";
 import { authorize, type Actor } from "../../authz";
@@ -121,6 +127,8 @@ export const stockInput = z.object({
   id: z.uuid(),
   /** Units on hand now; null stops tracking (always on sale unless 86'd by hand). */
   quantity: z.number().int().min(0).max(100_000).nullable(),
+  /** Warn staff at or under this many units; null = no warning; omitted = unchanged. */
+  lowStockThreshold: z.number().int().min(0).max(100_000).nullable().optional(),
 });
 
 /** Staff count: sets (or stops tracking) an item's stock. Recorded in the ledger and audit log. */
@@ -133,13 +141,21 @@ export async function setStock(db: Database, actor: Actor | null, raw: unknown) 
 
   return db.transaction(async (tx) => {
     const [current] = await tx
-      .select({ quantity: t.stockQuantity })
+      .select({ quantity: t.stockQuantity, threshold: t.lowStockThreshold })
       .from(t)
       .where(eq(t.id, id))
       .for("update");
     if (!current) throw notFound(target === "product" ? "Product" : "Option");
-    await tx.update(t).set({ stockQuantity: quantity }).where(eq(t.id, id));
+    const threshold =
+      parsed.data.lowStockThreshold === undefined
+        ? current.threshold
+        : parsed.data.lowStockThreshold;
+    await tx
+      .update(t)
+      .set({ stockQuantity: quantity, lowStockThreshold: threshold })
+      .where(eq(t.id, id));
 
+    // The ledger records counts; a threshold change alone is only audited.
     const delta = (quantity ?? 0) - (current.quantity ?? 0);
     const reason: StockMovementReason = delta > 0 ? "restock" : "adjustment";
     if (delta !== 0 || current.quantity !== quantity) {
@@ -156,8 +172,96 @@ export async function setStock(db: Database, actor: Actor | null, raw: unknown) 
       action: `catalog.${target}_stock_set`,
       entityType: target,
       entityId: id,
-      metadata: { from: current.quantity, to: quantity },
+      metadata: {
+        from: current.quantity,
+        to: quantity,
+        thresholdFrom: current.threshold,
+        thresholdTo: threshold,
+      },
     });
-    return { id, stockQuantity: quantity };
+    return { id, stockQuantity: quantity, lowStockThreshold: threshold };
   });
+}
+
+export interface StockAlert {
+  target: Target;
+  id: string;
+  nameFr: string;
+  nameEn: string;
+  stock: number;
+  level: "low" | "out";
+}
+
+/** Counted items that are out or at/under their alert threshold, out first, then fewest left. */
+export async function getStockAlerts(db: Database | Tx): Promise<StockAlert[]> {
+  const alerting = (t: typeof products | typeof modifierOptions) =>
+    and(
+      isNotNull(t.stockQuantity),
+      isNull(t.archivedAt),
+      or(lte(t.stockQuantity, 0), lte(t.stockQuantity, t.lowStockThreshold)),
+    );
+  const pick = {
+    id: true,
+    nameFr: true,
+    nameEn: true,
+    stockQuantity: true,
+    lowStockThreshold: true,
+  } as const;
+  const [productRows, optionRows] = await Promise.all([
+    db.query.products.findMany({ where: alerting(products), columns: pick }),
+    db.query.modifierOptions.findMany({ where: alerting(modifierOptions), columns: pick }),
+  ]);
+  const toAlert =
+    (target: Target) =>
+    (r: (typeof productRows)[number]): StockAlert => ({
+      target,
+      id: r.id,
+      nameFr: r.nameFr,
+      nameEn: r.nameEn,
+      stock: r.stockQuantity ?? 0,
+      level:
+        stockLevel({ stock: r.stockQuantity, lowStockThreshold: r.lowStockThreshold }) === "out"
+          ? "out"
+          : "low",
+    });
+  return [...productRows.map(toAlert("product")), ...optionRows.map(toAlert("option"))].sort(
+    (a, b) => a.stock - b.stock || a.nameFr.localeCompare(b.nameFr),
+  );
+}
+
+export const historyInput = z.object({
+  target: z.enum(["product", "option"]),
+  id: z.uuid(),
+});
+
+/** The latest stock movements of one item, with the order number and who made the change. */
+export async function getStockHistory(db: Database, actor: Actor | null, raw: unknown) {
+  authorize(actor, "catalog:toggle_availability");
+  const parsed = historyInput.safeParse(raw);
+  if (!parsed.success) throw fromZodError(parsed.error);
+  const { target, id } = parsed.data;
+  const rows = await db
+    .select({
+      id: stockMovements.id,
+      reason: stockMovements.reason,
+      delta: stockMovements.delta,
+      quantityAfter: stockMovements.quantityAfter,
+      createdAt: stockMovements.createdAt,
+      orderNumber: orders.number,
+      actorName: users.name,
+    })
+    .from(stockMovements)
+    .leftJoin(orders, eq(orders.id, stockMovements.orderId))
+    .leftJoin(users, eq(users.id, stockMovements.actorUserId))
+    .where(
+      target === "product" ? eq(stockMovements.productId, id) : eq(stockMovements.optionId, id),
+    )
+    .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
+    .limit(50);
+  return rows.map((r) => ({
+    ...r,
+    // Staff names only: a customer's name stays off the stock screen.
+    actorName: r.orderNumber ? null : r.actorName,
+    createdAt: r.createdAt.toISOString(),
+  }));
 }

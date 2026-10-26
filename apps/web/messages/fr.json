@@ -681,7 +681,11 @@
     "items": "{count, plural, one {# article} other {# articles}}",
     "delivery": "Livraison",
     "payments": "Paiements",
-    "loyalty": "Fidélité"
+    "loyalty": "Fidélité",
+    "stockAlertTitle": "Stock à surveiller",
+    "stockLow": "{name} : {count, plural, one {# restant} other {# restants}}",
+    "stockOut": "{name} : épuisé",
+    "stockLink": "Gérer le stock"
   },
   "StaffAvailability": {
     "title": "Disponibilité des produits",
@@ -697,7 +701,8 @@
       "until": "Indisponible jusqu’à {time}",
       "hidden": "Masqué",
       "out_of_stock": "Épuisé (stock à 0)",
-      "in_stock": "{count, plural, one {# en stock} other {# en stock}}"
+      "in_stock": "{count, plural, one {# en stock} other {# en stock}}",
+      "low": "Stock bas : {count}"
     },
     "saved": "{name} : mis à jour.",
     "error": "La mise à jour a échoué.",
@@ -707,7 +712,23 @@
     "stockUntrack": "Ne plus compter",
     "stockHelp": "Laissez vide pour ne pas compter cet article.",
     "stockSaved": "{name} : stock mis à jour.",
-    "stockInvalid": "Entrez un nombre entier, 0 ou plus."
+    "stockInvalid": "Entrez un nombre entier, 0 ou plus.",
+    "thresholdLabel": "Alerte à — {name}",
+    "thresholdHelp": "Avertir l’équipe à ce nombre ou moins. Vide : pas d’alerte.",
+    "history": "Historique",
+    "hideHistory": "Masquer l’historique",
+    "historyTitle": "Historique du stock — {name}",
+    "historyEmpty": "Aucun mouvement pour l’instant.",
+    "historyError": "Impossible de charger l’historique.",
+    "historyBy": "par {name}",
+    "historyAfter": "reste {count}",
+    "historyUntracked": "plus compté",
+    "reason": {
+      "sale": "Vente — commande {number}",
+      "release": "Remis en stock — commande {number}",
+      "restock": "Réapprovisionnement",
+      "adjustment": "Ajustement"
+    }
   },
   "PaymentReturn": {
     "title": "Confirmation du paiement",

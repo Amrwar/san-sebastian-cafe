@@ -59,19 +59,29 @@ Local end-to-end runs failed to start after any new migration: Playwright starts
 its setup migrates the test database, and the health check (correctly) refuses a database behind
 the code. The E2E web server now migrates its database first.
 
+### Low-stock alerts and history (added the same day, migration `0011_low_stock.sql`)
+
+- **Alert threshold** per product or option (`low_stock_threshold`, empty = no alert), set next
+  to the count. At or under it, the item shows "Stock bas : N"; at 0, "Épuisé (stock à 0)".
+- **On the live queue**, a "Stock à surveiller" banner lists what is low or out (out first, then
+  fewest left), with a link to the stock screen. It travels with the queue's live updates, so it
+  appears and clears by itself.
+- **History** per item ("Historique"): the latest 50 movements from the ledger, with the order
+  number for sales and returns and the staff member for counts. Customers' names are never shown
+  (`GET /api/v1/staff/stock/history`).
+- A threshold change alone is audited (from/to) but writes no ledger row: the ledger is for counts.
+
 ## 2. Test results
 
-| Suite                         | Result                                                                                                                                                                                                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typecheck · ESLint · Prettier | ✔ clean                                                                                                                                                                                                                                                                                   |
-| Domain unit                   | ✔ 139 (new: auto-86, cart-wide stock, a property test that served lines never exceed stock, when stock returns); coverage 96.5 % branches                                                                                                                                                 |
-| Integration (real Postgres)   | ✔ 228 web + 12 db (new `inventory.int.test.ts`, 11: menu sold out at 0, option at 0, ledger, over-stock refusal, 6 simultaneous orders for 3 units → exactly 3, expiry returns once, cancel before/after preparation, tracking turned off meanwhile, staff counts and audit, permissions) |
-| E2E — Playwright + axe        | ✔ 91 passed, 7 skipped (Stripe sandbox, opt-in); new: staff counts Cappuccino to 0 → a guest sees it unavailable; clearing the count puts it back                                                                                                                                         |
+| Suite                         | Result                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Typecheck · ESLint · Prettier | ✔ clean                                                                                                                                                                                                                                                                                                                        |
+| Domain unit                   | ✔ 139 (new: auto-86, cart-wide stock, a property test that served lines never exceed stock, when stock returns); coverage 96.5 % branches                                                                                                                                                                                      |
+| Integration (real Postgres)   | ✔ 231 web + 12 db (with low-stock: 14 inventory tests) (new `inventory.int.test.ts`, 11: menu sold out at 0, option at 0, ledger, over-stock refusal, 6 simultaneous orders for 3 units → exactly 3, expiry returns once, cancel before/after preparation, tracking turned off meanwhile, staff counts and audit, permissions) |
+| E2E — Playwright + axe        | ✔ 92 passed, 7 skipped (with low-stock: Croissant counted to 2 with an alert at 3 → badge, history, queue banner; cleared again) (Stripe sandbox, opt-in); new: staff counts Cappuccino to 0 → a guest sees it unavailable; clearing the count puts it back                                                                    |
 
 ## 3. Not done (options)
 
-- **Low-stock warning** (e.g. a badge on the queue at 3 left) and a stock history screen: the
-  ledger already holds the data.
 - **Recipes** (one latte uses 250 ml of milk) and units other than "pieces": counts are per
   product or option.
 - **Per-size stock** (counting small and large cups separately).

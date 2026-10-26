@@ -32,6 +32,10 @@ votre compte (menu **Personnel**).
 - Chaque commande en ligne retire ses unités. **À 0, l’article passe épuisé tout seul**, partout.
   Une commande annulée ou refusée avant d’être commencée remet ses unités.
 - Après une livraison ou un comptage, inscrivez simplement le nouveau total.
+- **Alerte à** : inscrivez un seuil (par exemple 3) pour être prévenu à temps. À ce nombre ou moins,
+  l’article affiche « Stock bas », et la file des commandes montre un bandeau « Stock à surveiller ».
+- **Historique** : sous chaque article, la liste des ventes, remises en stock et comptages, avec le
+  numéro de commande ou le nom de la personne qui a compté.
 - **Ne plus compter** : l’article reste en vente sans limite (seul le bouton « Épuisé » s’applique).
 - Les ventes au comptoir ne sont pas retirées automatiquement : recomptez quand c’est utile.
 

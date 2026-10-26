@@ -5,7 +5,7 @@ import { ORDER_STATUSES } from "../ordering/ordering";
 import { computeQuote } from "../pricing/quote";
 import { productAt } from "./availability";
 import type { ConfiguredProduct } from "./configuration";
-import { isOutOfStock, stockDemand, stockShortfalls, type StockLine } from "./stock";
+import { isOutOfStock, stockDemand, stockLevel, stockShortfalls, type StockLine } from "./stock";
 
 /* Inventory: auto-86 at zero, cart-wide stock checks, and when an order gives its stock back. */
 
@@ -67,6 +67,19 @@ describe("auto-86", () => {
     expect(productAt(croissant(3), now).availability).toBe("available");
     expect(productAt(latte(0), now).groups[0]?.options[1]?.availability).toBe("sold_out");
     expect(productAt(latte(null), now).groups[0]?.options[1]?.availability).toBe("available");
+  });
+});
+
+describe("stock level", () => {
+  it("is low at or under the item's alert threshold, out at zero, untracked without a count", () => {
+    expect(stockLevel({ stock: null, lowStockThreshold: 3 })).toBe("untracked");
+    expect(stockLevel({})).toBe("untracked");
+    expect(stockLevel({ stock: 0, lowStockThreshold: 3 })).toBe("out");
+    expect(stockLevel({ stock: 3, lowStockThreshold: 3 })).toBe("low");
+    expect(stockLevel({ stock: 4, lowStockThreshold: 3 })).toBe("ok");
+    // No threshold: never "low", still "out" at zero.
+    expect(stockLevel({ stock: 1, lowStockThreshold: null })).toBe("ok");
+    expect(stockLevel({ stock: 0 })).toBe("out");
   });
 });
 

@@ -212,6 +212,26 @@ export function QueueBoard({
         </div>
       ) : null}
 
+      {queue.stockAlerts.length > 0 ? (
+        <Alert tone="warning" title={t("stockAlertTitle")}>
+          <ul className="mt-1 flex flex-wrap gap-x-5 gap-y-1">
+            {queue.stockAlerts.map((a) => {
+              const name = locale === "en" ? a.nameEn : a.nameFr;
+              return (
+                <li key={a.id} className={a.level === "out" ? "font-semibold" : undefined}>
+                  {a.level === "out"
+                    ? t("stockOut", { name })
+                    : t("stockLow", { name, count: a.stock })}
+                </li>
+              );
+            })}
+          </ul>
+          <Link href="/staff/availability" className={buttonClasses("secondary", "sm", "mt-2")}>
+            {t("stockLink")}
+          </Link>
+        </Alert>
+      ) : null}
+
       <div aria-live="polite">
         {notice ? <Alert tone={notice.tone}>{notice.text}</Alert> : null}
       </div>

@@ -69,6 +69,8 @@ export const products = pgTable(
     unavailableUntil: timestamp({ withTimezone: true }),
     /** Units left when stock is tracked (sold out at 0); null = not tracked. See stock_movements. */
     stockQuantity: integer(),
+    /** Staff are warned at or under this many units left; null = no warning. */
+    lowStockThreshold: integer(),
     sortOrder: integer().notNull().default(0),
     archivedAt: timestamp({ withTimezone: true }),
     ...demoFlag,
@@ -77,6 +79,10 @@ export const products = pgTable(
   (t) => [
     index("products_category_idx").on(t.categoryId, t.sortOrder),
     check("products_stock_nonnegative", sql`${t.stockQuantity} is null or ${t.stockQuantity} >= 0`),
+    check(
+      "products_low_stock_nonnegative",
+      sql`${t.lowStockThreshold} is null or ${t.lowStockThreshold} >= 0`,
+    ),
     check(
       "products_image_alt_required",
       sql`${t.imageUrl} is null or (${t.imageAltFr} is not null and ${t.imageAltEn} is not null)`,
@@ -151,6 +157,8 @@ export const modifierOptions = pgTable(
     unavailableUntil: timestamp({ withTimezone: true }),
     /** Units left when stock is tracked (sold out at 0); null = not tracked. See stock_movements. */
     stockQuantity: integer(),
+    /** Staff are warned at or under this many units left; null = no warning. */
+    lowStockThreshold: integer(),
     sortOrder: integer().notNull().default(0),
     archivedAt: timestamp({ withTimezone: true }),
     ...timestamps,
@@ -160,6 +168,10 @@ export const modifierOptions = pgTable(
     check(
       "modifier_options_stock_nonnegative",
       sql`${t.stockQuantity} is null or ${t.stockQuantity} >= 0`,
+    ),
+    check(
+      "modifier_options_low_stock_nonnegative",
+      sql`${t.lowStockThreshold} is null or ${t.lowStockThreshold} >= 0`,
     ),
   ],
 );

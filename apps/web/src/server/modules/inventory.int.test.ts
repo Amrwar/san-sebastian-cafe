@@ -19,12 +19,12 @@ import type { Actor } from "../authz";
 import { AppError } from "../errors";
 import { getPublishedMenu } from "./catalog/menu";
 import { getProductBySlug } from "./catalog/storefront";
-import { setStock } from "./inventory/stock";
+import { getStockHistory, setStock } from "./inventory/stock";
 import { quoteCart } from "./ordering/cart-quote";
 import { expireStaleOrders } from "./ordering/lifecycle";
 import { transitionOrderAsStaff } from "./ordering/manage-order";
 import { placeOrder } from "./ordering/place-order";
-import { getAvailabilityBoard } from "./ordering/staff-queue";
+import { getAvailabilityBoard, getStaffQueue } from "./ordering/staff-queue";
 import { simulateFakePayment } from "./payments/checkout";
 
 /*
@@ -276,5 +276,80 @@ describe("staff counts", () => {
     expect(
       await failure(setStock(db, staff, { target: "product", id: randomUUID(), quantity: 1 })),
     ).toBe("not_found");
+  });
+});
+
+describe("low-stock alerts and history", () => {
+  it("items at or under their threshold, and items at zero, are on the staff queue", async () => {
+    await setStock(db, staff, {
+      target: "product",
+      id: latte.id,
+      quantity: 5,
+      lowStockThreshold: 3,
+    });
+    await setStock(db, staff, { target: "option", id: optionId("Oat beverage"), quantity: 0 });
+    expect((await getStaffQueue(db, staff, NOW)).stockAlerts).toEqual([
+      expect.objectContaining({ target: "option", nameEn: "Oat beverage", stock: 0, level: "out" }),
+    ]);
+
+    // Two lattes sold: 3 left, at the threshold.
+    await placeOrder(db, customer, await orderInput([latteLine(2)]), opts);
+    const alerts = (await getStaffQueue(db, staff, NOW)).stockAlerts;
+    expect(alerts.map((a) => [a.id, a.stock, a.level])).toEqual([
+      [optionId("Oat beverage"), 0, "out"],
+      [latte.id, 3, "low"],
+    ]);
+  });
+
+  it("changing only the threshold is audited but leaves the ledger alone", async () => {
+    await setStock(db, staff, { target: "product", id: latte.id, quantity: 8 });
+    const result = await setStock(db, staff, {
+      target: "product",
+      id: latte.id,
+      quantity: 8,
+      lowStockThreshold: 2,
+    });
+    expect(result).toMatchObject({ stockQuantity: 8, lowStockThreshold: 2 });
+    // Omitted threshold: unchanged.
+    await setStock(db, staff, { target: "product", id: latte.id, quantity: 9 });
+    const board = await getAvailabilityBoard(db, staff);
+    expect(board.products.find((p) => p.id === latte.id)).toMatchObject({
+      stockQuantity: 9,
+      lowStockThreshold: 2,
+    });
+    const moves = await db
+      .select()
+      .from(stockMovements)
+      .where(eq(stockMovements.productId, latte.id));
+    expect(moves.map((m) => m.delta).sort()).toEqual([1, 8]);
+    const audits = await db
+      .select()
+      .from(auditEvents)
+      .where(eq(auditEvents.action, "catalog.product_stock_set"));
+    expect(audits.map((a) => a.metadata)).toContainEqual({
+      from: 8,
+      to: 8,
+      thresholdFrom: null,
+      thresholdTo: 2,
+    });
+  });
+
+  it("history lists the latest movements with order numbers; staff names, never customers'", async () => {
+    await setStock(db, staff, { target: "product", id: latte.id, quantity: 6 });
+    const placed = await placeOrder(db, customer, await orderInput([latteLine(2)]), opts);
+    const history = await getStockHistory(db, staff, { target: "product", id: latte.id });
+    expect(history.map((h) => [h.reason, h.delta, h.quantityAfter, h.orderNumber])).toEqual([
+      ["sale", -2, 4, placed.number],
+      ["restock", 6, 6, null],
+    ]);
+    expect(history[0]?.actorName).toBeNull();
+    expect(history[1]?.actorName).toBeTruthy();
+
+    expect(await failure(getStockHistory(db, customer, { target: "product", id: latte.id }))).toBe(
+      "forbidden",
+    );
+    expect(await failure(getStockHistory(db, staff, { target: "x", id: "nope" }))).toBe(
+      "validation_failed",
+    );
   });
 });

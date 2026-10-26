@@ -19,6 +19,7 @@ import { z } from "zod";
 import { recordAudit } from "../../audit";
 import { authorize, type Actor } from "../../authz";
 import { fromZodError, notFound, unprocessable } from "../../errors";
+import { getStockAlerts } from "../inventory/stock";
 import { expireStaleOrders } from "./lifecycle";
 
 export interface QueueOrder {
@@ -57,7 +58,7 @@ export interface QueueOrder {
 export async function getStaffQueue(db: Database, actor: Actor | null, now = new Date()) {
   authorize(actor, "staff_console:access");
   await db.transaction((tx) => expireStaleOrders(tx, now));
-  const [active, recent, settings] = await Promise.all([
+  const [active, recent, settings, stockAlerts] = await Promise.all([
     db.query.orders.findMany({
       where: inArray(orders.status, [...KITCHEN_STATUSES]),
       orderBy: [asc(orders.placedAt)],
@@ -74,6 +75,7 @@ export async function getStaffQueue(db: Database, actor: Actor | null, now = new
       limit: 10,
     }),
     db.query.storeSettings.findFirst(),
+    getStockAlerts(db),
   ]);
 
   const staff = { kind: "staff" as const, role: actor.role };
@@ -116,6 +118,8 @@ export async function getStaffQueue(db: Database, actor: Actor | null, now = new
         : null,
     orders: active.map(toQueue).sort((a, b) => a.readyBy.localeCompare(b.readyBy)),
     recentlyCompleted: recent.map(toQueue),
+    /** Counted items that are low or out, so the counter sees them mid-rush. */
+    stockAlerts,
   };
 }
 export type StaffQueue = Awaited<ReturnType<typeof getStaffQueue>>;
@@ -232,6 +236,7 @@ export async function getAvailabilityBoard(db: Database, actor: Actor | null) {
         availability: products.availability,
         unavailableUntil: products.unavailableUntil,
         stockQuantity: products.stockQuantity,
+        lowStockThreshold: products.lowStockThreshold,
       })
       .from(products)
       .where(isNull(products.archivedAt))
@@ -246,6 +251,7 @@ export async function getAvailabilityBoard(db: Database, actor: Actor | null) {
         availability: modifierOptions.availability,
         unavailableUntil: modifierOptions.unavailableUntil,
         stockQuantity: modifierOptions.stockQuantity,
+        lowStockThreshold: modifierOptions.lowStockThreshold,
       })
       .from(modifierOptions)
       .innerJoin(modifierGroups, eq(modifierGroups.id, modifierOptions.groupId))

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { stockLevel } from "@ssc/domain";
 import { Alert, Badge, Button, cn, TextField } from "@ssc/ui";
 import { apiFetch } from "@/lib/api-client";
 
@@ -15,7 +16,11 @@ export interface BoardItem {
   unavailableUntil: string | null;
   /** Units left when counted; null = not counted. */
   stockQuantity: number | null;
+  /** Warn at or under this many units; null = no warning. */
+  lowStockThreshold: number | null;
 }
+
+type Target = "product" | "option";
 
 type Action = "available" | "sold_out" | "disabled_for";
 
@@ -63,16 +68,20 @@ export function AvailabilityBoard({
   };
 
   const saveStock = async (
-    target: "product" | "option",
+    target: Target,
     item: BoardItem,
     quantity: number | null,
+    lowStockThreshold: number | null,
   ) => {
     setBusy(item.id);
     setMessage(null);
     try {
-      const result = await apiFetch<{ stockQuantity: number | null }>("/api/v1/staff/stock", {
+      const result = await apiFetch<{
+        stockQuantity: number | null;
+        lowStockThreshold: number | null;
+      }>("/api/v1/staff/stock", {
         method: "PUT",
-        body: JSON.stringify({ target, id: item.id, quantity }),
+        body: JSON.stringify({ target, id: item.id, quantity, lowStockThreshold }),
       });
       setItems((prev) => ({
         ...prev,
@@ -96,9 +105,10 @@ export function AvailabilityBoard({
           <ItemRow
             key={item.id}
             item={item}
+            target={target}
             busy={busy === item.id}
             onAction={(s) => void apply(target, item, s)}
-            onStock={(q) => void saveStock(target, item, q)}
+            onStock={(q, threshold) => void saveStock(target, item, q, threshold)}
           />
         ))}
       </ul>
@@ -118,14 +128,16 @@ export function AvailabilityBoard({
 
 function ItemRow({
   item,
+  target,
   busy,
   onAction,
   onStock,
 }: {
   item: BoardItem;
+  target: Target;
   busy: boolean;
   onAction: (state: Action) => void;
-  onStock: (quantity: number | null) => void;
+  onStock: (quantity: number | null, lowStockThreshold: number | null) => void;
 }) {
   const t = useTranslations("StaffAvailability");
   const locale = useLocale();
@@ -138,11 +150,14 @@ function ItemRow({
     hour: "numeric",
     minute: "2-digit",
   });
-  const outOfStock = item.stockQuantity === 0;
-  const onSale = item.availability === "available" && !pausedUntil && !outOfStock;
+  const level = stockLevel({
+    stock: item.stockQuantity,
+    lowStockThreshold: item.lowStockThreshold,
+  });
+  const onSale = item.availability === "available" && !pausedUntil && level !== "out";
   const label = pausedUntil
     ? t("state.until", { time: time.format(pausedUntil) })
-    : item.availability === "available" && outOfStock
+    : item.availability === "available" && level === "out"
       ? t("state.out_of_stock")
       : t(`state.${item.availability}`);
   return (
@@ -152,11 +167,14 @@ function ItemRow({
         <p className="flex flex-wrap items-center gap-2 text-sm text-espresso-muted">
           {item.groupFr ? <span>{en ? item.groupEn : item.groupFr}</span> : null}
           <Badge tone={onSale ? "success" : "warning"}>{label}</Badge>
-          {item.stockQuantity !== null && item.stockQuantity > 0 ? (
-            <Badge tone="neutral">{t("state.in_stock", { count: item.stockQuantity })}</Badge>
+          {level === "low" ? (
+            <Badge tone="warning">{t("state.low", { count: item.stockQuantity ?? 0 })}</Badge>
+          ) : level === "ok" ? (
+            <Badge tone="neutral">{t("state.in_stock", { count: item.stockQuantity ?? 0 })}</Badge>
           ) : null}
         </p>
         <StockForm item={item} busy={busy} onStock={onStock} />
+        <StockHistory item={item} target={target} />
       </div>
       <div
         className="flex flex-wrap gap-2"
@@ -197,7 +215,17 @@ function ItemRow({
   );
 }
 
-/** Count on hand: a number (0 sells the item out) or empty to stop counting. */
+/** A whole number of units (0 or more), null when empty, or undefined when invalid. */
+function parseUnits(text: string): number | null | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  return /^\d{1,6}$/.test(trimmed) ? Number(trimmed) : undefined;
+}
+
+/**
+ * Count on hand (0 sells the item out, empty stops counting) and the alert threshold (warn at or
+ * under it, empty for no alert).
+ */
 function StockForm({
   item,
   busy,
@@ -205,27 +233,25 @@ function StockForm({
 }: {
   item: BoardItem;
   busy: boolean;
-  onStock: (quantity: number | null) => void;
+  onStock: (quantity: number | null, lowStockThreshold: number | null) => void;
 }) {
   const t = useTranslations("StaffAvailability");
   const locale = useLocale();
   const name = locale === "en" ? item.nameEn : item.nameFr;
-  const [text, setText] = useState(item.stockQuantity === null ? "" : String(item.stockQuantity));
-  const [error, setError] = useState<string | undefined>();
+  const asText = (n: number | null) => (n === null ? "" : String(n));
+  const [count, setCount] = useState(asText(item.stockQuantity));
+  const [threshold, setThreshold] = useState(asText(item.lowStockThreshold));
+  const [errors, setErrors] = useState<{ count?: string; threshold?: string }>({});
 
   const submit = () => {
-    const trimmed = text.trim();
-    if (trimmed === "") {
-      setError(undefined);
-      onStock(null);
-      return;
-    }
-    if (!/^\d{1,6}$/.test(trimmed)) {
-      setError(t("stockInvalid"));
-      return;
-    }
-    setError(undefined);
-    onStock(Number(trimmed));
+    const quantity = parseUnits(count);
+    const lowStockThreshold = parseUnits(threshold);
+    setErrors({
+      count: quantity === undefined ? t("stockInvalid") : undefined,
+      threshold: lowStockThreshold === undefined ? t("stockInvalid") : undefined,
+    });
+    if (quantity === undefined || lowStockThreshold === undefined) return;
+    onStock(quantity, lowStockThreshold);
   };
 
   return (
@@ -241,10 +267,21 @@ function StockForm({
         hint={t("stockHelp")}
         inputMode="numeric"
         className="w-56"
-        value={text}
-        error={error}
+        value={count}
+        error={errors.count}
         onChange={(e) => {
-          setText(e.currentTarget.value);
+          setCount(e.currentTarget.value);
+        }}
+      />
+      <TextField
+        label={t("thresholdLabel", { name })}
+        hint={t("thresholdHelp")}
+        inputMode="numeric"
+        className="w-56"
+        value={threshold}
+        error={errors.threshold}
+        onChange={(e) => {
+          setThreshold(e.currentTarget.value);
         }}
       />
       <Button type="submit" size="md" variant="secondary" disabled={busy}>
@@ -257,13 +294,96 @@ function StockForm({
           variant="ghost"
           disabled={busy}
           onClick={() => {
-            setText("");
-            onStock(null);
+            setCount("");
+            onStock(null, item.lowStockThreshold);
           }}
         >
           {t("stockUntrack")}
         </Button>
       ) : null}
     </form>
+  );
+}
+
+interface Movement {
+  id: string;
+  reason: "sale" | "release" | "restock" | "adjustment";
+  delta: number;
+  quantityAfter: number | null;
+  createdAt: string;
+  orderNumber: string | null;
+  actorName: string | null;
+}
+
+/** The item's latest stock movements from the ledger, loaded when opened. */
+function StockHistory({ item, target }: { item: BoardItem; target: Target }) {
+  const t = useTranslations("StaffAvailability");
+  const locale = useLocale();
+  const en = locale === "en";
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<Movement[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const panelId = `history-${item.id}`;
+  const when = new Intl.DateTimeFormat(en ? "en-CA" : "fr-CA", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+
+  const toggle = async () => {
+    const next = !open;
+    setOpen(next);
+    if (!next) return;
+    setFailed(false);
+    try {
+      const params = new URLSearchParams({ target, id: item.id });
+      setRows(await apiFetch<Movement[]>(`/api/v1/staff/stock/history?${params.toString()}`));
+    } catch {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => void toggle()}
+      >
+        {open ? t("hideHistory") : t("history")}
+      </Button>
+      {open ? (
+        <div id={panelId} className="mt-2">
+          <h3 className="sr-only">{t("historyTitle", { name: en ? item.nameEn : item.nameFr })}</h3>
+          {failed ? (
+            <p className="text-sm text-danger">{t("historyError")}</p>
+          ) : rows === null ? null : rows.length === 0 ? (
+            <p className="text-sm text-espresso-muted">{t("historyEmpty")}</p>
+          ) : (
+            <ol className="flex flex-col gap-1 text-sm text-espresso">
+              {rows.map((m) => (
+                <li key={m.id} className="flex flex-wrap gap-x-2">
+                  <time dateTime={m.createdAt} className="tabular-nums text-espresso-muted">
+                    {when.format(new Date(m.createdAt))}
+                  </time>
+                  <span className="font-semibold tabular-nums">
+                    {m.delta > 0 ? `+${String(m.delta)}` : String(m.delta)}
+                  </span>
+                  <span>{t(`reason.${m.reason}`, { number: m.orderNumber ?? "—" })}</span>
+                  {m.actorName ? <span>{t("historyBy", { name: m.actorName })}</span> : null}
+                  <span className="text-espresso-muted">
+                    {m.quantityAfter === null
+                      ? t("historyUntracked")
+                      : t("historyAfter", { count: m.quantityAfter })}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -78,6 +78,13 @@
       "when": 1793037764159,
       "tag": "0010_inventory",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793040927024,
+      "tag": "0011_low_stock",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,22 @@ export function isOutOfStock(item: { stock?: number | null }): boolean {
   return item.stock !== null && item.stock !== undefined && item.stock <= 0;
 }
 
+export type StockLevel = "untracked" | "ok" | "low" | "out";
+
+/**
+ * How an item's stock stands: not counted, fine, low (at or under its alert threshold, if it has
+ * one) or out. Staff see "low" and "out" on the queue and the availability screen.
+ */
+export function stockLevel(item: {
+  stock?: number | null;
+  lowStockThreshold?: number | null;
+}): StockLevel {
+  if (item.stock === null || item.stock === undefined) return "untracked";
+  if (item.stock <= 0) return "out";
+  if (item.lowStockThreshold != null && item.stock <= item.lowStockThreshold) return "low";
+  return "ok";
+}
+
 export interface StockLine {
   productId: string;
   optionIds: readonly string[];

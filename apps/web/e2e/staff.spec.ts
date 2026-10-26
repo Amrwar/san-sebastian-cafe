@@ -78,6 +78,37 @@ test.describe("staff product availability", () => {
   });
 });
 
+test.describe("low stock", () => {
+  test.use({ storageState: "e2e/.auth/staff.json" });
+
+  test("an item at its alert threshold is flagged on the queue, with its history a tap away", async ({
+    page,
+  }) => {
+    await page.goto("/fr/staff/availability");
+    const stock = page.getByLabel("Unités en stock — [DÉMO] Croissant");
+    const row = page.getByRole("listitem").filter({ has: stock });
+    await stock.fill("2");
+    await row.getByLabel("Alerte à — [DÉMO] Croissant").fill("3");
+    await row.getByRole("button", { name: "Enregistrer le stock" }).click();
+    await expect(row.getByText("Stock bas : 2")).toBeVisible();
+
+    await row.getByRole("button", { name: "Historique" }).click();
+    await expect(row.getByText("Réapprovisionnement")).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    await page.goto("/fr/staff");
+    await expect(page.getByText("Stock à surveiller")).toBeVisible();
+    await expect(page.getByText("[DÉMO] Croissant : 2 restants")).toBeVisible();
+
+    // Stop counting: the warning goes away.
+    await page.goto("/fr/staff/availability");
+    await row.getByRole("button", { name: "Ne plus compter" }).click();
+    await expect(row.getByText("Stock bas : 2")).toHaveCount(0);
+    await page.goto("/fr/staff");
+    await expect(page.getByText("Stock à surveiller")).toHaveCount(0);
+  });
+});
+
 test.describe("payments and refunds", () => {
   test.use({ storageState: "e2e/.auth/manager.json" });
 

@@ -681,7 +681,11 @@
     "items": "{count, plural, one {# item} other {# items}}",
     "delivery": "Delivery",
     "payments": "Payments",
-    "loyalty": "Loyalty"
+    "loyalty": "Loyalty",
+    "stockAlertTitle": "Stock to watch",
+    "stockLow": "{name}: {count} left",
+    "stockOut": "{name}: sold out",
+    "stockLink": "Manage stock"
   },
   "StaffAvailability": {
     "title": "Product availability",
@@ -697,7 +701,8 @@
       "until": "Unavailable until {time}",
       "hidden": "Hidden",
       "out_of_stock": "Sold out (stock at 0)",
-      "in_stock": "{count} in stock"
+      "in_stock": "{count} in stock",
+      "low": "Low stock: {count}"
     },
     "saved": "{name}: updated.",
     "error": "The update failed.",
@@ -707,7 +712,23 @@
     "stockUntrack": "Stop counting",
     "stockHelp": "Leave empty to not count this item.",
     "stockSaved": "{name}: stock updated.",
-    "stockInvalid": "Enter a whole number, 0 or more."
+    "stockInvalid": "Enter a whole number, 0 or more.",
+    "thresholdLabel": "Alert at — {name}",
+    "thresholdHelp": "Warn the team at this many or fewer. Empty: no alert.",
+    "history": "History",
+    "hideHistory": "Hide history",
+    "historyTitle": "Stock history — {name}",
+    "historyEmpty": "No movements yet.",
+    "historyError": "The history couldn’t be loaded.",
+    "historyBy": "by {name}",
+    "historyAfter": "{count} left",
+    "historyUntracked": "no longer counted",
+    "reason": {
+      "sale": "Sale — order {number}",
+      "release": "Back in stock — order {number}",
+      "restock": "Restock",
+      "adjustment": "Adjustment"
+    }
   },
   "PaymentReturn": {
     "title": "Payment confirmation",

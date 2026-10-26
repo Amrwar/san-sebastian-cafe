@@ -189,3 +189,6 @@ ids are stored from provider payloads. No card data is stored anywhere; `payment
 Stock is taken in the order-placement transaction with a guarded `stock_quantity >= n` update and
 returned in the status-change transaction (expired, or cancelled/rejected before preparation) from
 the order's own ledger rows, so it is never returned twice.
+
+`products.low_stock_threshold` and `modifier_options.low_stock_threshold` (migration
+`0011_low_stock.sql`, check ≥ 0, null = no alert): staff are warned at or under this count.
