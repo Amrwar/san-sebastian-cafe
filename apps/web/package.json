@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:load": "next build && tsx load/load-test.ts"
   },
   "dependencies": {
     "@ssc/db": "*",
@@ -43,6 +44,7 @@
     "@types/web-push": "3.6.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.0.0",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15"
   }
 }

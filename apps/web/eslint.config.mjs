@@ -45,7 +45,7 @@ export default [
     },
   },
   {
-    files: ["e2e/**"],
+    files: ["e2e/**", "load/**"],
     rules: { "no-console": "off", "@typescript-eslint/no-non-null-assertion": "off" },
   },
 ];

@@ -128,7 +128,42 @@ Neon → Project settings).
 Payments taken since that point stay in Stripe: reconcile them with Staff → Paiements and the
 Stripe Dashboard.
 
-## 6. Soft-launch checklist
+## 6. Load test
+
+`npm run test:load -w @ssc/web` builds the app, starts it on port 3200 against its own database
+(`DATABASE_URL_LOAD`, created if missing and wiped every run) and plays four scenarios:
+
+| Scenario | What happens                                                       | Must hold                                  |
+| -------- | ------------------------------------------------------------------ | ------------------------------------------ |
+| rush     | 300 guests quote, order, open checkout and pay, 30 at a time       | p95 within budget, no errors               |
+| one-slot | 18 guests aim at one 6-order pickup slot at the same instant       | exactly 6 orders; the rest told it's taken |
+| retries  | 50 checkouts, each submitted three times at once                   | one order per checkout                     |
+| webhooks | 200 signed payment events, each delivered three times concurrently | each stored once, all answered 200         |
+
+Afterwards it checks the database: no slot over capacity, order and payment counts match what was
+answered over HTTP, every webhook event stored and processed once. Any 5xx, network error, broken
+check or p95 over budget fails the run. Tune with `LOAD_CUSTOMERS`, `LOAD_CONCURRENCY`,
+`LOAD_WEBHOOKS`, `LOAD_PORT`.
+
+It uses the payment simulator, and its webhook events name sessions the app never created, so
+Stripe is never called. Once the Stripe sandbox is set up, also check a webhook burst there.
+
+**Baseline (2026-10-26, Windows laptop, local Docker Postgres):** 2,152 requests in 23 s, no
+errors, every check held.
+
+| Step (rush, 30 at a time) | p50    | p95    | Budget (p95) |
+| ------------------------- | ------ | ------ | ------------ |
+| Quote                     | 213 ms | 334 ms | 500 ms       |
+| Place order               | 455 ms | 704 ms | 1,000 ms     |
+| Open checkout             | 235 ms | 374 ms | 500 ms       |
+| Pay (simulator)           | 594 ms | 807 ms | 1,000 ms     |
+| Webhook delivery          | 131 ms | 182 ms | 300 ms       |
+
+For scale: 300 paid orders in about 15 seconds, far above a café's real peak. Run it again
+before launch and after changes to ordering or payments; a staging copy on Neon would give
+production-like numbers.
+
+## 7. Soft-launch checklist
 
 Owner decisions and inputs:
 

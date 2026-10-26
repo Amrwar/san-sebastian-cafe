@@ -108,7 +108,31 @@ Integration: **217 passed** (14 files). E2E: **84 passed, 2 skipped** (Stripe sa
 
 - **Manual accessibility audit** with NVDA and VoiceOver (automated axe checks pass on every
   tested screen; a person must still do this).
-- **Load test** of order placement and webhooks against a staging copy (no staging yet).
+- ~~**Load test** of order placement and webhooks against a staging copy (no staging yet).~~
+  **Done locally 2026-10-26** against a production build: `npm run test:load -w @ssc/web`,
+  results and budgets in [runbook §6](22-operations-runbook.md#6-load-test). Repeat on a
+  staging copy once one exists.
 - **Canadian regions** (D21), **error tracking service** (e.g. Sentry: an account to choose),
   **uptime monitor** (an account to choose), **Vercel plan** for per-minute jobs.
 - Everything in the soft-launch checklist marked as an owner decision.
+
+## 4. Follow-up (2026-10-26)
+
+- **Performance budgets** (`e2e/performance.spec.ts`, part of `npm run test:e2e`): each key page
+  is loaded cold on the production build and must stay within its JavaScript budget (compressed),
+  LCP ≤ 2.5 s and CLS ≤ 0.1.
+
+  | Page            | JS today | JS budget | LCP (local) | CLS |
+  | --------------- | -------- | --------- | ----------- | --- |
+  | Home            | 161 KB   | 195 KB    | 420 ms      | 0   |
+  | Menu            | 161 KB   | 195 KB    | 140 ms      | 0   |
+  | Product (latte) | 165 KB   | 200 KB    | 156 ms      | 0   |
+  | Cart            | 161 KB   | 195 KB    | 112 ms      | 0   |
+  | Sign-in         | 171 KB   | 205 KB    | 132 ms      | 0   |
+  | Staff queue     | 160 KB   | 195 KB    | 160 ms      | 0   |
+
+  LCP is measured without throttling, so it flags regressions rather than real-phone speed.
+
+- **Load test**: see §3 and [runbook §6](22-operations-runbook.md#6-load-test).
+- **Domain coverage**: the Phase 3 target (≥95 % branches, property-based tests) is met and
+  enforced in CI (see [Phase 3 report](12-phase-3-report.md)).

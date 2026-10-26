@@ -95,6 +95,7 @@ npm run format:check       # Prettier
 npm run test               # unit tests (domain, env, ui, web)
 npm run test:integration   # Postgres integration tests (uses DATABASE_URL_TEST; db must be up)
 npm run test:e2e           # builds the app and runs Playwright + axe on :3100 (uses DATABASE_URL_E2E)
+npm run test:load -w @ssc/web  # builds the app and load-tests ordering and webhooks on :3200 (uses DATABASE_URL_LOAD)
 npm run check              # typecheck + lint + unit tests
 ```
 
