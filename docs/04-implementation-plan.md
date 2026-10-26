@@ -26,7 +26,7 @@ Legend: ☐ not started · ◐ in progress · ☑ done · ⛔ blocked on owner d
 | 11  | Privacy & compliance features                            | ☑ legal text pending lawyer review                   |
 | 12  | POS / SRS integration                                    | ⛔ D1                                                |
 | 13  | Growth: promotions, referrals, communications            | ☑ referral terms pending (D17)                       |
-| 14  | Gift cards · delivery · inventory (each optional)        | ⛔ owner                                             |
+| 14  | Gift cards · delivery · inventory (each optional)        | ◐ inventory ☑ 2026-10-26; gift cards, delivery ⛔    |
 | 15  | Hardening & launch readiness                             | ◐ platform done; launch items need owner decisions   |
 
 ---
@@ -116,6 +116,8 @@ Promotions engine and admin, promo code at checkout (stacking rules), referral p
 ## Phase 14 — Optional modules (each needs an owner go-ahead)
 
 Gift cards (no expiry/fees, liability ledger, or POS-native), delivery (zones, fees, third-party courier adapter), inventory (stock counts → auto-86).
+
+**Inventory done 2026-10-26** ([report 25](25-inventory-report.md)): optional counts per product and option, auto-86 at zero, stock taken at order placement and returned when an order is stopped before preparation, ledger and audit.
 
 ## Phase 15 — Hardening & launch
 

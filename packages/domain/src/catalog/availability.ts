@@ -1,6 +1,7 @@
 import { CAFE_TIME_ZONE, localParts } from "../ordering/pickup";
 import type { Availability } from "./catalog";
 import type { AvailabilityWindow, ConfiguredProduct } from "./configuration";
+import { isOutOfStock } from "./stock";
 
 export type UnavailableReason = "sold_out" | "temporarily_unavailable" | "outside_hours" | "hidden";
 
@@ -21,7 +22,7 @@ export function withinWindows(
 /** Why a product can't be ordered at `at`, or null when it can. */
 export function unavailableReason(product: ConfiguredProduct, at: Date): UnavailableReason | null {
   if (product.availability === "hidden") return "hidden";
-  if (product.availability === "sold_out") return "sold_out";
+  if (product.availability === "sold_out" || isOutOfStock(product)) return "sold_out";
   if (product.unavailableUntil && product.unavailableUntil > at) return "temporarily_unavailable";
   if (!withinWindows(product.availabilityWindows, at)) return "outside_hours";
   return null;
@@ -48,7 +49,8 @@ export function productAt<P extends ConfiguredProduct>(
       options: g.options.map((o) => ({
         ...o,
         availability:
-          o.availability === "available" && o.unavailableUntil && o.unavailableUntil > at
+          o.availability === "available" &&
+          ((o.unavailableUntil && o.unavailableUntil > at) || isOutOfStock(o))
             ? "sold_out"
             : o.availability,
       })),

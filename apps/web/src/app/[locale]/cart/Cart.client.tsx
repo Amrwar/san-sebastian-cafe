@@ -116,14 +116,18 @@ export function Cart({ signedIn }: { signedIn: boolean }) {
                       </p>
                       {line.issues.length > 0 ? (
                         <ul className="mt-1 text-sm font-medium text-danger">
-                          {[...new Set(line.issues.map((i) => i.code))].map((code) => (
-                            <li key={code}>
-                              {code === "product_unavailable" &&
-                              d?.unavailableReason === "outside_hours"
-                                ? t("issues.product_outside_hours")
-                                : t(`issues.${code}`)}
-                            </li>
-                          ))}
+                          {line.issues
+                            .filter((i, n) => line.issues.findIndex((j) => j.code === i.code) === n)
+                            .map(({ code, available }) => (
+                              <li key={code}>
+                                {code === "product_unavailable" &&
+                                d?.unavailableReason === "outside_hours"
+                                  ? t("issues.product_outside_hours")
+                                  : code === "insufficient_stock"
+                                    ? t("issues.insufficient_stock", { available: available ?? 0 })
+                                    : t(`issues.${code}`)}
+                              </li>
+                            ))}
                         </ul>
                       ) : null}
                     </div>

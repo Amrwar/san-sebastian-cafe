@@ -220,7 +220,7 @@ export async function setItemAvailability(
   });
 }
 
-/** Products and options with their current sale state, for the staff availability screen. */
+/** Products and options with their sale state and stock, for the staff availability screen. */
 export async function getAvailabilityBoard(db: Database, actor: Actor | null) {
   authorize(actor, "catalog:toggle_availability");
   const [productRows, optionRows] = await Promise.all([
@@ -231,6 +231,7 @@ export async function getAvailabilityBoard(db: Database, actor: Actor | null) {
         nameEn: products.nameEn,
         availability: products.availability,
         unavailableUntil: products.unavailableUntil,
+        stockQuantity: products.stockQuantity,
       })
       .from(products)
       .where(isNull(products.archivedAt))
@@ -244,6 +245,7 @@ export async function getAvailabilityBoard(db: Database, actor: Actor | null) {
         groupEn: modifierGroups.nameEn,
         availability: modifierOptions.availability,
         unavailableUntil: modifierOptions.unavailableUntil,
+        stockQuantity: modifierOptions.stockQuantity,
       })
       .from(modifierOptions)
       .innerJoin(modifierGroups, eq(modifierGroups.id, modifierOptions.groupId))

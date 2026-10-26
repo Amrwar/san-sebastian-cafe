@@ -10,3 +10,4 @@ export * from "./audit";
 export * from "./store";
 export * from "./privacy";
 export * from "./notifications";
+export * from "./inventory";

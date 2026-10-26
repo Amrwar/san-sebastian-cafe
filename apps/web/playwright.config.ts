@@ -6,6 +6,7 @@ loadRootEnv();
 const PORT = 3100;
 const BASE_URL = `http://localhost:${PORT}`;
 const E2E_DATABASE_URL = process.env.DATABASE_URL_E2E ?? "";
+const MIGRATE = "npx tsx ../../packages/db/scripts/migrate.ts";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -29,10 +30,12 @@ export default defineConfig({
     },
   ],
   webServer: {
+    // The E2E database is migrated first: the server only reports healthy once its schema matches
+    // the code, and the global setup (which resets it) runs after the server has started.
     // CI builds once in a separate step; locally the E2E run builds a fresh production bundle.
     command: process.env.CI
-      ? `npx next start -p ${PORT}`
-      : `npx next build && npx next start -p ${PORT}`,
+      ? `${MIGRATE} && npx next start -p ${PORT}`
+      : `${MIGRATE} && npx next build && npx next start -p ${PORT}`,
     url: `${BASE_URL}/api/health`,
     reuseExistingServer: false,
     timeout: 240_000,

@@ -5,6 +5,7 @@ import {
   unitPriceCents,
   validateSelection,
 } from "../catalog/configuration";
+import { stockShortfalls } from "../catalog/stock";
 import { isRewardEligible, rewardValueCents } from "../loyalty/loyalty";
 import { applyRatePpm, cents } from "../shared/money";
 import { computeTaxes, isTaxable } from "./tax";
@@ -157,7 +158,7 @@ export function computeQuote(input: QuoteInput): Quote {
   const { catalog, now } = input;
 
   // 1. Price and validate each line.
-  const lines: QuotedLine[] = input.lines.map((line) => {
+  const checked: QuotedLine[] = input.lines.map((line) => {
     const product = catalog.get(line.productId);
     if (!product) {
       return {
@@ -184,6 +185,16 @@ export function computeQuote(input: QuoteInput): Quote {
       issues,
       valid,
     };
+  });
+  // Tracked stock is shared by the whole cart: a line beyond what's left can't be ordered.
+  const shortfalls = stockShortfalls(
+    checked.map((l) => ({ ...l, quantity: l.valid ? l.quantity : 0 })),
+    catalog,
+  );
+  const lines = checked.map((l, i): QuotedLine => {
+    const stockIssues = shortfalls[i] ?? [];
+    if (stockIssues.length === 0) return l;
+    return { ...l, lineTotalCents: 0, issues: [...l.issues, ...stockIssues], valid: false };
   });
   const validLines = lines.filter((l) => l.valid);
   const subtotalCents = validLines.reduce((s, l) => s + l.lineTotalCents, 0);

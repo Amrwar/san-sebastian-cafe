@@ -170,7 +170,8 @@
       "group_above_maximum": "Trop d’options choisies.",
       "quantity_invalid": "Quantité invalide.",
       "product_outside_hours": "Ce produit n’est pas offert à l’heure choisie.",
-      "option_not_allowed_for_size": "Une option n’est pas offerte pour ce format."
+      "option_not_allowed_for_size": "Une option n’est pas offerte pour ce format.",
+      "insufficient_stock": "{available, plural, =0 {Il n’en reste plus pour cette commande : retirez cet article.} other {Il n’en reste que # : réduisez la quantité.}}"
     },
     "fixLines": "Retirez ou modifiez les articles indisponibles pour continuer.",
     "summaryTitle": "Résumé",
@@ -684,7 +685,7 @@
   },
   "StaffAvailability": {
     "title": "Disponibilité des produits",
-    "intro": "Retirez un produit ou une option de la vente en un geste. Les indisponibilités temporaires prennent fin automatiquement.",
+    "intro": "Retirez un produit ou une option de la vente en un geste, ou comptez son stock : à 0, l’article passe épuisé tout seul. Les pauses prennent fin automatiquement.",
     "products": "Produits",
     "options": "Options",
     "onSale": "En vente",
@@ -694,11 +695,19 @@
       "available": "En vente",
       "sold_out": "Épuisé",
       "until": "Indisponible jusqu’à {time}",
-      "hidden": "Masqué"
+      "hidden": "Masqué",
+      "out_of_stock": "Épuisé (stock à 0)",
+      "in_stock": "{count, plural, one {# en stock} other {# en stock}}"
     },
     "saved": "{name} : mis à jour.",
     "error": "La mise à jour a échoué.",
-    "backToQueue": "Retour à la file"
+    "backToQueue": "Retour à la file",
+    "stockLabel": "Unités en stock — {name}",
+    "stockSave": "Enregistrer le stock",
+    "stockUntrack": "Ne plus compter",
+    "stockHelp": "Laissez vide pour ne pas compter cet article.",
+    "stockSaved": "{name} : stock mis à jour.",
+    "stockInvalid": "Entrez un nombre entier, 0 ou plus."
   },
   "PaymentReturn": {
     "title": "Confirmation du paiement",

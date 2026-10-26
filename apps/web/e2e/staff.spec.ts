@@ -44,6 +44,38 @@ test.describe("staff product availability", () => {
       await guest.close();
     }
   });
+
+  test("a stock count at zero sells the product out by itself; clearing it stops counting", async ({
+    page,
+    browser,
+  }) => {
+    await page.goto("/fr/staff/availability");
+    const stock = page.getByLabel("Unités en stock — [DÉMO] Cappuccino");
+    const row = page.getByRole("listitem").filter({ has: stock });
+    await stock.fill("0");
+    await row.getByRole("button", { name: "Enregistrer le stock" }).click();
+    await expect(page.getByText("[DÉMO] Cappuccino : stock mis à jour.")).toBeVisible();
+    await expect(row.getByText("Épuisé (stock à 0)")).toBeVisible();
+    await expectNoSeriousA11yViolations(page);
+
+    const guest = await browser.newContext();
+    try {
+      const shopper = await guest.newPage();
+      await shopper.goto("/fr/menu/demo-cappuccino");
+      await expect(
+        shopper.getByText("Ce produit n’est pas disponible pour le moment."),
+      ).toBeVisible();
+
+      // Stop counting: back on sale.
+      await row.getByRole("button", { name: "Ne plus compter" }).click();
+      await expect(row.getByText("Épuisé (stock à 0)")).toHaveCount(0);
+      await expect(stock).toHaveValue("");
+      await shopper.reload();
+      await expect(shopper.getByRole("button", { name: /Ajouter au panier/ })).toBeVisible();
+    } finally {
+      await guest.close();
+    }
+  });
 });
 
 test.describe("payments and refunds", () => {

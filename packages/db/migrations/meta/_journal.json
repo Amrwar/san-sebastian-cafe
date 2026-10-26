@@ -71,6 +71,13 @@
       "when": 1792970907565,
       "tag": "0009_referrals",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793037764159,
+      "tag": "0010_inventory",
+      "breakpoints": true
     }
   ]
 }

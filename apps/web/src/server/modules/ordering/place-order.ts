@@ -25,6 +25,7 @@ import {
 import { z } from "zod";
 import type { Actor } from "../../authz";
 import { AppError, fromZodError, required, unprocessable } from "../../errors";
+import { takeStock } from "../inventory/stock";
 import { reserveReward } from "../loyalty/ledger";
 import { computeAvailability, holdsSlot, loadStoreConfig } from "../store/pickup";
 import { cartLineInput, priceCart } from "./cart-quote";
@@ -409,6 +410,9 @@ export async function placeOrder(
           })
           .where(eq(orders.id, order.id));
       }
+
+      // 7. Take tracked stock (given back if the order expires or is stopped before preparation).
+      await takeStock(tx, order.id, quote.lines, priced.catalog, actor?.userId ?? null);
 
       const customer = { kind: "customer" as const, userId: actor?.userId ?? null };
       await recordOrderEvent(tx, order.id, "created", customer, {

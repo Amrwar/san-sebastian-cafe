@@ -1,5 +1,10 @@
 import { asc, categories, isNull, ne, products, productVariants, type Database } from "@ssc/db";
-import { withinWindows, type Availability, type UnavailableReason } from "@ssc/domain";
+import {
+  isOutOfStock,
+  withinWindows,
+  type Availability,
+  type UnavailableReason,
+} from "@ssc/domain";
 
 export interface MenuProduct {
   id: string;
@@ -71,7 +76,9 @@ export async function getPublishedMenu(db: Database, now = new Date()): Promise<
           endMinute: w.endMinute,
         }));
         const unavailableReason: MenuProduct["unavailableReason"] =
-          p.availability === "sold_out" || prices.length === 0
+          p.availability === "sold_out" ||
+          prices.length === 0 ||
+          isOutOfStock({ stock: p.stockQuantity })
             ? "sold_out"
             : p.unavailableUntil && p.unavailableUntil > now
               ? "temporarily_unavailable"

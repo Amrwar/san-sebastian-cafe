@@ -158,6 +158,7 @@ docs/               planning and phase documentation
 | [22 Operations runbook](docs/22-operations-runbook.md)       | Deploys and migrations, jobs, monitoring, incidents, restore drill, launch checklist |
 | [23 Staff guide](docs/23-staff-guide.md)                     | Guide de l’équipe (French): queue, pause, refunds, counter loyalty                   |
 | [24 Phase 12 report](docs/24-phase-12-report.md)             | Hardening: security upgrade, CSP, rate limits, route sweep, health                   |
+| [25 Inventory report](docs/25-inventory-report.md)           | Stock counts, auto-86 at zero, ledger                                                |
 
 ## Deployment (Vercel demo)
 

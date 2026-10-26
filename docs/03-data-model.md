@@ -178,3 +178,14 @@ completed / cancelled / rejected / partially_refunded ──▶ partially_refund
 effects, so a failed processing attempt leaves no row and the provider's retry is processed again. Only
 ids are stored from provider payloads. No card data is stored anywhere; `payments.card_brand` /
 `card_last4` are display-only values returned by the provider.
+
+## Inventory additions (migration `0010_inventory.sql`)
+
+| Table / column                                               | Owner     | Purpose and constraints                                                                                                                         |
+| ------------------------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `products.stock_quantity`, `modifier_options.stock_quantity` | catalog   | Units left; null = not counted. Check ≥ 0. At 0 the item is sold out (derived, the `availability` column is untouched)                          |
+| `stock_movements`                                            | inventory | Ledger of every change: `sale` / `release` / `restock` / `adjustment`, delta, count after, order, staff member. Exactly one of product / option |
+
+Stock is taken in the order-placement transaction with a guarded `stock_quantity >= n` update and
+returned in the status-change transaction (expired, or cancelled/rejected before preparation) from
+the order's own ledger rows, so it is never returned twice.

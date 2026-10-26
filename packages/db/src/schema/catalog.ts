@@ -67,6 +67,8 @@ export const products = pgTable(
     availability: availabilityEnum().notNull().default("available"),
     /** Temporarily disabled ("86'd") until this instant; restores automatically. */
     unavailableUntil: timestamp({ withTimezone: true }),
+    /** Units left when stock is tracked (sold out at 0); null = not tracked. See stock_movements. */
+    stockQuantity: integer(),
     sortOrder: integer().notNull().default(0),
     archivedAt: timestamp({ withTimezone: true }),
     ...demoFlag,
@@ -74,6 +76,7 @@ export const products = pgTable(
   },
   (t) => [
     index("products_category_idx").on(t.categoryId, t.sortOrder),
+    check("products_stock_nonnegative", sql`${t.stockQuantity} is null or ${t.stockQuantity} >= 0`),
     check(
       "products_image_alt_required",
       sql`${t.imageUrl} is null or (${t.imageAltFr} is not null and ${t.imageAltEn} is not null)`,
@@ -146,11 +149,19 @@ export const modifierOptions = pgTable(
     availability: availabilityEnum().notNull().default("available"),
     /** Temporarily disabled ("86'd") until this instant; restores automatically. */
     unavailableUntil: timestamp({ withTimezone: true }),
+    /** Units left when stock is tracked (sold out at 0); null = not tracked. See stock_movements. */
+    stockQuantity: integer(),
     sortOrder: integer().notNull().default(0),
     archivedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
-  (t) => [index("modifier_options_group_idx").on(t.groupId, t.sortOrder)],
+  (t) => [
+    index("modifier_options_group_idx").on(t.groupId, t.sortOrder),
+    check(
+      "modifier_options_stock_nonnegative",
+      sql`${t.stockQuantity} is null or ${t.stockQuantity} >= 0`,
+    ),
+  ],
 );
 
 export const productModifierGroups = pgTable(

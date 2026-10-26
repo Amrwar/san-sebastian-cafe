@@ -170,7 +170,8 @@
       "group_above_maximum": "Too many options chosen.",
       "quantity_invalid": "Invalid quantity.",
       "product_outside_hours": "This product isn’t offered at the chosen time.",
-      "option_not_allowed_for_size": "An option isn’t offered for this size."
+      "option_not_allowed_for_size": "An option isn’t offered for this size.",
+      "insufficient_stock": "{available, plural, =0 {None left for this order: remove this item.} other {Only # left: lower the quantity.}}"
     },
     "fixLines": "Remove or edit unavailable items to continue.",
     "summaryTitle": "Summary",
@@ -684,7 +685,7 @@
   },
   "StaffAvailability": {
     "title": "Product availability",
-    "intro": "Take a product or option off sale in one tap. Temporary pauses end automatically.",
+    "intro": "Take a product or option off sale in one tap, or count its stock: at 0 it sells out by itself. Pauses end automatically.",
     "products": "Products",
     "options": "Options",
     "onSale": "On sale",
@@ -694,11 +695,19 @@
       "available": "On sale",
       "sold_out": "Sold out",
       "until": "Unavailable until {time}",
-      "hidden": "Hidden"
+      "hidden": "Hidden",
+      "out_of_stock": "Sold out (stock at 0)",
+      "in_stock": "{count} in stock"
     },
     "saved": "{name}: updated.",
     "error": "The update failed.",
-    "backToQueue": "Back to queue"
+    "backToQueue": "Back to queue",
+    "stockLabel": "Units in stock — {name}",
+    "stockSave": "Save stock",
+    "stockUntrack": "Stop counting",
+    "stockHelp": "Leave empty to not count this item.",
+    "stockSaved": "{name}: stock updated.",
+    "stockInvalid": "Enter a whole number, 0 or more."
   },
   "PaymentReturn": {
     "title": "Payment confirmation",

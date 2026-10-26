@@ -39,6 +39,20 @@ export const REFUNDABLE_ORDER_STATUSES: readonly OrderStatus[] = [
   "partially_refunded",
 ];
 
+/** Orders not yet being made: stopping one puts its stock back on the shelf. */
+const STOCK_RETURNING_STATES: readonly OrderStatus[] = ["awaiting_payment", "paid", "accepted"];
+
+/**
+ * True when moving `from` → `to` returns the order's stock: it expired unpaid, or it was cancelled
+ * or rejected before preparation began. Once a drink is being made, its ingredients are used.
+ */
+export function stockReturnsOn(from: OrderStatus, to: OrderStatus): boolean {
+  return (
+    (to === "expired" || to === "cancelled" || to === "rejected") &&
+    STOCK_RETURNING_STATES.includes(from)
+  );
+}
+
 export const TRANSITION_RULES: readonly Rule[] = [
   { from: ["awaiting_payment"], to: "paid", who: ["system"] },
   { from: ["awaiting_payment"], to: "expired", who: ["system"] },

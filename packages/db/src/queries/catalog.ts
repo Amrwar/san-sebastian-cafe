@@ -94,6 +94,7 @@ export async function loadCatalog(
         allergenNoteEn: p.allergenNoteEn,
         availability: p.availability,
         unavailableUntil: p.unavailableUntil,
+        stock: p.stockQuantity,
         availabilityWindows: p.availabilityWindows.map((w) => ({
           weekday: w.weekday,
           startMinute: w.startMinute,
@@ -135,6 +136,7 @@ export async function loadCatalog(
               isDefault: o.isDefault,
               availability: o.availability,
               unavailableUntil: o.unavailableUntil,
+              stock: o.stockQuantity,
             })),
           })),
       },

@@ -11,6 +11,8 @@ export interface ConfiguredOption {
   availability: Availability;
   /** Temporarily disabled ("86'd") until this instant; null/undefined = not disabled. */
   unavailableUntil?: Date | null;
+  /** Units left when stock is tracked (sold out at 0); null/undefined = not tracked. */
+  stock?: number | null;
 }
 
 export interface ConfiguredGroup {
@@ -59,6 +61,8 @@ export interface ConfiguredProduct {
   availabilityWindows?: AvailabilityWindow[];
   /** Temporarily disabled ("86'd") until this instant. */
   unavailableUntil?: Date | null;
+  /** Units left when stock is tracked (sold out at 0); null/undefined = not tracked. */
+  stock?: number | null;
 }
 
 export interface Selection {
@@ -78,12 +82,15 @@ export type LineIssueCode =
   | "option_not_allowed_for_size"
   | "group_below_minimum"
   | "group_above_maximum"
-  | "quantity_invalid";
+  | "quantity_invalid"
+  | "insufficient_stock";
 
 export interface LineIssue {
   code: LineIssueCode;
-  /** Group, option or variant the issue refers to, if any. */
+  /** Group, option, variant or (for stock) product the issue refers to, if any. */
   ref?: string;
+  /** insufficient_stock: units still available for this line. */
+  available?: number;
 }
 
 function ruleFor(

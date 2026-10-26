@@ -24,6 +24,17 @@ votre compte (menu **Personnel**).
 - **Produit épuisé** : Personnel → Disponibilité → « Épuisé ». Il disparaît des commandes tout de
   suite; remettez-le « En vente » quand il revient.
 
+## Compter le stock (facultatif)
+
+- Personnel → Disponibilité : sous chaque produit ou option, inscrivez le nombre d’unités sur place
+  et touchez **Enregistrer le stock** (par exemple 12 croissants le matin, ou les cartons de
+  boisson d’avoine).
+- Chaque commande en ligne retire ses unités. **À 0, l’article passe épuisé tout seul**, partout.
+  Une commande annulée ou refusée avant d’être commencée remet ses unités.
+- Après une livraison ou un comptage, inscrivez simplement le nouveau total.
+- **Ne plus compter** : l’article reste en vente sans limite (seul le bouton « Épuisé » s’applique).
+- Les ventes au comptoir ne sont pas retirées automatiquement : recomptez quand c’est utile.
+
 ## Annuler, refuser, rembourser
 
 - **Refuser** une commande payée que vous ne pouvez pas préparer : un motif est demandé; le client
