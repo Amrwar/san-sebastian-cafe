@@ -64,6 +64,18 @@ export function QuoteSummary({
         <dt>{t("total")}</dt>
         <dd className="tabular-nums">{money(quote.totalCents, locale)}</dd>
       </div>
+      {quote.giftCardCents > 0 ? (
+        <>
+          <div className="flex justify-between gap-4 text-espresso-muted">
+            <dt>{t("giftCard")}</dt>
+            <dd className="tabular-nums">−{money(quote.giftCardCents, locale)}</dd>
+          </div>
+          <div className="flex justify-between gap-4 text-lg font-semibold text-espresso">
+            <dt>{t("amountDue")}</dt>
+            <dd className="tabular-nums">{money(quote.amountDueCents, locale)}</dd>
+          </div>
+        </>
+      ) : null}
     </dl>
   );
 }

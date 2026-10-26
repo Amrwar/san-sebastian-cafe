@@ -131,6 +131,9 @@ export default async function ReceiptPage({
 
         <section className="flex flex-col gap-1">
           <h2 className="font-semibold text-espresso">{t("payment")}</h2>
+          {totals.giftCardCents > 0 ? (
+            <p>{tInfo("paidGiftCard", { amount: money(totals.giftCardCents, locale) })}</p>
+          ) : null}
           {payment.paid ? (
             <p>
               {payment.paid.cardBrand && payment.paid.cardLast4
@@ -142,7 +145,7 @@ export default async function ReceiptPage({
                 : tInfo("paidAmount", { amount: money(payment.paid.amountCents, locale) })}
               {payment.paid.paidAt ? ` — ${date(payment.paid.paidAt)}` : null}
             </p>
-          ) : (
+          ) : totals.giftCardCents > 0 ? null : (
             <p>{t("notPaid")}</p>
           )}
         </section>

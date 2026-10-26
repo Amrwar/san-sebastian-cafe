@@ -14,6 +14,7 @@ import {
 import { productVariants, products } from "./catalog";
 import { demoFlag, timestamps } from "./columns";
 import { deliveryZones } from "./delivery";
+import { giftCards } from "./gift-cards";
 import {
   actorKindEnum,
   orderEventTypeEnum,
@@ -76,6 +77,9 @@ export const orders = pgTable(
     qstCents: integer().notNull(),
     tipCents: integer().notNull().default(0),
     totalCents: integer().notNull(),
+    /** Gift card paying part (or all) of the total; the rest is charged by card. */
+    giftCardId: uuid().references(() => giftCards.id, { onDelete: "restrict" }),
+    giftCardCents: integer().notNull().default(0),
     /** Full pricing evidence (rates, rounding, inputs) used to compute the totals. */
     pricingSnapshot: jsonb().notNull(),
     idempotencyKey: text().notNull().unique(),
@@ -103,6 +107,10 @@ export const orders = pgTable(
     check(
       "orders_total_adds_up",
       sql`${t.totalCents} = ${t.subtotalCents} - ${t.discountCents} - ${t.rewardDiscountCents} + ${t.deliveryFeeCents} + ${t.gstCents} + ${t.qstCents} + ${t.tipCents}`,
+    ),
+    check(
+      "orders_gift_card_within_total",
+      sql`${t.giftCardCents} >= 0 and ${t.giftCardCents} <= ${t.totalCents} and (${t.giftCardCents} = 0 or ${t.giftCardId} is not null)`,
     ),
     check(
       "orders_delivery_fields",

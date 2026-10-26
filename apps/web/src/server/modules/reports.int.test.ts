@@ -326,7 +326,13 @@ describe("sales report", () => {
     await db.update(payments).set({ amountCents: 200 }).where(eq(payments.orderId, o1));
     const r = await report(MON);
     expect(r.reconciliation.mismatches).toEqual([
-      { orderId: o1, number: (await orderRow(o1)).number, totalCents: 230, paidCents: 200 },
+      {
+        orderId: o1,
+        number: (await orderRow(o1)).number,
+        totalCents: 230,
+        paidCents: 200,
+        giftCardCents: 0,
+      },
     ]);
   });
 

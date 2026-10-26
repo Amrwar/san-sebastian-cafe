@@ -24,11 +24,13 @@ export const PERMISSIONS = [
   "catalog:toggle_availability",
   "customers:lookup",
   "loyalty:in_store",
+  "gift_cards:redeem",
   // shift lead
   "orders:cancel",
   "orders:refund",
   "loyalty:adjust",
   "store:pause_ordering",
+  "gift_cards:issue",
   // manager
   "admin_console:access",
   "catalog:manage",
@@ -37,6 +39,7 @@ export const PERMISSIONS = [
   "reports:read",
   "audit:read",
   "privacy:manage",
+  "gift_cards:adjust",
   // owner
   "staff:manage",
   "loyalty:configure",
@@ -58,6 +61,7 @@ const STAFF: readonly Permission[] = [
   "catalog:toggle_availability",
   "customers:lookup",
   "loyalty:in_store",
+  "gift_cards:redeem",
 ];
 const SHIFT_LEAD: readonly Permission[] = [
   ...STAFF,
@@ -65,6 +69,7 @@ const SHIFT_LEAD: readonly Permission[] = [
   "orders:refund",
   "loyalty:adjust",
   "store:pause_ordering",
+  "gift_cards:issue",
 ];
 const MANAGER: readonly Permission[] = [
   ...SHIFT_LEAD,
@@ -75,6 +80,7 @@ const MANAGER: readonly Permission[] = [
   "reports:read",
   "audit:read",
   "privacy:manage",
+  "gift_cards:adjust",
 ];
 const OWNER: readonly Permission[] = [...PERMISSIONS];
 

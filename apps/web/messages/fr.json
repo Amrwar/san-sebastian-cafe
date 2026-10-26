@@ -207,7 +207,9 @@
     "demoItems": "Votre panier contient des produits de démonstration.",
     "notesLabel": "Instructions",
     "notesFor": "Instructions pour {name} (facultatif)",
-    "notesPlaceholder": "Ex. : très chaud"
+    "notesPlaceholder": "Ex. : très chaud",
+    "giftCard": "Carte-cadeau",
+    "amountDue": "À payer par carte"
   },
   "Checkout": {
     "eyebrow": "Commande",
@@ -282,9 +284,22 @@
       "promotion_limit_reached": "Vous avez déjà utilisé cette promotion.",
       "payments_unavailable": "Le paiement en ligne n’est pas encore offert.",
       "generic": "La commande n’a pas pu être envoyée. Réessayez.",
-      "below_minimum_charge": "Le paiement par carte exige un total d’au moins 0,50 $."
+      "below_minimum_charge": "Le paiement par carte exige un total d’au moins 0,50 $.",
+      "gift_card_invalid": "Ce code de carte-cadeau n’existe pas.",
+      "gift_card_disabled": "Cette carte-cadeau est bloquée. Adressez-vous au comptoir.",
+      "gift_card_empty": "Cette carte-cadeau n’a plus de solde.",
+      "gift_card_insufficient": "Le solde de la carte-cadeau a changé. Vérifiez le montant et réessayez."
     },
-    "errorsAddress": "Entrez une adresse complète."
+    "errorsAddress": "Entrez une adresse complète.",
+    "giftCard": {
+      "label": "Code de carte-cadeau",
+      "apply": "Appliquer",
+      "remove": "Retirer",
+      "applied": "Carte-cadeau •••• {last4} appliquée (solde : {balance}).",
+      "not_found": "Ce code de carte-cadeau n’existe pas. Vérifiez-le.",
+      "disabled": "Cette carte-cadeau est bloquée. Adressez-vous au comptoir.",
+      "empty": "Cette carte-cadeau n’a plus de solde."
+    }
   },
   "SignIn": {
     "eyebrow": "Compte",
@@ -523,11 +538,22 @@
   "GiftCards": {
     "eyebrow": "Cartes-cadeaux",
     "title": "Cartes-cadeaux",
-    "intro": "Offrez un café à quelqu’un.",
-    "unavailableTitle": "Pas encore offert en ligne",
-    "unavailableBody": "L’achat et l’utilisation de cartes-cadeaux en ligne nécessitent une intégration avec le système de caisse du café, qui n’est pas encore en place. Aucune carte ne peut être achetée ni utilisée dans l’application pour le moment.",
-    "policyTitle": "Ce que vous pouvez attendre",
-    "policyBody": "Conformément à la Loi sur la protection du consommateur du Québec, les cartes-cadeaux du café n’auront pas de date d’expiration ni de frais d’utilisation."
+    "intro": "Offrez un café à quelqu’un, et vérifiez le solde d’une carte.",
+    "balanceTitle": "Vérifier un solde",
+    "codeLabel": "Code de la carte",
+    "codeHint": "16 caractères, inscrits sur la carte. Les tirets sont facultatifs.",
+    "check": "Vérifier",
+    "balance": "Carte •••• {last4} : {amount}",
+    "usable": "Utilisable en ligne au moment de payer, ou au comptoir.",
+    "blocked": "Cette carte est bloquée. Adressez-vous au comptoir.",
+    "notFound": "Aucune carte ne correspond à ce code. Vérifiez-le.",
+    "tooMany": "Trop de vérifications. Réessayez plus tard.",
+    "error": "La vérification a échoué. Réessayez.",
+    "howTitle": "Comment ça marche",
+    "howBuy": "Les cartes s’achètent au comptoir, de 5 $ à 500 $.",
+    "howUse": "Entrez le code au moment de payer votre commande en ligne, ou présentez la carte au comptoir. Si le solde ne couvre pas tout, vous payez le reste par carte de crédit ou de débit.",
+    "policyTitle": "Sans date d’expiration, sans frais",
+    "policyBody": "Conformément à la Loi sur la protection du consommateur du Québec, nos cartes-cadeaux n’ont pas de date d’expiration ni de frais d’utilisation. Le solde reste disponible jusqu’à ce qu’il soit utilisé."
   },
   "Promotions": {
     "eyebrow": "Promotions",
@@ -632,7 +658,8 @@
       "payments_unavailable": "Le paiement en ligne n’est pas disponible pour le moment.",
       "generic": "Le paiement n’a pas pu démarrer. Réessayez."
     },
-    "testMode": "Mode test Stripe : aucune vraie carte n’est débitée. Carte de test : 4242 4242 4242 4242."
+    "testMode": "Mode test Stripe : aucune vraie carte n’est débitée. Carte de test : 4242 4242 4242 4242.",
+    "giftCardPaid": "Total {total}, dont {giftCard} payés par carte-cadeau."
   },
   "StaffQueue": {
     "title": "File de commandes",
@@ -685,7 +712,8 @@
     "stockAlertTitle": "Stock à surveiller",
     "stockLow": "{name} : {count, plural, one {# restant} other {# restants}}",
     "stockOut": "{name} : épuisé",
-    "stockLink": "Gérer le stock"
+    "stockLink": "Gérer le stock",
+    "giftCards": "Cartes-cadeaux"
   },
   "StaffAvailability": {
     "title": "Disponibilité des produits",
@@ -766,7 +794,8 @@
     "refundDelay": "Les remboursements apparaissent sur votre relevé sous 5 à 10 jours ouvrables.",
     "returned": "Un paiement en double ou tardif de {amount} a été remboursé automatiquement.",
     "receipt": "Voir le reçu",
-    "history": "Historique des paiements"
+    "history": "Historique des paiements",
+    "paidGiftCard": "Carte-cadeau : {amount}"
   },
   "Receipt": {
     "title": "Reçu — commande {number}",
@@ -844,7 +873,8 @@
     },
     "evidenceDue": "Preuves à fournir avant le {date}",
     "disputeHelp": "Répondez aux litiges dans le tableau de bord Stripe.",
-    "back": "Retour à la file"
+    "back": "Retour à la file",
+    "giftCardPaid": "Carte-cadeau : {amount}"
   },
   "StaffLoyalty": {
     "title": "Fidélité",
@@ -1388,7 +1418,8 @@
       "mismatch": "{count, plural, one {# commande payée ne concorde pas} other {# commandes payées ne concordent pas}} avec son paiement. Vérifiez :",
       "paid": "commande {total}, paiement {paid}",
       "missing": "commande {total}, aucun paiement",
-      "extra": "{count, plural, one {# paiement en double ou en retard} other {# paiements en double ou en retard}} ({received}) {count, plural, one {a été remboursé} other {ont été remboursés}} automatiquement ({refunded}). Ils ne comptent ni comme ventes ni comme remboursements."
+      "extra": "{count, plural, one {# paiement en double ou en retard} other {# paiements en double ou en retard}} ({received}) {count, plural, one {a été remboursé} other {ont été remboursés}} automatiquement ({refunded}). Ils ne comptent ni comme ventes ni comme remboursements.",
+      "okWithGiftCards": "Ventes et paiements concordent : {amount} encaissés par carte et {giftCards} payés par carte-cadeau pour ces commandes."
     },
     "byDay": {
       "title": "Ventes par jour",
@@ -1466,7 +1497,16 @@
       "refunds": "Un remboursement compte le jour où il est réglé, sur sa propre ligne.",
       "unpaid": "Les commandes impayées, expirées et de démonstration ne comptent pas."
     },
-    "periodShown": "Du {from} au {to}"
+    "periodShown": "Du {from} au {to}",
+    "giftCards": {
+      "title": "Cartes-cadeaux",
+      "hint": "Le solde des cartes est une dette du café jusqu’à son utilisation. Les cartes vendues ne sont pas des ventes (sans taxes) : les achats payés avec elles le sont.",
+      "outstanding": "Soldes à rembourser (aujourd’hui)",
+      "cards": "{count} cartes avec un solde",
+      "issued": "Cartes vendues dans la période",
+      "redeemed": "Utilisé dans la période",
+      "adjusted": "Corrections dans la période"
+    }
   },
   "AccountData": {
     "eyebrow": "Mon compte",
@@ -1945,6 +1985,82 @@
       "referrals_off": "Le parrainage n’est pas offert en ce moment.",
       "unknown": "Code inconnu. Vérifiez-le et réessayez.",
       "generic": "L’enregistrement a échoué. Réessayez."
+    }
+  },
+  "StaffGiftCards": {
+    "title": "Cartes-cadeaux",
+    "intro": "Vendez une carte payée au comptoir, vérifiez un solde et utilisez une carte pour un achat au comptoir. Les cartes n’expirent jamais et n’ont aucuns frais.",
+    "backToQueue": "Retour à la file",
+    "issue": {
+      "title": "Vendre une carte",
+      "help": "Encaissez d’abord la carte à la caisse (sans taxes : une carte-cadeau est un moyen de paiement). Créez-la ensuite ici.",
+      "amount": "Montant ($)",
+      "amountHint": "De 5 $ à 500 $",
+      "amountInvalid": "Entrez un montant de 5 $ à 500 $.",
+      "note": "Note interne",
+      "noteHint": "Par exemple le numéro du reçu de caisse. Aucun renseignement sur le client.",
+      "submit": "Créer la carte",
+      "done": "Carte de {amount} créée.",
+      "shownOnce": "Inscrivez ou imprimez ce code maintenant : il ne sera plus affiché.",
+      "print": "Imprimer"
+    },
+    "find": {
+      "title": "Trouver une carte",
+      "code": "Code de la carte",
+      "codeHint": "Les tirets et les espaces sont facultatifs.",
+      "submit": "Chercher"
+    },
+    "card": {
+      "title": "Carte •••• {last4}",
+      "issued": "Vendue {amount} le {date}",
+      "status": {
+        "active": "Active",
+        "disabled": "Bloquée"
+      }
+    },
+    "redeem": {
+      "title": "Payer un achat au comptoir",
+      "amount": "Montant ($)",
+      "note": "Note (facultative)",
+      "submit": "Débiter la carte",
+      "done": "Montant débité de la carte."
+    },
+    "status": {
+      "disableTitle": "Bloquer la carte (perdue, volée)",
+      "enableTitle": "Débloquer la carte",
+      "reason": "Motif",
+      "disable": "Bloquer",
+      "enable": "Débloquer",
+      "done": "Statut de la carte mis à jour."
+    },
+    "adjust": {
+      "title": "Corriger le solde (gérant)",
+      "amount": "Montant ($, négatif pour retirer)",
+      "reason": "Motif",
+      "submit": "Corriger",
+      "done": "Solde corrigé."
+    },
+    "history": {
+      "title": "Historique",
+      "by": "par {name}",
+      "after": "solde {amount}",
+      "kind": {
+        "issue": "Vente de la carte",
+        "redeem": "Paiement — commande {number}",
+        "release": "Retour (commande non payée) — {number}",
+        "refund": "Remboursement — commande {number}",
+        "adjustment": "Correction"
+      }
+    },
+    "errors": {
+      "notFound": "Aucune carte ne correspond à ce code.",
+      "forbidden": "Votre rôle ne permet pas cette action.",
+      "insufficient": "Le solde de la carte est insuffisant.",
+      "disabled": "Cette carte est bloquée.",
+      "invalid": "Vérifiez les champs.",
+      "amount": "Entrez un montant valide.",
+      "reason": "Indiquez un motif (3 caractères ou plus).",
+      "generic": "L’opération a échoué. Réessayez."
     }
   }
 }

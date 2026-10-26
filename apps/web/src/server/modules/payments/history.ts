@@ -162,6 +162,9 @@ export interface StaffOrderPayments {
     number: string;
     status: OrderStatus;
     totalCents: number;
+    /** Paid with a gift card, and how much of that can still go back to the card. */
+    giftCardCents: number;
+    giftCardRefundableCents: number;
     customerName: string | null;
     createdAt: string;
   };
@@ -229,6 +232,14 @@ export async function staffOrderPayments(
       number: order.number,
       status: order.status,
       totalCents: order.totalCents,
+      giftCardCents: order.giftCardCents,
+      giftCardRefundableCents: Math.max(
+        0,
+        order.giftCardCents -
+          refundRows
+            .filter((r) => r.refund.giftCardId !== null && r.refund.status === "succeeded")
+            .reduce((sum, r) => sum + r.refund.amountCents, 0),
+      ),
       customerName: order.guestName,
       createdAt: order.createdAt.toISOString(),
     },

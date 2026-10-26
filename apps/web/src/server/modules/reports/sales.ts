@@ -19,6 +19,7 @@ import {
 import type { TaxCategory } from "@ssc/domain";
 import { authorize, type Actor } from "../../authz";
 import { fromZodError } from "../../errors";
+import { giftCardLiability } from "../gift-cards/gift-cards";
 import { eachDay, REPORT_TIME_ZONE, reportRangeInput, type ReportRange } from "./range";
 import { splitRefunds, type MoneySplit } from "./refund-split";
 
@@ -114,16 +115,21 @@ export interface SalesReport {
   reconciliation: {
     /** Order payments recorded for this period's sales. */
     paymentsCents: number;
-    /** Paid orders whose payment is missing or for another amount. */
+    /** Paid by gift card for this period's sales (with payments, adds up to the sales total). */
+    giftCardsCents: number;
+    /** Paid orders whose payment (plus gift card) is missing or for another amount. */
     mismatches: Array<{
       orderId: string;
       number: string;
       totalCents: number;
       paidCents: number | null;
+      giftCardCents: number;
     }>;
     /** Late or duplicate payments received in the period, and what was refunded of them. */
     extraPayments: { count: number; receivedCents: number; refundedCents: number };
   };
+  /** Gift cards: what is owed now (outstanding balances) and what moved in the period. */
+  giftCards: Awaited<ReturnType<typeof giftCardLiability>>;
   loyalty: {
     issued: number;
     redeemed: number;
@@ -335,6 +341,7 @@ export async function getSalesReport(
         number: orders.number,
         totalCents: orders.totalCents,
         paidCents: payments.amountCents,
+        giftCardCents: orders.giftCardCents,
       })
       .from(orders)
       .leftJoin(
@@ -463,12 +470,13 @@ export async function getSalesReport(
     taxCategories: taxRows.sort(bySales),
     reconciliation: {
       paymentsCents: paymentCheck.reduce((s, p) => s + (p.paidCents ?? 0), 0),
-      // A 0,00 $ order (a free drink covering it all) is confirmed without any payment.
-      mismatches: paymentCheck.filter(
-        (p) => p.paidCents !== p.totalCents && !(p.totalCents === 0 && p.paidCents === null),
-      ),
+      giftCardsCents: paymentCheck.reduce((s, p) => s + p.giftCardCents, 0),
+      // Card payment plus gift card must equal the total. An order covered by a free drink or a
+      // gift card is confirmed without any card payment.
+      mismatches: paymentCheck.filter((p) => (p.paidCents ?? 0) + p.giftCardCents !== p.totalCents),
       extraPayments: extra ?? { count: 0, receivedCents: 0, refundedCents: 0 },
     },
+    giftCards: await giftCardLiability(db, start, end),
     loyalty,
     demoOrdersExcluded: range.includeDemo ? 0 : (demo?.count ?? 0),
   };

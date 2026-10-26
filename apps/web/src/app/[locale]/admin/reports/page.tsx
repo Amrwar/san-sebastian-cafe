@@ -87,7 +87,7 @@ export default async function AdminReportsPage({
   };
   const isPreset = (r: ReportRange) => r.from === range.from && r.to === range.to;
 
-  const { sales, refunds, net, reconciliation: rec, loyalty } = report;
+  const { sales, refunds, net, reconciliation: rec, loyalty, giftCards } = report;
   const maxDay = Math.max(0, ...report.days.map((d) => d.sales.totalCents));
   const maxHour = Math.max(0, ...report.hours.map((h) => h.orders));
   // Daytime hours (7 h–18 h), widened to any hour that had sales.
@@ -186,7 +186,14 @@ export default async function AdminReportsPage({
       {/* Payments check */}
       <div className="mb-6 flex flex-col gap-2">
         {rec.mismatches.length === 0 ? (
-          <Alert tone="success">{t("reconciliation.ok", { amount: $(rec.paymentsCents) })}</Alert>
+          <Alert tone="success">
+            {rec.giftCardsCents > 0
+              ? t("reconciliation.okWithGiftCards", {
+                  amount: $(rec.paymentsCents),
+                  giftCards: $(rec.giftCardsCents),
+                })
+              : t("reconciliation.ok", { amount: $(rec.paymentsCents) })}
+          </Alert>
         ) : (
           <Alert tone="danger">
             <p>{t("reconciliation.mismatch", { count: rec.mismatches.length })}</p>
@@ -196,7 +203,10 @@ export default async function AdminReportsPage({
                   {m.number} —{" "}
                   {m.paidCents === null
                     ? t("reconciliation.missing", { total: $(m.totalCents) })
-                    : t("reconciliation.paid", { total: $(m.totalCents), paid: $(m.paidCents) })}
+                    : t("reconciliation.paid", {
+                        total: $(m.totalCents),
+                        paid: $(m.paidCents + m.giftCardCents),
+                      })}
                 </li>
               ))}
             </ul>
@@ -429,6 +439,20 @@ export default async function AdminReportsPage({
           <p className="mt-3 text-sm text-espresso-muted">
             {t("loyalty.stamps", { count: format.number(loyalty.stampsInProgress) })}
           </p>
+        </Section>
+
+        <Section title={t("giftCards.title")} hint={t("giftCards.hint")}>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <Tile
+              label={t("giftCards.outstanding")}
+              value={$(giftCards.outstandingCents)}
+              note={t("giftCards.cards", { count: format.number(giftCards.cardsWithBalance) })}
+              plain
+            />
+            <Tile label={t("giftCards.issued")} value={$(giftCards.issuedCents)} plain />
+            <Tile label={t("giftCards.redeemed")} value={$(giftCards.redeemedCents)} plain />
+            <Tile label={t("giftCards.adjusted")} value={$(giftCards.adjustedCents)} plain />
+          </dl>
         </Section>
       </div>
 

@@ -70,9 +70,19 @@ export default async function PayPage({
             </p>
             <p className="text-sm text-espresso-muted">{tOrders("items", { count: items })}</p>
           </div>
-          <p className="font-display text-3xl tabular-nums text-espresso">
-            {money(order.totals.totalCents, locale)}
-          </p>
+          <div className="text-end">
+            <p className="font-display text-3xl tabular-nums text-espresso">
+              {money(order.totals.amountDueCents, locale)}
+            </p>
+            {order.totals.giftCardCents > 0 ? (
+              <p className="text-sm text-espresso-muted">
+                {t("giftCardPaid", {
+                  total: money(order.totals.totalCents, locale),
+                  giftCard: money(order.totals.giftCardCents, locale),
+                })}
+              </p>
+            ) : null}
+          </div>
         </Surface>
         {sp.cancelled ? <Alert tone="neutral">{t("cancelled")}</Alert> : null}
         {payment.state === "processing" ? (
@@ -86,7 +96,7 @@ export default async function PayPage({
             <PayWithProvider
               orderId={order.id}
               token={token}
-              amountLabel={money(order.totals.totalCents, locale)}
+              amountLabel={money(order.totals.amountDueCents, locale)}
             />
             {testMode ? <p className="text-sm text-warning">{t("testMode")}</p> : null}
           </Surface>

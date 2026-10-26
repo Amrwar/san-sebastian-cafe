@@ -3,6 +3,7 @@ import {
   customerCanCancel,
   customerCanModify,
   ORDER_STATUSES,
+  REFUNDABLE_ORDER_STATUSES,
   refundRequiredOnCancel,
 } from "@ssc/domain";
 import { z } from "zod";
@@ -10,7 +11,13 @@ import { authorize, type Actor } from "../../authz";
 import { AppError, fromZodError, notFound, required, unprocessable } from "../../errors";
 import { computeAvailability, holdsSlot, loadStoreConfig } from "../store/pickup";
 import { closeOpenCheckouts } from "../payments/checkout";
-import { primaryPayment, requestRefund, submitRefunds } from "../payments/refunds";
+import {
+  primaryPayment,
+  refundableForOrder,
+  refundToGiftCard,
+  requestRefund,
+  submitRefunds,
+} from "../payments/refunds";
 import { applyTransition, lockOrder, recordOrderEvent, type OrderActor } from "./lifecycle";
 import { resolveOrderAccess } from "./order-access";
 
@@ -55,47 +62,71 @@ export async function cancelOrderAsCustomer(
       guestVerified: access.via === "guest_token",
       now,
     });
-    return refundInFull(tx, updated, "Cancelled by customer", "customer_cancel", {
-      kind: "system",
-    });
+    return refundInFull(
+      tx,
+      updated,
+      "Cancelled by customer",
+      "customer_cancel",
+      { kind: "system" },
+      now,
+    );
   });
   await submitRefunds(db, refundIds, now);
   await closeOpenCheckouts(db, orderId);
   return { status: (await statusOf(db, orderId)).status };
 }
 
-/** Records a full refund of the order's payment, if it was paid. Returns refund ids to submit. */
+/**
+ * Gives back everything a stopped order paid: its card payment (returned as refund ids to submit
+ * after commit) and the part its gift card paid (credited back to the card at once).
+ */
 async function refundInFull(
   tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
   order: {
     id: string;
     status: (typeof ORDER_STATUSES)[number];
     paidAt: Date | null;
-    totalCents: number;
   },
   reason: string,
   source: "customer_cancel" | "staff",
   actor: OrderActor,
+  now = new Date(),
 ): Promise<string[]> {
   if (!order.paidAt) return [];
+  const refundIds: string[] = [];
   const payment = await primaryPayment(tx, order.id);
-  if (!payment) return [];
-  const amount = refundRequiredOnCancel({
-    paid: true,
-    totalCents: payment.amountCents,
-    refundedCents: payment.refundedCents,
-  });
-  if (amount <= 0) return [];
-  return [
-    await requestRefund(tx, {
-      payment,
-      orderStatus: order.status,
-      amountCents: amount,
+  if (payment) {
+    const amount = refundRequiredOnCancel({
+      paid: true,
+      totalCents: payment.amountCents,
+      refundedCents: payment.refundedCents,
+    });
+    if (amount > 0) {
+      refundIds.push(
+        await requestRefund(tx, {
+          payment,
+          orderStatus: order.status,
+          amountCents: amount,
+          reason,
+          source,
+          actor,
+        }),
+      );
+    }
+  }
+  const current = required(await lockOrder(tx, order.id), "order");
+  const { giftCardCents } = await refundableForOrder(tx, current);
+  if (giftCardCents > 0) {
+    await refundToGiftCard(tx, {
+      orderId: order.id,
+      amountCents: giftCardCents,
       reason,
       source,
       actor,
-    }),
-  ];
+      now,
+    });
+  }
+  return refundIds;
 }
 
 export const customerUpdateInput = z
@@ -200,7 +231,7 @@ export async function transitionOrderAsStaff(
     });
     // Cancelling or rejecting a paid order refunds it in full, requested by this staff member.
     return input.to === "cancelled" || input.to === "rejected"
-      ? refundInFull(tx, updated, input.reason ?? input.to, "staff", staff)
+      ? refundInFull(tx, updated, input.reason ?? input.to, "staff", staff, now)
       : [];
   });
   await submitRefunds(db, refundIds, now);
@@ -228,24 +259,53 @@ export async function refundOrderAsStaff(
 ) {
   authorize(actor, "orders:refund");
   const input = parse(staffRefundInput, raw);
-  const refundId = await db.transaction(async (tx) => {
+  // Card money is given back first, then the gift card's part.
+  const { cardRefundId, giftCardRefundId } = await db.transaction(async (tx) => {
     const order = await lockOrder(tx, orderId);
     if (!order) throw notFound("Order");
-    const payment = await primaryPayment(tx, order.id);
-    if (!payment) throw unprocessable("not_paid");
-    return requestRefund(tx, {
-      payment,
-      orderStatus: order.status,
-      amountCents: input.amountCents,
-      reason: input.reason,
-      source: "staff",
-      actor: staffActor(actor),
-      items: input.items,
-      now,
-    });
+    const available = await refundableForOrder(tx, order);
+    if (!available.payment && !order.giftCardId) throw unprocessable("not_paid");
+    // An order still in the kitchen is cancelled instead (which refunds it in full).
+    if (!REFUNDABLE_ORDER_STATUSES.includes(order.status))
+      throw unprocessable("refund_not_allowed");
+    if (input.amountCents > available.cardCents + available.giftCardCents) {
+      throw new AppError("validation_failed", "Refund amount not available", [
+        { path: "amountCents", code: "amount_invalid" },
+      ]);
+    }
+    const byCard = Math.min(input.amountCents, available.cardCents);
+    const toGiftCard = input.amountCents - byCard;
+    const common = { reason: input.reason, source: "staff" as const, actor: staffActor(actor) };
+    const card =
+      available.payment && byCard > 0
+        ? await requestRefund(tx, {
+            ...common,
+            payment: available.payment,
+            orderStatus: order.status,
+            amountCents: byCard,
+            items: input.items,
+            now,
+          })
+        : null;
+    const gift =
+      toGiftCard > 0
+        ? await refundToGiftCard(tx, {
+            ...common,
+            orderId,
+            amountCents: toGiftCard,
+            items: card ? [] : input.items,
+            now,
+          })
+        : null;
+    return { cardRefundId: card, giftCardRefundId: gift };
   });
-  const [refundStatus] = await submitRefunds(db, [refundId], now);
-  return { ...(await statusOf(db, orderId)), refundId, refundStatus };
+  const [cardStatus] = cardRefundId ? await submitRefunds(db, [cardRefundId], now) : [];
+  return {
+    ...(await statusOf(db, orderId)),
+    refundId: cardRefundId ?? giftCardRefundId,
+    refundStatus: cardStatus ?? "succeeded",
+    ...(giftCardRefundId ? { giftCardRefundId } : {}),
+  };
 }
 
 export const staffNotesInput = z.object({ staffNotes: z.string().trim().max(500) });

@@ -14,6 +14,7 @@ import {
   type Tx,
 } from "@ssc/db";
 import {
+  amountDueCents,
   checkPickupRequest,
   LOCALES,
   localParts,
@@ -25,6 +26,7 @@ import {
 import { z } from "zod";
 import type { Actor } from "../../authz";
 import { AppError, fromZodError, required, unprocessable } from "../../errors";
+import { moveGiftCardBalance, usableGiftCard } from "../gift-cards/ledger";
 import { takeStock } from "../inventory/stock";
 import { reserveReward } from "../loyalty/ledger";
 import { computeAvailability, holdsSlot, loadStoreConfig } from "../store/pickup";
@@ -74,6 +76,10 @@ export const placeOrderInput = z.object({
   notes: z.string().trim().max(200).optional(),
   /** The total the customer was shown. If prices changed meanwhile, the order is refused (422). */
   expectedTotalCents: z.number().int().nonnegative(),
+  /** Gift card paying part (or all) of the total, as printed. */
+  giftCardCode: z.string().trim().max(40).optional(),
+  /** With a gift card: the amount left to pay by card the customer was shown (422 if it changed). */
+  expectedAmountDueCents: z.number().int().nonnegative().optional(),
   locale: z.enum(LOCALES),
 });
 export type PlaceOrderInput = z.infer<typeof placeOrderInput>;
@@ -84,6 +90,8 @@ export interface PlacedOrder {
   /** awaiting_payment, or paid/accepted for an order fully covered by discounts (nothing to pay). */
   status: OrderStatus;
   totalCents: number;
+  /** Left to pay by card (the total minus what a gift card paid). */
+  amountDueCents: number;
   expiresAt: string;
   /** Returned once to guests; required to view and pay for the order. Only its hash is stored. */
   guestToken: string | null;
@@ -146,6 +154,7 @@ async function findReplay(
     number: existing.number,
     status: existing.status,
     totalCents: existing.totalCents,
+    amountDueCents: amountDueCents(existing),
     expiresAt: (existing.expiresAt ?? existing.placedAt).toISOString(),
     guestToken: null, // never re-issued; the original response carried it
     replayed: true,
@@ -239,7 +248,9 @@ export async function placeOrder(
         readyAt = new Date(availability.asapReadyAt);
       }
 
-      // 3. Price on the server, with availability at the preparation time.
+      // 3. Price on the server, with availability at the preparation time. A gift card is locked
+      //    first, so its balance can't be spent twice by simultaneous orders.
+      const card = input.giftCardCode ? await usableGiftCard(tx, input.giftCardCode) : null;
       const priced = await priceCart(
         tx,
         actor,
@@ -254,13 +265,19 @@ export async function placeOrder(
               : { method: "delivery", postalCode: input.fulfilment.address.postalCode },
           tip: input.tip,
         },
-        { now, availableAt: readyAt },
+        { now, availableAt: readyAt, giftCardBalanceCents: card?.balanceCents },
       );
       const { quote } = priced.result;
       if (!quote.canCheckout)
         throw unprocessable("cart_invalid", "The cart has items that can't be ordered");
       if (quote.totalCents !== input.expectedTotalCents) throw unprocessable("price_changed");
-      if (quote.totalCents > 0 && quote.totalCents < MIN_CARD_CHARGE_CENTS)
+      if (card && quote.giftCardCents === 0) throw unprocessable("gift_card_empty");
+      if (
+        input.expectedAmountDueCents !== undefined &&
+        quote.amountDueCents !== input.expectedAmountDueCents
+      )
+        throw unprocessable("price_changed");
+      if (quote.amountDueCents > 0 && quote.amountDueCents < MIN_CARD_CHARGE_CENTS)
         throw unprocessable("below_minimum_charge");
       if (input.useReward && quote.reward?.status !== "applied")
         throw unprocessable("reward_unavailable");
@@ -333,6 +350,8 @@ export async function placeOrder(
           qstCents: quote.qstCents,
           tipCents: quote.tipCents,
           totalCents: quote.totalCents,
+          giftCardId: card && quote.giftCardCents > 0 ? card.id : null,
+          giftCardCents: quote.giftCardCents,
           pricingSnapshot: {
             quote,
             requestHash: requestHash(input, actor),
@@ -345,6 +364,14 @@ export async function placeOrder(
         })
         .returning();
       const order = required(inserted, "order");
+      if (card && quote.giftCardCents > 0) {
+        await moveGiftCardBalance(tx, card.id, {
+          kind: "redeem",
+          deltaCents: -quote.giftCardCents,
+          orderId: order.id,
+          actorUserId: actor?.userId ?? null,
+        });
+      }
 
       const itemIdByLine = new Map<string, string>();
       for (const line of quote.lines) {
@@ -430,13 +457,14 @@ export async function placeOrder(
         createdAt: now,
       });
 
-      // Fully covered by discounts (e.g. a free drink): there is nothing to pay.
+      // Fully covered by discounts (e.g. a free drink) or by a gift card: nothing to pay by card.
       let status: OrderStatus = "awaiting_payment";
-      if (quote.totalCents === 0) {
+      if (quote.amountDueCents === 0) {
         const system = { kind: "system" as const };
         await recordOrderEvent(tx, order.id, "payment_recorded", system, {
           amountCents: 0,
           noPaymentRequired: true,
+          ...(quote.giftCardCents > 0 ? { giftCardCents: quote.giftCardCents } : {}),
         });
         let updated = await applyTransition(
           tx,
@@ -455,6 +483,7 @@ export async function placeOrder(
         number,
         status,
         totalCents: quote.totalCents,
+        amountDueCents: quote.amountDueCents,
         expiresAt: expiresAt.toISOString(),
         guestToken,
         replayed: false,

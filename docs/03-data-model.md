@@ -192,3 +192,12 @@ the order's own ledger rows, so it is never returned twice.
 
 `products.low_stock_threshold` and `modifier_options.low_stock_threshold` (migration
 `0011_low_stock.sql`, check ≥ 0, null = no alert): staff are warned at or under this count.
+
+## Gift card additions (migration `0012_gift_cards.sql`)
+
+| Table / column                                  | Owner    | Purpose and constraints                                                                                                   |
+| ----------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `gift_cards`                                    | payments | Balance (≥ 0), initial amount, status `active`/`disabled`, SHA-256 of the code (unique; the code is never stored), last 4 |
+| `gift_card_transactions`                        | payments | Ledger: `issue` / `redeem` / `release` / `refund` / `adjustment`, delta, balance after (≥ 0), order, refund, staff member |
+| `orders.gift_card_id`, `orders.gift_card_cents` | ordering | Part of the total paid by a gift card (0 ≤ cents ≤ total); the amount charged by card is total − gift card                |
+| `refunds.gift_card_id`                          | payments | Refund credited back to the gift card (settled at once). A refund names a payment or a gift card, never both              |

@@ -26,6 +26,7 @@ import {
 import { z } from "zod";
 import type { Actor } from "../../authz";
 import { fromZodError } from "../../errors";
+import { findGiftCard } from "../gift-cards/ledger";
 import { currentRules } from "../loyalty/program";
 
 /** Canadian postal code (A1A 1A1), case-insensitive, optional space. */
@@ -46,6 +47,8 @@ export const cartQuoteInput = z.object({
   /** When the order would be prepared (scheduled pickup); availability is checked for that time. */
   pickupAt: z.iso.datetime().optional(),
   promoCode: z.string().trim().max(32).optional(),
+  /** Gift card to pay with (as printed; spaces and dashes are fine). */
+  giftCardCode: z.string().trim().max(40).optional(),
   /** Apply the customer's oldest available free-drink reward (server chooses which). */
   useReward: z.boolean().optional(),
   rewardLineId: z.string().max(64).optional(),
@@ -92,6 +95,16 @@ export interface CartQuoteResult {
   delivery: DeliveryStatus;
   /** Rewards the signed-in customer could apply (ids only; null when anonymous). */
   availableRewardIds: string[] | null;
+  /** The gift card entered, if any: whether it pays and what is left on it. */
+  giftCard: GiftCardQuote | null;
+}
+
+export interface GiftCardQuote {
+  status: "applied" | "not_found" | "disabled" | "empty";
+  /** Last four characters of the code (null when no card matched). */
+  last4: string | null;
+  /** Balance before this order (null when no card matched). */
+  balanceCents: number | null;
 }
 
 function displayFor(
@@ -144,7 +157,16 @@ export async function priceCart(
   db: Database | Tx,
   actor: Actor | null,
   input: CartQuoteInput,
-  { now, availableAt }: { now: Date; availableAt?: Date },
+  {
+    now,
+    availableAt,
+    giftCardBalanceCents,
+  }: {
+    now: Date;
+    availableAt?: Date;
+    /** Order placement passes the balance of the card it has locked (instead of a code). */
+    giftCardBalanceCents?: number;
+  },
 ): Promise<PricedCart> {
   const catalog = catalogAt(
     await loadCatalog(db, [...new Set(input.lines.map((l) => l.productId))]),
@@ -228,6 +250,22 @@ export async function priceCart(
     }
   }
 
+  // A gift card pays the total after tax; an unknown, disabled or empty card pays nothing.
+  let giftCard: GiftCardQuote | null = null;
+  if (input.giftCardCode && giftCardBalanceCents === undefined) {
+    const card = await findGiftCard(db, input.giftCardCode);
+    giftCard = !card
+      ? { status: "not_found", last4: null, balanceCents: null }
+      : {
+          status:
+            card.status !== "active" ? "disabled" : card.balanceCents === 0 ? "empty" : "applied",
+          last4: card.codeLast4,
+          balanceCents: card.balanceCents,
+        };
+  }
+  const usableBalance =
+    giftCardBalanceCents ?? (giftCard?.status === "applied" ? giftCard.balanceCents : null);
+
   const rules = ownedReward ? await currentRules(db) : null;
   const quote = computeQuote({
     lines: input.lines,
@@ -247,6 +285,7 @@ export async function priceCart(
     fulfilment,
     tip: input.tip,
     now,
+    giftCardBalanceCents: usableBalance,
   });
 
   // A delivery that cannot be fulfilled blocks checkout even if every line is valid.
@@ -259,6 +298,7 @@ export async function priceCart(
       display: quote.lines.map((l) => displayFor(l, catalog.get(l.productId))),
       delivery,
       availableRewardIds,
+      giftCard,
     },
     promotion,
     reward: ownedReward ?? null,

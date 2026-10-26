@@ -114,6 +114,9 @@ export async function getOrderDetail(
       qstCents: order.qstCents,
       tipCents: order.tipCents,
       totalCents: order.totalCents,
+      /** Paid with a gift card (after tax); the rest is paid by card. */
+      giftCardCents: order.giftCardCents,
+      amountDueCents: order.totalCents - order.giftCardCents,
     },
     items: order.items.map((i) => ({
       id: i.id,

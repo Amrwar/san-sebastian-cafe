@@ -147,7 +147,7 @@ const sum = (vs: number[]) => vs.reduce((s, v) => s + v, 0);
 describe("computeQuote (properties)", () => {
   it("adds up to the cent, with nothing negative and discounts within bounds", () => {
     fc.assert(
-      fc.property(scenario, (s) => {
+      fc.property(scenario, fc.option(fc.nat(20_000), { nil: null }), (s, giftCard) => {
         const q = computeQuote({
           lines: s.lines,
           catalog,
@@ -158,7 +158,12 @@ describe("computeQuote (properties)", () => {
             : { method: "pickup" },
           tip: s.tip,
           now,
+          giftCardBalanceCents: giftCard,
         });
+        // A gift card pays part of the total (never more than its balance); the rest is due.
+        expect(q.giftCardCents + q.amountDueCents).toBe(q.totalCents);
+        expect(q.giftCardCents).toBeLessThanOrEqual(giftCard ?? 0);
+        expect(q.amountDueCents).toBeGreaterThanOrEqual(0);
         // The total is exactly its parts.
         expect(q.totalCents).toBe(
           q.subtotalCents -

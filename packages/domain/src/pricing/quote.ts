@@ -7,6 +7,7 @@ import {
 } from "../catalog/configuration";
 import { stockShortfalls } from "../catalog/stock";
 import { isRewardEligible, rewardValueCents } from "../loyalty/loyalty";
+import { giftCardPaymentForOrder } from "../payments/gift-cards";
 import { applyRatePpm, cents } from "../shared/money";
 import { computeTaxes, isTaxable } from "./tax";
 
@@ -72,6 +73,8 @@ export interface QuoteInput {
   fulfilment: FulfilmentInput;
   tip: TipInput;
   now: Date;
+  /** Balance of the gift card applied at checkout, if any: it pays the total after tax. */
+  giftCardBalanceCents?: number | null | undefined;
 }
 
 export interface QuotedLine extends QuoteLineInput {
@@ -113,6 +116,10 @@ export interface Quote {
   tipCents: number;
   tipSuggestions: Array<{ basisPoints: number; cents: number }>;
   totalCents: number;
+  /** Part of the total paid by a gift card (a way to pay: taxes are unchanged). */
+  giftCardCents: number;
+  /** What the customer still pays by card: total minus the gift card. */
+  amountDueCents: number;
   promotion: { id: string | null; status: PromotionStatus; discountCents: number } | null;
   reward: {
     rewardId: string;
@@ -326,6 +333,10 @@ export function computeQuote(input: QuoteInput): Quote {
     taxes.qstCents +
     tipCents;
 
+  const giftCardCents = input.giftCardBalanceCents
+    ? giftCardPaymentForOrder(totalCents, input.giftCardBalanceCents)
+    : 0;
+
   return {
     lines,
     subtotalCents,
@@ -341,6 +352,8 @@ export function computeQuote(input: QuoteInput): Quote {
     tipCents,
     tipSuggestions,
     totalCents,
+    giftCardCents,
+    amountDueCents: totalCents - giftCardCents,
     promotion,
     reward,
     issues,

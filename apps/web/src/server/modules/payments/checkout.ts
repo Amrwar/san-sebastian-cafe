@@ -13,6 +13,7 @@ import {
   type Tx,
 } from "@ssc/db";
 import {
+  amountDueCents,
   checkoutOutcome,
   classifyIncomingPayment,
   customerPaymentState,
@@ -42,7 +43,7 @@ import { primaryPayment, requestRefund, submitRefunds } from "./refunds";
  * Paying for an order:
  *   startCheckout  → one hosted payment page per order (reused while open, so a customer is never
  *                    sent to two pages for the same order), created server-side for the exact
- *                    server-computed total.
+ *                    server-computed amount due (the total, minus what a gift card paid).
  *   applyCheckout  → the ONLY way money is recorded and an order becomes paid. Fed by verified
  *                    webhooks, by authenticated status checks (return page, recovery job) and by
  *                    the development simulator. Idempotent per provider payment id.
@@ -75,6 +76,7 @@ function describe(order: typeof orders.$inferSelect): string {
     [fr ? "TPS" : "GST", order.gstCents],
     [fr ? "TVQ" : "QST", order.qstCents],
     [fr ? "Pourboire" : "Tip", order.tipCents],
+    [fr ? "Carte-cadeau" : "Gift card", -order.giftCardCents],
   ];
   return parts
     .filter(([label, cents]) => cents !== 0 || label === "TPS" || label === "GST")
@@ -153,7 +155,7 @@ export async function openCheckout(
       const usable =
         attempt.provider === provider.name &&
         attempt.checkoutUrl &&
-        attempt.amountCents === order.totalCents &&
+        attempt.amountCents === amountDueCents(order) &&
         attempt.expiresAt.getTime() - now.getTime() > REUSE_MARGIN_MS;
       if (usable && attempt.checkoutUrl)
         return { attemptId: attempt.id, url: attempt.checkoutUrl, reused: true };
@@ -175,7 +177,7 @@ export async function openCheckout(
       attemptId,
       orderId: order.id,
       orderNumber: order.number,
-      amountCents: order.totalCents,
+      amountCents: amountDueCents(order),
       description: describe(order),
       locale: options.locale,
       successUrl: `${base}/checkout/return/${order.id}?session_id={CHECKOUT_SESSION_ID}${token}`,
@@ -190,7 +192,7 @@ export async function openCheckout(
       provider: provider.name,
       providerSessionId: created.sessionId,
       status: "open",
-      amountCents: order.totalCents,
+      amountCents: amountDueCents(order),
       checkoutUrl: created.url,
       expiresAt: created.expiresAt,
       createdAt: now,
@@ -350,7 +352,7 @@ export async function applyCheckoutInTx(
         amountCents:
           snapshot.orderId && snapshot.orderId !== order.id ? null : snapshot.amountCents,
         currency: snapshot.currency,
-        expectedCents: attempt.amountCents === order.totalCents ? order.totalCents : -1,
+        expectedCents: attempt.amountCents === amountDueCents(order) ? amountDueCents(order) : -1,
       });
       const reconciliation = decision.action === "refund" ? decision.reconciliation : null;
       const [payment] = await tx

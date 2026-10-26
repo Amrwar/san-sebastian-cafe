@@ -207,7 +207,9 @@
     "demoItems": "Your cart contains demonstration products.",
     "notesLabel": "Instructions",
     "notesFor": "Instructions for {name} (optional)",
-    "notesPlaceholder": "E.g. extra hot"
+    "notesPlaceholder": "E.g. extra hot",
+    "giftCard": "Gift card",
+    "amountDue": "To pay by card"
   },
   "Checkout": {
     "eyebrow": "Checkout",
@@ -282,9 +284,22 @@
       "promotion_limit_reached": "You’ve already used this promotion.",
       "payments_unavailable": "Online payment isn’t available yet.",
       "generic": "Your order couldn’t be sent. Please try again.",
-      "below_minimum_charge": "Card payments require a total of at least $0.50."
+      "below_minimum_charge": "Card payments require a total of at least $0.50.",
+      "gift_card_invalid": "That gift card code doesn’t exist.",
+      "gift_card_disabled": "This gift card is blocked. Please ask at the counter.",
+      "gift_card_empty": "This gift card has no balance left.",
+      "gift_card_insufficient": "The gift card balance changed. Check the amount and try again."
     },
-    "errorsAddress": "Enter a complete address."
+    "errorsAddress": "Enter a complete address.",
+    "giftCard": {
+      "label": "Gift card code",
+      "apply": "Apply",
+      "remove": "Remove",
+      "applied": "Gift card •••• {last4} applied (balance: {balance}).",
+      "not_found": "That gift card code doesn’t exist. Please check it.",
+      "disabled": "This gift card is blocked. Please ask at the counter.",
+      "empty": "This gift card has no balance left."
+    }
   },
   "SignIn": {
     "eyebrow": "Account",
@@ -523,11 +538,22 @@
   "GiftCards": {
     "eyebrow": "Gift cards",
     "title": "Gift cards",
-    "intro": "Treat someone to a coffee.",
-    "unavailableTitle": "Not available online yet",
-    "unavailableBody": "Buying and redeeming gift cards online requires an integration with the café’s point-of-sale system, which isn’t in place yet. Gift cards can’t be bought or used in the app at this time.",
-    "policyTitle": "What to expect",
-    "policyBody": "In line with Québec’s Consumer Protection Act, the café’s gift cards will have no expiry date and no usage fees."
+    "intro": "Treat someone to a coffee, and check a card’s balance.",
+    "balanceTitle": "Check a balance",
+    "codeLabel": "Card code",
+    "codeHint": "16 characters, printed on the card. Dashes are optional.",
+    "check": "Check",
+    "balance": "Card •••• {last4}: {amount}",
+    "usable": "Usable online when you pay, or at the counter.",
+    "blocked": "This card is blocked. Please ask at the counter.",
+    "notFound": "No card matches this code. Please check it.",
+    "tooMany": "Too many checks. Please try again later.",
+    "error": "The check failed. Please try again.",
+    "howTitle": "How it works",
+    "howBuy": "Cards are sold at the counter, from $5 to $500.",
+    "howUse": "Enter the code when you pay for an online order, or show the card at the counter. If the balance doesn’t cover everything, you pay the rest by credit or debit card.",
+    "policyTitle": "No expiry, no fees",
+    "policyBody": "In line with Québec’s Consumer Protection Act, our gift cards have no expiry date and no usage fees. The balance stays available until it is used."
   },
   "Promotions": {
     "eyebrow": "Promotions",
@@ -632,7 +658,8 @@
       "payments_unavailable": "Online payment isn’t available right now.",
       "generic": "The payment couldn’t start. Please try again."
     },
-    "testMode": "Stripe test mode: no real card is charged. Test card: 4242 4242 4242 4242."
+    "testMode": "Stripe test mode: no real card is charged. Test card: 4242 4242 4242 4242.",
+    "giftCardPaid": "Total {total}, of which {giftCard} paid by gift card."
   },
   "StaffQueue": {
     "title": "Order queue",
@@ -685,7 +712,8 @@
     "stockAlertTitle": "Stock to watch",
     "stockLow": "{name}: {count} left",
     "stockOut": "{name}: sold out",
-    "stockLink": "Manage stock"
+    "stockLink": "Manage stock",
+    "giftCards": "Gift cards"
   },
   "StaffAvailability": {
     "title": "Product availability",
@@ -766,7 +794,8 @@
     "refundDelay": "Refunds appear on your statement within 5 to 10 business days.",
     "returned": "A duplicate or late payment of {amount} was refunded automatically.",
     "receipt": "View receipt",
-    "history": "Payment history"
+    "history": "Payment history",
+    "paidGiftCard": "Gift card: {amount}"
   },
   "Receipt": {
     "title": "Receipt — order {number}",
@@ -844,7 +873,8 @@
     },
     "evidenceDue": "Evidence due by {date}",
     "disputeHelp": "Respond to disputes in the Stripe dashboard.",
-    "back": "Back to queue"
+    "back": "Back to queue",
+    "giftCardPaid": "Gift card: {amount}"
   },
   "StaffLoyalty": {
     "title": "Loyalty",
@@ -1388,7 +1418,8 @@
       "mismatch": "{count, plural, one {# paid order doesn’t match} other {# paid orders don’t match}} its payment. Check:",
       "paid": "order {total}, payment {paid}",
       "missing": "order {total}, no payment",
-      "extra": "{count, plural, one {# duplicate or late payment} other {# duplicate or late payments}} ({received}) {count, plural, one {was} other {were}} refunded automatically ({refunded}). They count as neither sales nor refunds."
+      "extra": "{count, plural, one {# duplicate or late payment} other {# duplicate or late payments}} ({received}) {count, plural, one {was} other {were}} refunded automatically ({refunded}). They count as neither sales nor refunds.",
+      "okWithGiftCards": "Sales and payments match: {amount} received by card and {giftCards} paid by gift card for these orders."
     },
     "byDay": {
       "title": "Sales by day",
@@ -1466,7 +1497,16 @@
       "refunds": "A refund counts on the day it settles, on its own line.",
       "unpaid": "Unpaid, expired and demo orders don’t count."
     },
-    "periodShown": "{from} to {to}"
+    "periodShown": "{from} to {to}",
+    "giftCards": {
+      "title": "Gift cards",
+      "hint": "Card balances are owed by the café until spent. Cards sold are not sales (no tax): what is bought with them is.",
+      "outstanding": "Balances owed (today)",
+      "cards": "{count} cards with a balance",
+      "issued": "Cards sold in the period",
+      "redeemed": "Spent in the period",
+      "adjusted": "Corrections in the period"
+    }
   },
   "AccountData": {
     "eyebrow": "My account",
@@ -1945,6 +1985,82 @@
       "referrals_off": "Referrals aren’t offered right now.",
       "unknown": "Unknown code. Check it and try again.",
       "generic": "Saving failed. Try again."
+    }
+  },
+  "StaffGiftCards": {
+    "title": "Gift cards",
+    "intro": "Sell a card paid at the counter, check a balance, and use a card for a counter purchase. Cards never expire and have no fees.",
+    "backToQueue": "Back to queue",
+    "issue": {
+      "title": "Sell a card",
+      "help": "Ring the card up at the till first (no tax: a gift card is a way to pay). Then create it here.",
+      "amount": "Amount ($)",
+      "amountHint": "From $5 to $500",
+      "amountInvalid": "Enter an amount from $5 to $500.",
+      "note": "Internal note",
+      "noteHint": "For example the till receipt number. No customer details.",
+      "submit": "Create card",
+      "done": "{amount} card created.",
+      "shownOnce": "Write down or print this code now: it won’t be shown again.",
+      "print": "Print"
+    },
+    "find": {
+      "title": "Find a card",
+      "code": "Card code",
+      "codeHint": "Dashes and spaces are optional.",
+      "submit": "Search"
+    },
+    "card": {
+      "title": "Card •••• {last4}",
+      "issued": "Sold for {amount} on {date}",
+      "status": {
+        "active": "Active",
+        "disabled": "Blocked"
+      }
+    },
+    "redeem": {
+      "title": "Pay for a counter purchase",
+      "amount": "Amount ($)",
+      "note": "Note (optional)",
+      "submit": "Charge the card",
+      "done": "Amount taken off the card."
+    },
+    "status": {
+      "disableTitle": "Block the card (lost, stolen)",
+      "enableTitle": "Unblock the card",
+      "reason": "Reason",
+      "disable": "Block",
+      "enable": "Unblock",
+      "done": "Card status updated."
+    },
+    "adjust": {
+      "title": "Correct the balance (manager)",
+      "amount": "Amount ($, negative to remove)",
+      "reason": "Reason",
+      "submit": "Correct",
+      "done": "Balance corrected."
+    },
+    "history": {
+      "title": "History",
+      "by": "by {name}",
+      "after": "balance {amount}",
+      "kind": {
+        "issue": "Card sold",
+        "redeem": "Payment — order {number}",
+        "release": "Returned (unpaid order) — {number}",
+        "refund": "Refund — order {number}",
+        "adjustment": "Correction"
+      }
+    },
+    "errors": {
+      "notFound": "No card matches this code.",
+      "forbidden": "Your role doesn’t allow this.",
+      "insufficient": "Not enough on the card.",
+      "disabled": "This card is blocked.",
+      "invalid": "Please check the fields.",
+      "amount": "Enter a valid amount.",
+      "reason": "Give a reason (3 characters or more).",
+      "generic": "That didn’t work. Please try again."
     }
   }
 }

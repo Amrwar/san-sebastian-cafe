@@ -8,6 +8,7 @@ import {
 } from "@ssc/domain";
 import { AppError, required } from "../../errors";
 import { queueOrderNotifications } from "../../notifications/outbox";
+import { releaseOrderGiftCard } from "../gift-cards/ledger";
 import { releaseStock } from "../inventory/stock";
 import {
   commitRedemptions,
@@ -169,6 +170,9 @@ export async function applyTransition(
   }
   // Stock goes back on the shelf if the order is stopped before anything was made.
   if (stockReturnsOn(order.status, to)) await releaseStock(tx, order.id, actorUserId(actor));
+  // An unpaid order that won't be paid gives its gift card hold back (a paid one is refunded).
+  if (to === "expired" || ((to === "cancelled" || to === "rejected") && !order.paidAt))
+    await releaseOrderGiftCard(tx, order.id, actorUserId(actor));
   // Customer emails and push notices (outbox, same transaction).
   await queueOrderNotifications(tx, order, updated, now);
   return updated;

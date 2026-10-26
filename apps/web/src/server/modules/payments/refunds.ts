@@ -1,9 +1,14 @@
+import type { orders } from "@ssc/db";
 import {
   and,
   eq,
+  isNotNull,
+  isNull,
+  or,
   orderItems,
   payments,
   refunds,
+  sql,
   type Database,
   type RefundItem,
   type Tx,
@@ -18,6 +23,7 @@ import {
 import { recordAudit } from "../../audit";
 import { AppError, required, unprocessable } from "../../errors";
 import { logger } from "../../logger";
+import { giftCardRefundedCents, moveGiftCardBalance } from "../gift-cards/ledger";
 import { refundedUnits, reverseForRefund } from "../loyalty/earning";
 import {
   actorUserId,
@@ -42,6 +48,7 @@ import { paymentProvider, type RefundSnapshot } from "./provider";
 
 export type RefundSource = "staff" | "customer_cancel" | "system" | "provider";
 type PaymentRow = typeof payments.$inferSelect;
+type OrderRow = typeof orders.$inferSelect;
 
 const FINAL: readonly RefundStatus[] = ["succeeded", "failed", "cancelled"];
 
@@ -126,7 +133,7 @@ export async function requestRefund(
  * Merges duplicate lines and checks each belongs to the order and is not refunded beyond the units
  * bought (refunds that have not failed count).
  */
-async function validRefundItems(
+export async function validRefundItems(
   tx: Tx,
   orderId: string,
   raw: readonly RefundItem[],
@@ -152,6 +159,145 @@ async function validRefundItems(
     }
   }
   return [...merged].map(([orderItemId, quantity]) => ({ orderItemId, quantity }));
+}
+
+/**
+ * Money given back for the order itself, by any means: succeeded refunds of its own payment (not
+ * of late or duplicate money) plus refunds to its gift card.
+ */
+export async function orderRefundedCents(tx: Tx, orderId: string): Promise<number> {
+  const [row] = await tx
+    .select({ cents: sql<number>`coalesce(sum(${refunds.amountCents}), 0)::int` })
+    .from(refunds)
+    .leftJoin(payments, eq(payments.id, refunds.paymentId))
+    .where(
+      and(
+        eq(refunds.orderId, orderId),
+        eq(refunds.status, "succeeded"),
+        or(isNotNull(refunds.giftCardId), isNull(payments.reconciliation)),
+      ),
+    );
+  return required(row, "sum").cents;
+}
+
+/**
+ * After a refund of the order's own money succeeded (by card or to its gift card): the refunded
+ * drinks' stamps go first, then the order becomes refunded once everything paid is given back,
+ * partially refunded until then. Caller holds the order lock and passes the current row.
+ */
+async function applyRefundToOrder(
+  tx: Tx,
+  order: OrderRow,
+  refund: { id: string; reason: string },
+  now: Date,
+): Promise<void> {
+  if (!REFUNDABLE_ORDER_STATUSES.includes(order.status)) return;
+  await reverseForRefund(tx, order, refund.id, now);
+  const refunded = await orderRefundedCents(tx, order.id);
+  await applyTransition(
+    tx,
+    order,
+    refunded >= order.totalCents ? "refunded" : "partially_refunded",
+    { kind: "system" },
+    { reason: refund.reason, now },
+  );
+}
+
+/** What can still be given back for an order: by card (its payment) and to its gift card. */
+export async function refundableForOrder(
+  tx: Tx,
+  order: OrderRow,
+): Promise<{ payment: PaymentRow | undefined; cardCents: number; giftCardCents: number }> {
+  const payment = await primaryPayment(tx, order.id);
+  let cardCents = 0;
+  if (payment) {
+    const existing = await tx
+      .select({ amountCents: refunds.amountCents, status: refunds.status })
+      .from(refunds)
+      .where(eq(refunds.paymentId, payment.id));
+    cardCents = refundableCents(payment.amountCents, existing);
+  }
+  const giftCardCents = order.giftCardId
+    ? Math.max(0, order.giftCardCents - (await giftCardRefundedCents(tx, order.id)))
+    : 0;
+  return { payment, cardCents, giftCardCents };
+}
+
+/**
+ * Gives money back to the gift card that paid part of the order. Settled at once (no provider):
+ * the refund row is recorded as succeeded with the card credit, in the caller's transaction on the
+ * locked order. Returns the refund id.
+ */
+export async function refundToGiftCard(
+  tx: Tx,
+  input: {
+    orderId: string;
+    amountCents: number;
+    reason: string;
+    source: RefundSource;
+    actor: OrderActor;
+    items?: readonly RefundItem[];
+    now: Date;
+  },
+): Promise<string> {
+  const order = required(await lockOrder(tx, input.orderId), "order");
+  if (!order.giftCardId) throw unprocessable("not_paid");
+  if (!REFUNDABLE_ORDER_STATUSES.includes(order.status)) throw unprocessable("refund_not_allowed");
+  const { giftCardCents: available } = await refundableForOrder(tx, order);
+  if (
+    !Number.isInteger(input.amountCents) ||
+    input.amountCents <= 0 ||
+    input.amountCents > available
+  ) {
+    throw new AppError("validation_failed", "Refund amount not available", [
+      { path: "amountCents", code: "amount_invalid" },
+    ]);
+  }
+  const items = await validRefundItems(tx, order.id, input.items ?? []);
+  const [refund] = await tx
+    .insert(refunds)
+    .values({
+      orderId: order.id,
+      giftCardId: order.giftCardId,
+      amountCents: input.amountCents,
+      reason: input.reason,
+      status: "succeeded",
+      source: input.source,
+      requestedByUserId: actorUserId(input.actor),
+      items,
+      submittedAt: input.now,
+      settledAt: input.now,
+    })
+    .returning({ id: refunds.id });
+  const refundId = required(refund, "refund").id;
+  await moveGiftCardBalance(tx, order.giftCardId, {
+    kind: "refund",
+    deltaCents: input.amountCents,
+    orderId: order.id,
+    refundId,
+    actorUserId: actorUserId(input.actor),
+    note: input.reason,
+  });
+  const details = {
+    refundId,
+    amountCents: input.amountCents,
+    reason: input.reason,
+    giftCard: true,
+  };
+  await recordOrderEvent(tx, order.id, "refund_requested", input.actor, {
+    ...details,
+    source: input.source,
+  });
+  await recordOrderEvent(tx, order.id, "refund_recorded", { kind: "system" }, details);
+  await recordAudit(tx, {
+    actorUserId: actorUserId(input.actor),
+    action: "payment.refund_requested",
+    entityType: "order",
+    entityId: order.id,
+    metadata: { refundId, amountCents: input.amountCents, source: input.source, giftCard: true },
+  });
+  await applyRefundToOrder(tx, order, { id: refundId, reason: input.reason }, input.now);
+  return refundId;
 }
 
 /**
@@ -292,17 +438,7 @@ export async function settleRefundInTx(
       reason: refund.reason,
     });
     // Only the order's own payment changes the order; late/duplicate money is just returned.
-    if (payment.reconciliation === null && REFUNDABLE_ORDER_STATUSES.includes(order.status)) {
-      // Stamps of the refunded drinks go first; a full refund then takes back whatever is left.
-      await reverseForRefund(tx, order, refund.id, now);
-      await applyTransition(
-        tx,
-        order,
-        refundedCents >= payment.amountCents ? "refunded" : "partially_refunded",
-        system,
-        { reason: refund.reason, now },
-      );
-    }
+    if (payment.reconciliation === null) await applyRefundToOrder(tx, order, refund, now);
   } else if (snapshot.status === "failed" || snapshot.status === "cancelled") {
     if (refund.status === "succeeded") {
       // The provider reversed a refund it had reported as succeeded (rare, e.g. closed card).

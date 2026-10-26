@@ -40,6 +40,10 @@ const REASONS = new Set([
   "promotion_limit_reached",
   "payments_unavailable",
   "below_minimum_charge",
+  "gift_card_invalid",
+  "gift_card_disabled",
+  "gift_card_empty",
+  "gift_card_insufficient",
 ]);
 /** Refusals that mean the offered pickup times are stale: reload them from the server. */
 const TIME_REASONS = new Set([
@@ -102,6 +106,9 @@ export function Checkout({
   const [submitted, setSubmitted] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  // Gift card: what is typed, and the code applied to the quote once the customer confirms it.
+  const [giftInput, setGiftInput] = useState("");
+  const [giftCode, setGiftCode] = useState<string | null>(null);
   // One key per checkout attempt; kept across network retries, renewed after a server answer.
   const idempotencyKey = useRef<string | null>(null);
 
@@ -127,7 +134,10 @@ export function Checkout({
         : { method: "pickup" },
     tip,
     ...(method === "pickup" && timing === "scheduled" && slot ? { pickupAt: slot } : {}),
+    ...(giftCode ? { giftCardCode: giftCode } : {}),
   });
+  const giftCard = data?.giftCard ?? null;
+  const giftApplied = giftCode !== null && giftCard?.status === "applied";
 
   const tag = locale === "en" ? "en-CA" : "fr-CA";
   const timeFormat = new Intl.DateTimeFormat(tag, {
@@ -226,6 +236,9 @@ export function Checkout({
           },
           notes: notes.trim() || undefined,
           expectedTotalCents: data.quote.totalCents,
+          ...(giftApplied && giftCode
+            ? { giftCardCode: giftCode, expectedAmountDueCents: data.quote.amountDueCents }
+            : {}),
           locale: tag,
         }),
       });
@@ -575,6 +588,57 @@ export function Checkout({
           <h2 className="font-display text-2xl text-espresso">{t("summaryTitle")}</h2>
           {error ? <RequestProblem failure={error} onRetry={retry} /> : null}
           {slow ? <SlowNetworkNotice /> : null}
+          <div className="flex flex-col gap-2 border-b border-line pb-4">
+            {giftApplied ? (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-espresso">
+                  {t("giftCard.applied", {
+                    last4: giftCard.last4 ?? "",
+                    balance: money(giftCard.balanceCents ?? 0, locale),
+                  })}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setGiftCode(null);
+                    setGiftInput("");
+                  }}
+                >
+                  {t("giftCard.remove")}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-end gap-2">
+                <TextField
+                  label={t("giftCard.label")}
+                  name="giftCardCode"
+                  autoComplete="off"
+                  className="min-w-0 flex-1"
+                  value={giftInput}
+                  onChange={(e) => {
+                    setGiftInput(e.currentTarget.value);
+                  }}
+                  error={
+                    giftCode && giftCard && giftCard.status !== "applied"
+                      ? t(`giftCard.${giftCard.status}`)
+                      : undefined
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={giftInput.trim() === ""}
+                  onClick={() => {
+                    setGiftCode(giftInput.trim());
+                  }}
+                >
+                  {t("giftCard.apply")}
+                </Button>
+              </div>
+            )}
+          </div>
           {data ? (
             <QuoteSummary quote={data.quote} showTip stale={loading} />
           ) : (

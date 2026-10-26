@@ -48,6 +48,21 @@ votre compte (menu **Personnel**).
 - **Rembourser** une commande terminée (chef d’équipe et plus) : Personnel → Paiements, trouvez la
   commande, choisissez le montant et le motif. Le client reçoit un courriel.
 
+## Cartes-cadeaux
+
+- **Vendre** (chef d’équipe et plus) : encaissez d’abord la carte à la caisse, sans taxes (c’est un
+  moyen de paiement). Puis Personnel → Cartes-cadeaux → montant (5 $ à 500 $) → **Créer la carte**.
+  Inscrivez ou imprimez le code tout de suite : **il ne sera plus jamais affiché**.
+- **Payer au comptoir** : Personnel → Cartes-cadeaux → code → **Débiter la carte** du montant de
+  l’achat, puis enregistrez l’achat à la caisse comme payé par carte-cadeau.
+- **Vérifier un solde** : même écran, ou le client peut le faire lui-même sur le site
+  (Cartes-cadeaux).
+- **Carte perdue ou volée** (chef d’équipe et plus) : **Bloquer**. Le solde est conservé; débloquez
+  quand le client la retrouve.
+- **Erreur de montant** : seul un gérant peut corriger le solde, avec un motif.
+- Les cartes **n’expirent jamais et n’ont aucuns frais** : ne refusez jamais une carte « trop
+  vieille ».
+
 ## Fidélité au comptoir
 
 - Le client montre le code de sa carte (page Fidélité de son téléphone) ou donne son courriel :

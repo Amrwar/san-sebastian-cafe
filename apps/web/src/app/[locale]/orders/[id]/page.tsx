@@ -258,6 +258,18 @@ export default async function OrderDetailPage({
               <dt>{tCart("total")}</dt>
               <dd className="tabular-nums">{money(totals.totalCents, locale)}</dd>
             </div>
+            {totals.giftCardCents > 0 ? (
+              <>
+                <div className="flex justify-between gap-4 text-espresso-muted">
+                  <dt>{tCart("giftCard")}</dt>
+                  <dd className="tabular-nums">−{money(totals.giftCardCents, locale)}</dd>
+                </div>
+                <div className="flex justify-between gap-4 font-semibold text-espresso">
+                  <dt>{tCart("amountDue")}</dt>
+                  <dd className="tabular-nums">{money(totals.amountDueCents, locale)}</dd>
+                </div>
+              </>
+            ) : null}
           </dl>
           <p className="text-sm text-espresso-muted">{t("receiptNote")}</p>
         </Surface>

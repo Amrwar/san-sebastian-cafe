@@ -28,6 +28,8 @@ export const LIMITS = {
   accountDeletion: { max: 5, windowSeconds: 3600 },
   reportExport: { max: 60, windowSeconds: 3600 },
   pushSubscription: { max: 20, windowSeconds: 3600 },
+  /** Gift card balance checks: a person checks a card or two; guessing codes needs millions. */
+  giftCardLookup: { max: 20, windowSeconds: 3600 },
 } as const satisfies Record<string, Limit>;
 
 /** Who is asking: the account when signed in, otherwise a hash of the address (never stored raw). */

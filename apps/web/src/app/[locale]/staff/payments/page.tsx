@@ -44,7 +44,10 @@ export default async function StaffPaymentsPage({
   ]);
   const date = (iso: string) =>
     format.dateTime(new Date(iso), { dateStyle: "medium", timeStyle: "short" });
-  const refundable = found?.payments.find((p) => p.reconciliation === null)?.refundableCents ?? 0;
+  // Card money first, then the gift card's part (the server splits a refund the same way).
+  const refundable =
+    (found?.payments.find((p) => p.reconciliation === null)?.refundableCents ?? 0) +
+    (found?.order.giftCardRefundableCents ?? 0);
   const source = (s: string) =>
     (REFUND_SOURCES as readonly string[]).includes(s)
       ? t(`source.${s as (typeof REFUND_SOURCES)[number]}`)
@@ -139,6 +142,18 @@ export default async function StaffPaymentsPage({
                   ) : null}
                 </div>
               ))}
+              {found.order.giftCardCents > 0 ? (
+                <div className="rounded-sm border border-line p-3">
+                  <p className="font-semibold tabular-nums">
+                    {t("giftCardPaid", { amount: money(found.order.giftCardCents, locale) })}
+                  </p>
+                  <p className="text-sm">
+                    {t("refundable", {
+                      amount: money(found.order.giftCardRefundableCents, locale),
+                    })}
+                  </p>
+                </div>
+              ) : null}
             </section>
 
             <section className="flex flex-col gap-2">

@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { GiftCardTransactionKind } from "@ssc/domain";
 import {
   check,
   index,
@@ -19,6 +20,7 @@ import {
   refundStatusEnum,
 } from "./enums";
 import { users } from "./identity";
+import { giftCards } from "./gift-cards";
 import { orders } from "./ordering";
 
 /*
@@ -141,6 +143,8 @@ export const refunds = pgTable(
       .notNull()
       .references(() => orders.id, { onDelete: "restrict" }),
     paymentId: uuid().references(() => payments.id, { onDelete: "restrict" }),
+    /** Money given back to the gift card that paid part of the order (settled at once). */
+    giftCardId: uuid().references(() => giftCards.id, { onDelete: "restrict" }),
     amountCents: integer().notNull(),
     reason: text().notNull(),
     status: refundStatusEnum().notNull().default("pending"),
@@ -165,6 +169,7 @@ export const refunds = pgTable(
       .on(t.providerRefundId)
       .where(sql`${t.providerRefundId} is not null`),
     check("refunds_amount_positive", sql`${t.amountCents} > 0`),
+    check("refunds_one_tender", sql`${t.paymentId} is null or ${t.giftCardId} is null`),
     check("refunds_source", sql`${t.source} in ('staff', 'customer_cancel', 'system', 'provider')`),
   ],
 );
@@ -204,5 +209,34 @@ export const paymentDisputes = pgTable(
   (t) => [
     unique("payment_disputes_provider_ref_uq").on(t.provider, t.providerDisputeId),
     index("payment_disputes_status_idx").on(t.status),
+  ],
+);
+
+/** Every change to a gift card balance, with what caused it. */
+export const giftCardTransactions = pgTable(
+  "gift_card_transactions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    giftCardId: uuid()
+      .notNull()
+      .references(() => giftCards.id, { onDelete: "restrict" }),
+    kind: text().$type<GiftCardTransactionKind>().notNull(),
+    /** Added (positive) or spent (negative). */
+    deltaCents: integer().notNull(),
+    balanceAfterCents: integer().notNull(),
+    orderId: uuid().references(() => orders.id, { onDelete: "set null" }),
+    refundId: uuid().references(() => refunds.id, { onDelete: "set null" }),
+    actorUserId: text().references(() => users.id, { onDelete: "set null" }),
+    note: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("gift_card_transactions_card_idx").on(t.giftCardId, t.createdAt),
+    index("gift_card_transactions_order_idx").on(t.orderId),
+    check(
+      "gift_card_transactions_kind",
+      sql`${t.kind} in ('issue', 'redeem', 'release', 'refund', 'adjustment')`,
+    ),
+    check("gift_card_transactions_balance", sql`${t.balanceAfterCents} >= 0`),
   ],
 );
