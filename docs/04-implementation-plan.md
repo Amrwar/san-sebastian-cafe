@@ -1,6 +1,6 @@
 # 04 — Implementation Plan & Phase Checklist
 
-_Status: **Phase 4 (payments) implemented (2026-10-11)**: Stripe Checkout behind a provider interface, webhooks, refunds, recovery. **Stripe sandbox verification deferred to the pre-launch stage (owner decision, 2026-10-11); production payments not enabled.** **Phase 5 (loyalty engine) implemented (2026-10-16)**: versioned rules, ledger with refund policies, counter stamps, staff corrections, explained history; counter stamps on (D9, owner 2026-10-16). **Phase 6 (admin console) implemented (2026-10-17)**: menu, options, store settings, loyalty rules, team, audit log; product photos on Vercel Blob (2026-10-25). **Phase 7 (reporting) implemented (2026-10-25)**: sales, taxes, tips, refunds, loyalty, CSV exports, reconciled to the cent. **Phase 8 (privacy, Law 25) implemented (2026-10-25)**: data export and account deletion, privacy requests, incident register, retention job, draft privacy policy and terms (legal review pending). **Phase 9 (live queue and notifications) implemented (2026-10-25)**: live staff queue and order tracking (server-sent events), outbox with exactly-once queueing, FR/EN order emails over SMTP (Mailpit locally), Web Push. **Phase 10 (2026-10-25)**: guest-order stamp claim (D11); plan Phases 4 and 8 closed. **Phase 11 (Growth, 2026-10-25)**: promotions admin, CASL marketing email with one-click unsubscribe, referral program (off until D17). Reports: [Phase 1](10-phase-1-report.md), [Phase 2](11-phase-2-report.md), [Phase 3](12-phase-3-report.md), [Phase 4](14-phase-4-report.md), [Phase 5](15-phase-5-report.md), [Phase 6](16-phase-6-report.md), [Phase 7](17-phase-7-report.md), [Phase 8](18-phase-8-report.md), [Phase 9](19-phase-9-report.md), [Phase 10](20-phase-10-report.md), [Phase 11](21-phase-11-report.md), [Phase 12](24-phase-12-report.md). Operations: [runbook](22-operations-runbook.md), [staff guide](23-staff-guide.md). Payments runbook: [13](13-payments.md)._
+_Status: **Phase 4 (payments) implemented (2026-10-11)**: Stripe Checkout behind a provider interface, webhooks, refunds, recovery. **Stripe sandbox verified end to end on 2026-10-26** (payments, declines, 3-D Secure, refunds, replay, disputes; see [13 §7](13-payments.md#7-testing)); production payments not enabled. **Phase 5 (loyalty engine) implemented (2026-10-16)**: versioned rules, ledger with refund policies, counter stamps, staff corrections, explained history; counter stamps on (D9, owner 2026-10-16). **Phase 6 (admin console) implemented (2026-10-17)**: menu, options, store settings, loyalty rules, team, audit log; product photos on Vercel Blob (2026-10-25). **Phase 7 (reporting) implemented (2026-10-25)**: sales, taxes, tips, refunds, loyalty, CSV exports, reconciled to the cent. **Phase 8 (privacy, Law 25) implemented (2026-10-25)**: data export and account deletion, privacy requests, incident register, retention job, draft privacy policy and terms (legal review pending). **Phase 9 (live queue and notifications) implemented (2026-10-25)**: live staff queue and order tracking (server-sent events), outbox with exactly-once queueing, FR/EN order emails over SMTP (Mailpit locally), Web Push. **Phase 10 (2026-10-25)**: guest-order stamp claim (D11); plan Phases 4 and 8 closed. **Phase 11 (Growth, 2026-10-25)**: promotions admin, CASL marketing email with one-click unsubscribe, referral program (off until D17). Reports: [Phase 1](10-phase-1-report.md), [Phase 2](11-phase-2-report.md), [Phase 3](12-phase-3-report.md), [Phase 4](14-phase-4-report.md), [Phase 5](15-phase-5-report.md), [Phase 6](16-phase-6-report.md), [Phase 7](17-phase-7-report.md), [Phase 8](18-phase-8-report.md), [Phase 9](19-phase-9-report.md), [Phase 10](20-phase-10-report.md), [Phase 11](21-phase-11-report.md), [Phase 12](24-phase-12-report.md). Operations: [runbook](22-operations-runbook.md), [staff guide](23-staff-guide.md). Payments runbook: [13](13-payments.md)._
 
 > Scope note: the owner's Phase 2 brief covered the complete customer-facing experience, so parts of Phases 3, 5 and 8 were delivered early (pricing/tax/promotion/reward quote engine, pickup scheduling, menu & cart, read-only loyalty/orders/favorites views). Order **placement**, payments, loyalty **earning/redemption writes**, and staff status changes remain in Phases 6–8.
 >
@@ -10,24 +10,24 @@ Every phase ends with: typecheck ✔ · lint ✔ · unit/integration/E2E tests f
 
 Legend: ☐ not started · ◐ in progress · ☑ done · ⛔ blocked on owner decision
 
-| #   | Phase                                                    | Status                                                |
-| --- | -------------------------------------------------------- | ----------------------------------------------------- |
-| 0   | Discovery & planning                                     | ☑                                                     |
-| 1   | Foundation & tooling                                     | ☑                                                     |
-| 2   | Design system & PWA shell                                | ☑                                                     |
-| 3   | Domain core (pricing, tax, loyalty, order state machine) | ☑                                                     |
-| 4   | Auth, accounts, roles                                    | ☑                                                     |
-| 5   | Menu browsing, product customization, cart               | ☑                                                     |
-| 6   | Checkout, pickup scheduling, payments                    | ◐ Stripe built; sandbox deferred to pre-launch; D1 ⛔ |
-| 7   | Staff order console, realtime, notifications             | ☑ email provider pending (D22)                        |
-| 8   | Loyalty wallet, history, favorites, reorder, receipts    | ☑                                                     |
-| 9   | Admin: menu, store settings, loyalty rules, staff, audit | ☑                                                     |
-| 10  | Reporting & exports                                      | ☑                                                     |
-| 11  | Privacy & compliance features                            | ☑ legal text pending lawyer review                    |
-| 12  | POS / SRS integration                                    | ⛔ D1                                                 |
-| 13  | Growth: promotions, referrals, communications            | ☑ referral terms pending (D17)                        |
-| 14  | Gift cards · delivery · inventory (each optional)        | ⛔ owner                                              |
-| 15  | Hardening & launch readiness                             | ◐ platform done; launch items need owner decisions    |
+| #   | Phase                                                    | Status                                               |
+| --- | -------------------------------------------------------- | ---------------------------------------------------- |
+| 0   | Discovery & planning                                     | ☑                                                    |
+| 1   | Foundation & tooling                                     | ☑                                                    |
+| 2   | Design system & PWA shell                                | ☑                                                    |
+| 3   | Domain core (pricing, tax, loyalty, order state machine) | ☑                                                    |
+| 4   | Auth, accounts, roles                                    | ☑                                                    |
+| 5   | Menu browsing, product customization, cart               | ☑                                                    |
+| 6   | Checkout, pickup scheduling, payments                    | ☑ Stripe sandbox verified 2026-10-26; D1 ⛔ for live |
+| 7   | Staff order console, realtime, notifications             | ☑ email provider pending (D22)                       |
+| 8   | Loyalty wallet, history, favorites, reorder, receipts    | ☑                                                    |
+| 9   | Admin: menu, store settings, loyalty rules, staff, audit | ☑                                                    |
+| 10  | Reporting & exports                                      | ☑                                                    |
+| 11  | Privacy & compliance features                            | ☑ legal text pending lawyer review                   |
+| 12  | POS / SRS integration                                    | ⛔ D1                                                |
+| 13  | Growth: promotions, referrals, communications            | ☑ referral terms pending (D17)                       |
+| 14  | Gift cards · delivery · inventory (each optional)        | ⛔ owner                                             |
+| 15  | Hardening & launch readiness                             | ◐ platform done; launch items need owner decisions   |
 
 ---
 

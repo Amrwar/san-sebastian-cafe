@@ -2,7 +2,7 @@
 
 Customer PWA, staff/owner console, and backend for San Sebastian Café (Montréal, QC).
 
-**Status:** Phase 4 (payments) implemented: Stripe Checkout, webhooks, refunds and recovery — see the [Phase 4 report](docs/14-phase-4-report.md) and the [payments runbook](docs/13-payments.md). Verification in the Stripe sandbox is pending test keys, and production payments are **not** enabled.
+**Status:** Phase 4 (payments) implemented: Stripe Checkout, webhooks, refunds and recovery — see the [Phase 4 report](docs/14-phase-4-report.md) and the [payments runbook](docs/13-payments.md). Verified end to end in the Stripe sandbox on 2026-10-26 (payments, declines, 3-D Secure, refunds, disputes); production payments are **not** enabled.
 With `PAYMENT_PROVIDER=none` (the default, and the Vercel demo) orders cannot be placed and nothing is
 charged. All menu items, prices, hours and accounts in development databases are clearly labelled
 demonstration data.

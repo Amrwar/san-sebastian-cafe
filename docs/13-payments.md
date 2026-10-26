@@ -1,9 +1,8 @@
 # 13 — Payments: Provider Decision, Setup and Operations
 
-_Phase 4 (2026-10-11). Status: **implemented and tested against a scripted Stripe double and Stripe's
-own request/signature formats; NOT yet verified end-to-end in the Stripe sandbox** (no test keys were
-available). Production payments are not enabled and must not be until the launch checklist (§8) is
-complete._
+_Phase 4 (2026-10-11). Status: **implemented, and verified end-to-end in the Stripe sandbox on
+2026-10-26** (§7: payment, declines, 3-D Secure, refunds, replay and a dispute, all automated).
+Production payments are not enabled and must not be until the launch checklist (§8) is complete._
 
 ## 1. Provider evaluation
 
@@ -101,7 +100,8 @@ Refunds, Customers. Read access to Charges and Disputes is enough.
    printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`.
 3. `npm run dev`, order something, and pay with test card `4242 4242 4242 4242` (any future date, any CVC).
 4. Without `stripe listen`, payments are still confirmed by the return page's authenticated status check.
-   Refund and dispute updates then need the recovery job (§6).
+   Refund and dispute updates then need the recovery job (§6). Any `whsec_` value works for the app to
+   start; the sandbox E2E delivers real events itself, signed with it (§7).
 
 ## 4. Webhook configuration
 
@@ -177,22 +177,31 @@ allows daily runs) or any external scheduler. It is not scheduled in this reposi
 | Refunded                | partial pending → webhook; concurrent over-refund blocked; timeout → idempotent retry; failed refund; dashboard refund; cancel → refund |
 | Signature verification  | `stripe.test.ts` with Stripe's own test-header generator: valid, tampered, wrong secret, stale, missing                                 |
 | Requests sent to Stripe | `stripe.test.ts` against a local HTTP stand-in: amounts, CAD, metadata, idempotency keys, no card fields                                |
-| **Real Stripe sandbox** | `e2e/stripe-sandbox.spec.ts` (`STRIPE_E2E=1`, test keys): 4242 payment and 4000 0000 0000 0002 decline. **Not yet run**: no keys        |
+| **Real Stripe sandbox** | `e2e/stripe-sandbox.spec.ts` (`STRIPE_E2E=1`, test keys): the checklist below, automated. **7/7 passed 2026-10-26**                     |
 
 Integration tests use `src/test/stripe-double.ts`, a scripted stand-in for Stripe. They verify our
 reconciliation, not Stripe; that is what the sandbox run and the checklist below are for.
 
-**Sandbox checklist (run once keys are in `.env`):**
+**Sandbox run:** `STRIPE_E2E=1 npx playwright test stripe-sandbox --project=desktop` (test keys in
+`.env`). It needs no `stripe listen`: webhook scenarios fetch the real events from Stripe's API and
+deliver them to the endpoint signed with `STRIPE_WEBHOOK_SECRET`, as the CLI does, and the app reads
+the current state back from Stripe as usual. **2026-10-26: 7/7 passed.**
 
-1. `STRIPE_E2E=1 npx playwright test stripe-sandbox --project=desktop`
-2. Manually, with `stripe listen` running:
-   - 4242 → paid
-   - `4000 0000 0000 9995` (insufficient funds) → declined
-   - `4000 0027 6000 3184` (3-D Secure) → authenticate → paid
-   - Refund a paid order from Staff → Paiements → `refund.updated` → order `refunded`
-   - `stripe trigger charge.dispute.created` → appears under _À surveiller_ (that triggered dispute
-     belongs to a synthetic payment, so it shows as an unknown payment)
-3. Replay an event from the dashboard → logged as duplicate, no change.
+| Scenario                            | Card / action                    | Result                                          |
+| ----------------------------------- | -------------------------------- | ----------------------------------------------- |
+| Payment                             | `4242 4242 4242 4242`            | paid, confirmed by Stripe (not the redirect)    |
+| Declined                            | `4000 0000 0000 0002`            | refused on Stripe's page, order unpaid          |
+| Insufficient funds                  | `4000 0000 0000 9995`            | refused on Stripe's page                        |
+| 3-D Secure                          | `4000 0027 6000 3184` → Complete | paid after authentication                       |
+| Partial refund of a completed order | Staff refund 0,50 $              | refund succeeded, payment `partially_refunded`  |
+| Replayed event                      | same `refund.*` event again      | recorded as duplicate, nothing changes          |
+| Paid order cancelled by staff       | Staff → Annuler                  | refunded in full through Stripe                 |
+| Chargeback on a real order          | `4000 0000 0000 0259`            | dispute recorded on that order, _Litige ouvert_ |
+
+Stripe test-mode refunds succeed at once, so the refund is settled from Stripe's answer and the
+webhook re-applies it idempotently. A refund that stays pending until its webhook is covered by the
+integration tests with the Stripe double. Still to do on the staging deployment with a real
+endpoint: the same run with Stripe delivering webhooks itself (§8).
 
 ## 8. Production launch checklist
 
