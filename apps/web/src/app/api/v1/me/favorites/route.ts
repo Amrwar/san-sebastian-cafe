@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { apiRoute, parseJson } from "@/server/http";
-import { addFavorite, favoriteInput, listFavorites } from "@/server/modules/customer/favorites";
+import { apiRoute } from "@/server/http";
+import { addFavorite, listFavorites } from "@/server/modules/customer/favorites";
 import { getSessionUser } from "@/server/session";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,8 @@ export const GET = apiRoute(async () => {
 
 /** POST /api/v1/me/favorites — save a configuration (idempotent). */
 export const POST = apiRoute(async (req) => {
-  const input = await parseJson(req, favoriteInput);
-  const favorite = await addFavorite(db(), await getSessionUser(), input);
+  // The service checks the session first, then the body.
+  const body: unknown = await req.json().catch(() => null);
+  const favorite = await addFavorite(db(), await getSessionUser(), body);
   return NextResponse.json(favorite, { status: 201 });
 });

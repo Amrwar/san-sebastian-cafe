@@ -93,7 +93,15 @@ test.describe("HTTP API", () => {
   test("health reports database readiness with a request id", async ({ request }) => {
     const response = await request.get("/api/health");
     expect(response.status()).toBe(200);
-    expect(await response.json()).toEqual({ status: "ok", database: "ok" });
+    // Notifications may be "degraded" mid-run; the schema must be fully migrated.
+    const body = (await response.json()) as {
+      status: string;
+      database: string;
+      schema: { applied: number; expected: number; ok: boolean };
+    };
+    expect(body).toMatchObject({ database: "ok", schema: { ok: true } });
+    expect(body.schema.applied).toBe(body.schema.expected);
+    expect(["ok", "degraded"]).toContain(body.status);
     expect(response.headers()["x-request-id"]).toBeTruthy();
     expect(response.headers()["x-content-type-options"]).toBe("nosniff");
   });

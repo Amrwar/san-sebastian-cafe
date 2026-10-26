@@ -1,0 +1,151 @@
+# 22 — Operations Runbook
+
+What to do, step by step, to deploy safely, keep the platform healthy and handle the incidents
+that matter for a café that takes orders and payments online. Written for whoever runs the
+platform (owner, or a developer on call).
+
+## 1. Deploying
+
+Vercel deploys `main` automatically. **The build does not migrate the database**, so a deploy
+whose code needs a new migration must be preceded by that migration.
+
+1. On your machine, with the change merged locally, check that it passes:
+   `npm run check && npm run test:integration` (and `npm run test:e2e` for anything visible).
+2. If the change adds a file in `packages/db/migrations/`, migrate production **first**:
+   1. `npx vercel@latest env pull .env.production.local --environment=production --yes`
+   2. Run the migrations against `DATABASE_URL_UNPOOLED` from that file (never the `-pooler`
+      host): `DATABASE_URL=<unpooled url> npm run db:migrate`.
+   3. Delete `.env.production.local`.
+
+   Migrations only add (tables, columns with defaults), so the old code keeps working on the
+   new schema while the deploy rolls out.
+
+3. `git push origin main`.
+4. Check `https://<site>/api/health`: `"status": "ok"` and `schema.applied` = `schema.expected`.
+   A 503 with `schema.ok: false` means step 2 was missed: run it now.
+
+**Rolling back:** in Vercel → Deployments, promote the previous deployment. Schema changes stay
+(they are additive), so the older code still runs.
+
+## 2. Scheduled jobs
+
+Set `CRON_SECRET` (32+ random characters) in Vercel. Vercel Cron sends it as
+`Authorization: Bearer …` automatically.
+
+| Job                       | Schedule          | What it does                                                                  |
+| ------------------------- | ----------------- | ----------------------------------------------------------------------------- |
+| `GET /api/cron/outbox`    | every minute      | Sends notifications not sent right after the change (retries)                 |
+| `GET /api/cron/payments`  | every 5–10 min    | Reconciles payments stuck in checkout, resubmits pending refunds              |
+| `GET /api/cron/retention` | daily (e.g. 3:00) | Deletes expired sign-in data, old guest contact details, old webhook payloads |
+
+Vercel's **Hobby plan allows only daily cron jobs**. On Hobby, schedule the retention job on
+Vercel and the two others with an external scheduler (e.g. cron-job.org or GitHub Actions)
+calling the URLs with the bearer secret, or move to Pro. Example `vercel.json` for Pro:
+
+```json
+{
+  "crons": [
+    { "path": "/api/cron/outbox", "schedule": "* * * * *" },
+    { "path": "/api/cron/payments", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/retention", "schedule": "0 7 * * *" }
+  ]
+}
+```
+
+(Times are UTC: 7:00 UTC is 3:00 in Montréal in summer, 2:00 in winter.)
+
+## 3. Monitoring and alerts
+
+| Watch                          | How                                                                                          | Alert when                     |
+| ------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------ |
+| Site and database up, migrated | Uptime monitor (e.g. Better Stack, UptimeRobot) on `/api/health`, every minute               | non-200 twice in a row         |
+| Notifications flowing          | Same monitor, keyword check `"delayed":false`                                                | `delayed: true` for 15 minutes |
+| Errors                         | Vercel → Logs, filter `level:error`; or a log drain to the monitoring tool                   | any `request failed` burst     |
+| Payments                       | Staff → Paiements shows anything needing attention; Stripe Dashboard → Developers → Webhooks | failed webhook deliveries      |
+
+Logs are JSON, carry a request id (`x-request-id` header on every API response, also shown to
+customers on errors), and never contain contact details (tested).
+
+## 4. Incidents
+
+### Payment provider outage (Stripe down or erroring)
+
+1. Symptoms: customers can't reach the payment page, or errors mention Stripe in the logs.
+2. Staff → Pause online ordering (top of the queue) with a duration. Customers see that ordering
+   is paused; nothing is charged.
+3. Check https://status.stripe.com.
+4. When it's back, resume ordering. Orders left unpaid expire on their own and free their slots.
+   The payment job reconciles any checkout that succeeded during the outage.
+
+### Webhook backlog (payments not confirmed)
+
+1. Symptoms: customers paid, but orders stay "awaiting payment".
+2. Stripe Dashboard → Developers → Webhooks: check the endpoint's failures. Fix the cause (wrong
+   `STRIPE_WEBHOOK_SECRET` after a key rotation is the usual one), then **Resend** failed events.
+   Processing is idempotent, so resending is always safe.
+3. The payment recovery job (every 5–10 min) also asks Stripe directly about stuck checkouts, so
+   orders confirm even if webhooks stay down.
+
+### Refunds
+
+- Day to day: Staff → Paiements, find the order, refund all or part with a reason (shift lead and
+  up). Each refund is audited and the customer is emailed.
+- A refund stuck "pending": the payment job resubmits it with the same idempotency key, so it can
+  never pay out twice. If it stays pending for over an hour, look it up in Stripe.
+- Never refund from the Stripe Dashboard if you can avoid it: it works (the webhook records it), but
+  the reason isn't captured.
+
+### Confidentiality incident (Law 25)
+
+1. Contain it (revoke access in Équipe, rotate a leaked secret, take the page down).
+2. Record it the same day in Administration → Confidentialité → Registre des incidents.
+3. Assess the risk of serious injury (sensitivity, consequences, likelihood).
+4. If serious: notify the Commission d'accès à l'information and the people concerned promptly,
+   then date both notifications in the register. A serious incident can't be closed without them.
+
+### Secret leaked or staff member leaving
+
+- Remove a staff member's access in Administration → Équipe (their sessions end at once).
+- Rotate in Vercel, then redeploy: `BETTER_AUTH_SECRET` (signs everyone out and invalidates
+  unsubscribe links), `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (update both sides),
+  `CRON_SECRET` (update the external scheduler), the database password (Neon console, then
+  `vercel env pull` to check).
+
+## 5. Backups and restore drill
+
+Neon keeps the database's history (point-in-time restore; the window depends on the plan, check
+Neon → Project settings).
+
+**Drill (do it once before launch, then every quarter):**
+
+1. Neon console → Branches → create a branch from a past point in time (e.g. one hour ago).
+2. Run against the branch's connection string: `DATABASE_URL=<branch url> npm run db:migrate` (it
+   should report nothing to apply), then query a few known orders.
+3. Write down how long it took and the point in time used. Delete the branch.
+
+**Real restore:** create the branch from just before the problem, check it, then in Vercel point
+`DATABASE_URL` / `DATABASE_URL_UNPOOLED` at it (or restore the main branch in Neon) and redeploy.
+Payments taken since that point stay in Stripe: reconcile them with Staff → Paiements and the
+Stripe Dashboard.
+
+## 6. Soft-launch checklist
+
+Owner decisions and inputs:
+
+- [ ] D1: POS / mandatory billing (SRS) answered with Revenu Québec or the CPA. **No live sales
+      before this** (risk R1).
+- [ ] D21: privacy impact assessment for data hosted in the US, or move to Canadian regions.
+- [ ] D22: email provider and sending domain (SPF, DKIM, DMARC); `EMAIL_TRANSPORT=smtp`.
+- [ ] Lawyer review of the privacy policy and terms; privacy officer named.
+- [ ] GST/QST numbers on receipts; tax categories confirmed by the accountant.
+- [ ] Real menu, prices, hours and photos entered; `npm run db:purge-demo` run against production.
+
+Platform:
+
+- [ ] `APP_ENV=production`, live Stripe keys, Stripe sandbox checklist done (docs/13).
+- [ ] `STORAGE_DRIVER=vercel-blob` with a public Blob store; `CRON_SECRET` and the three jobs
+      scheduled; VAPID keys if push is wanted.
+- [ ] Uptime monitor on `/api/health` with alerts to the owner's phone.
+- [ ] Restore drill done once.
+- [ ] A test order end to end with a real card, refunded.
+- [ ] Staff trained (docs/23-staff-guide.md).

@@ -10,8 +10,12 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
   // HSTS only matters over HTTPS; browsers ignore it on http://localhost.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
-  // A nonce-based Content-Security-Policy is added in Phase 15 (hardening), once third-party
-  // payment scripts are known.
+  // Pages get a nonce-based Content-Security-Policy per request, from src/proxy.ts.
+];
+
+/** API responses are data, never documents to render: nothing may load or frame them. */
+const apiHeaders = [
+  { key: "Content-Security-Policy", value: "default-src 'none'; frame-ancestors 'none'" },
 ];
 
 const config: NextConfig = {
@@ -24,7 +28,11 @@ const config: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
     localPatterns: [{ pathname: "/api/dev/uploads/**", search: "" }],
   },
-  headers: () => Promise.resolve([{ source: "/:path*", headers: securityHeaders }]),
+  headers: () =>
+    Promise.resolve([
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/api/:path*", headers: apiHeaders },
+    ]),
 };
 
 export default withNextIntl(config);

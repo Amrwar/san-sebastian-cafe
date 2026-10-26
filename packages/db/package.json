@@ -8,7 +8,8 @@
     "./schema": "./src/schema/index.ts",
     "./maintenance": "./src/maintenance.ts",
     "./seed": "./src/seed.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./schema-version": "./src/schema-version.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

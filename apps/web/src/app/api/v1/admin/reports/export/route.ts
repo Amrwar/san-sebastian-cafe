@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { enforceLimit, requester } from "@/server/rate-limit";
 import { apiRoute } from "@/server/http";
 import { exportReportCsv } from "@/server/modules/reports/export";
 import { getSessionUser } from "@/server/session";
@@ -11,7 +12,9 @@ export const dynamic = "force-dynamic";
  */
 export const GET = apiRoute(async (req) => {
   const q = req.nextUrl.searchParams;
-  const { fileName, csv } = await exportReportCsv(db(), await getSessionUser(), {
+  const user = await getSessionUser();
+  if (user) await enforceLimit(db(), "reportExport", requester(req, user.userId));
+  const { fileName, csv } = await exportReportCsv(db(), user, {
     kind: q.get("kind"),
     from: q.get("from"),
     to: q.get("to"),

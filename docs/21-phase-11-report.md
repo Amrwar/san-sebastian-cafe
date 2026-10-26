@@ -68,12 +68,12 @@ The promo engine and promo codes at checkout already existed (Phase 3); this pha
 
 ## 2. Test results
 
-| Suite                             | Result                                                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Typecheck · ESLint · Prettier     | ✔ clean                                                                                                            |
-| Unit                              | ✔ web 47, domain 107, env 9, ui 4                                                                                  |
-| Integration — web (real Postgres) | ✔ 215 passed, incl. 17 new (promotions 5, marketing 7, referrals 5)                                                |
-| E2E — Playwright + axe            | ◐ new growth.spec passed (with the setup, 7/7); the full-suite rerun was stopped for low memory and is still to do |
+| Suite                             | Result                                                                               |
+| --------------------------------- | ------------------------------------------------------------------------------------ |
+| Typecheck · ESLint · Prettier     | ✔ clean                                                                              |
+| Unit                              | ✔ web 47, domain 107, env 9, ui 4                                                    |
+| Integration — web (real Postgres) | ✔ 215 passed, incl. 17 new (promotions 5, marketing 7, referrals 5)                  |
+| E2E — Playwright + axe            | ✔ growth.spec 7/7; full suite 84 passed, 2 skipped (run on 2026-10-26 with Phase 12) |
 
 **Promotions:** the code applies at checkout as set, in any case, through the last day
 (23:30 counts, the next morning doesn't); uses and discount counted; an edit or switching off

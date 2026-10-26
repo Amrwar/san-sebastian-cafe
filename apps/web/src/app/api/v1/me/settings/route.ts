@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { authorize } from "@/server/authz";
 import { db } from "@/server/db";
 import { apiRoute, parseJson } from "@/server/http";
 import {
@@ -19,6 +20,8 @@ export const GET = apiRoute(async () => {
 /** PUT /api/v1/me/settings — replaces the signed-in user's profile and email preferences. */
 export const PUT = apiRoute(async (req, { requestId }) => {
   const user = await getSessionUser();
+  // Signed-out callers are refused before the body is looked at.
+  authorize(user, "profile:update_own");
   const input = await parseJson(req, accountSettingsInput);
   const settings = await updateAccountSettings(db(), user, input, requestId);
   return NextResponse.json(settings);
