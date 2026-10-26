@@ -1,1 +1,1 @@
-{ "extends": "@ssc/config/tsconfig.base.json", "include": ["src"] }
+{ "extends": "@ssc/config/tsconfig.base.json", "include": ["src", "*.config.ts"] }

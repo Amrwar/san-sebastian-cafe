@@ -36,8 +36,9 @@ export function applyRatePpm(value: Cents, ratePpm: number): Cents {
   const numerator = value * ratePpm;
   if (!Number.isSafeInteger(numerator))
     throw new RangeError("Amount too large for exact rate math");
-  const sign = numerator < 0 ? -1 : 1;
-  return cents(sign * Math.floor((Math.abs(numerator) + PPM / 2) / PPM));
+  const rounded = Math.floor((Math.abs(numerator) + PPM / 2) / PPM);
+  // A negative amount that rounds to nothing is 0, never -0 (which would display as "-0,00 $").
+  return cents(numerator < 0 && rounded > 0 ? -rounded : rounded);
 }
 
 export type SupportedLocale = "fr-CA" | "en-CA";

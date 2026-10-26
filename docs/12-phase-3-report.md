@@ -137,8 +137,11 @@ The E2E run found and fixed three real issues:
   are planned with Phase 7, along with notifications (email/SMS/push, ⛔ D22).
 - **Expiry runs lazily**: stale unpaid orders expire when an order is placed or the staff queue refreshes.
   A scheduled job is still needed so expiry doesn't depend on traffic.
-- **The plan's Phase 3 exit criteria are not met yet**: ≥95 % branch coverage on `domain` and
-  property-based (fast-check) tests. No coverage tooling is set up yet, so this carries forward.
+- ~~**The plan's Phase 3 exit criteria are not met yet**: ≥95 % branch coverage on `domain` and
+  property-based (fast-check) tests.~~ **Met 2026-10-26**: 96.2 % branches, 97.8 % statements,
+  enforced by `npm run test` in CI. Property-based tests cover money and tax rounding, the
+  quote and its allocations, stamp earning and reversal, and the order state machine. They found
+  one bug: a tiny negative amount rounded to `-0`, which showed as "-0,00 $".
 - **No admin UI** for availability windows, size rules, capacity, cutoff or auto-accept. They're data-only
   until Phase 9.
 - **Delivery** stays disabled: address fields exist, but no zone or fee rules are confirmed.

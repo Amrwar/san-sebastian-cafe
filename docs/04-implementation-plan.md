@@ -4,7 +4,7 @@ _Status: **Phase 4 (payments) implemented (2026-10-11)**: Stripe Checkout behind
 
 > Scope note: the owner's Phase 2 brief covered the complete customer-facing experience, so parts of Phases 3, 5 and 8 were delivered early (pricing/tax/promotion/reward quote engine, pickup scheduling, menu & cart, read-only loyalty/orders/favorites views). Order **placement**, payments, loyalty **earning/redemption writes**, and staff status changes remain in Phases 6–8.
 >
-> The owner's Phase 3 brief likewise covered the full order-management domain: order placement, scheduling and capacity, the order state machine, cancellations and refunds, loyalty earning/redemption writes, and the staff order queue — with a **development payment simulator** in place of a real provider. What remains for Phase 6 is the real payment provider and its webhooks. Phase 7 (realtime and notifications) was completed on 2026-10-25 (report 19). The Phase 3 exit criteria of ≥95 % branch coverage and property-based tests are **not yet met** (no coverage tooling or fast-check yet) and carry forward.
+> The owner's Phase 3 brief likewise covered the full order-management domain: order placement, scheduling and capacity, the order state machine, cancellations and refunds, loyalty earning/redemption writes, and the staff order queue — with a **development payment simulator** in place of a real provider. What remains for Phase 6 is the real payment provider and its webhooks. Phase 7 (realtime and notifications) was completed on 2026-10-25 (report 19). The Phase 3 exit criteria of ≥95 % branch coverage and property-based tests were **met on 2026-10-26** (96.2 % branches with fast-check properties for money, tax, quotes, loyalty and the order state machine; thresholds enforced in CI).
 
 Every phase ends with: typecheck ✔ · lint ✔ · unit/integration/E2E tests for the phase ✔ · security, a11y, responsive and failure-state review · docs and this checklist updated · a written report (done / test results / open issues / next).
 
@@ -15,7 +15,7 @@ Legend: ☐ not started · ◐ in progress · ☑ done · ⛔ blocked on owner d
 | 0   | Discovery & planning                                     | ☑                                                     |
 | 1   | Foundation & tooling                                     | ☑                                                     |
 | 2   | Design system & PWA shell                                | ☑                                                     |
-| 3   | Domain core (pricing, tax, loyalty, order state machine) | ☑ (coverage target open)                              |
+| 3   | Domain core (pricing, tax, loyalty, order state machine) | ☑                                                     |
 | 4   | Auth, accounts, roles                                    | ☑                                                     |
 | 5   | Menu browsing, product customization, cart               | ☑                                                     |
 | 6   | Checkout, pickup scheduling, payments                    | ◐ Stripe built; sandbox deferred to pre-launch; D1 ⛔ |
