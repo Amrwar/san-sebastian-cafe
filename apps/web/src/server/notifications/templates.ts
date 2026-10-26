@@ -3,7 +3,7 @@ import { formatCad, cents } from "@ssc/domain";
 import en from "../../../messages/en.json";
 import fr from "../../../messages/fr.json";
 import { TIME_ZONE } from "@/i18n/routing";
-import type { NotificationTemplate, QueuedMessage } from "./outbox";
+import type { NotificationTemplate, OrderMessage } from "./outbox";
 
 /*
  * Customer messages in French and English, rendered when sent (from the outbox payload), so the
@@ -39,7 +39,7 @@ function translator(locale: "fr" | "en"): Translate {
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** The lines of the message, before layout (shared by the text and HTML versions). */
-function lines(message: QueuedMessage) {
+function lines(message: OrderMessage) {
   const { locale, template, payload: p } = message;
   const t = translator(locale);
   const money = (v: number) => formatCad(cents(v), locale === "en" ? "en-CA" : "fr-CA");
@@ -92,7 +92,7 @@ const TEMPLATE_KEYS: Record<
   order_refunded: "refunded",
 };
 
-export function renderEmail(message: QueuedMessage, baseUrl: string): RenderedEmail {
+export function renderEmail(message: OrderMessage, baseUrl: string): RenderedEmail {
   const { subject, body, link, footer, t } = lines(message);
   const url = `${baseUrl}/${message.locale}/orders/${message.payload.orderId}`;
   const text = [
@@ -118,7 +118,7 @@ ${link ? `<p style="margin:20px 0 0"><a href="${escape(url)}" style="display:inl
   return { subject, text, html };
 }
 
-export function renderPush(message: QueuedMessage): RenderedPush {
+export function renderPush(message: OrderMessage): RenderedPush {
   const t = translator(message.locale);
   const key = TEMPLATE_KEYS[message.template];
   const vars = { number: message.payload.number };
@@ -128,4 +128,39 @@ export function renderPush(message: QueuedMessage): RenderedPush {
     url: `/${message.locale}/orders/${message.payload.orderId}`,
     tag: `order-${message.payload.orderId}`,
   };
+}
+
+/**
+ * A marketing email: the campaign's text, then what CASL requires in every message: who sends
+ * it (name and mailing address), why the person receives it, and a working unsubscribe link.
+ */
+export function renderMarketingEmail(input: {
+  locale: "fr" | "en";
+  subject: string;
+  body: string;
+  sender: { name: string; address: string };
+  unsubscribeUrl: string;
+  test: boolean;
+}): RenderedEmail {
+  const t = translator(input.locale);
+  const paragraphs = input.body
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const footer = [
+    `${input.sender.name} · ${input.sender.address}`,
+    t("marketing.why"),
+    t("marketing.unsubscribe", { url: input.unsubscribeUrl }),
+  ];
+  const subject = input.test ? `[${t("marketing.test")}] ${input.subject}` : input.subject;
+  const text = [...paragraphs, "", "—", ...footer].join("\n\n");
+  const html = `<!doctype html><html lang="${input.locale}"><body style="margin:0;background:#f6f0e6;font-family:Arial,Helvetica,sans-serif;color:#38251f">
+<div style="max-width:560px;margin:0 auto;padding:24px">
+<p style="font-size:20px;font-family:Georgia,serif;margin:0 0 16px">${escape(input.sender.name)}</p>
+<div style="background:#fbf8f3;border:1px solid #ddd0bd;border-radius:8px;padding:20px">
+${paragraphs.map((p) => `<p style="margin:0 0 12px;line-height:1.5">${escape(p).replace(/\n/g, "<br>")}</p>`).join("\n")}
+</div>
+<p style="font-size:12px;color:#5c4a43;margin:16px 0 0;line-height:1.5">${escape(input.sender.name)} · ${escape(input.sender.address)}<br>${escape(t("marketing.why"))}<br><a href="${escape(input.unsubscribeUrl)}" style="color:#772f3b">${escape(t("marketing.unsubscribeLink"))}</a></p>
+</div></body></html>`;
+  return { subject, text, html };
 }

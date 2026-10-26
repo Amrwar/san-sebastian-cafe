@@ -87,6 +87,16 @@ export interface LoyaltyRules {
    * order’s stamps. 0 = off.
    */
   guestClaimDays: number;
+  /** Referral program (decision D17): off until the owner turns it on. */
+  referralEnabled: boolean;
+  /** Stamps for the customer who referred, once the newcomer's first order is completed. */
+  referrerStamps: number;
+  /** Welcome stamps for the newcomer, with that same first order. */
+  refereeStamps: number;
+  /** The first order must be at least this much (cents, before tip), to discourage token orders. */
+  referralMinOrderCents: number;
+  /** At most this many rewarded referrals per referrer in any 30 days. */
+  referralMonthlyCap: number;
 }
 
 /** Version 1: the café's rule ("every five qualifying paid drinks earn one free eligible drink"). */
@@ -109,6 +119,11 @@ export const DEFAULT_LOYALTY_RULES: LoyaltyRules = {
   inStoreMaxStampsPerVisit: 10,
   inStoreMaxStampsPerDay: 10,
   guestClaimDays: 14,
+  referralEnabled: false,
+  referrerStamps: 2,
+  refereeStamps: 1,
+  referralMinOrderCents: 500,
+  referralMonthlyCap: 5,
 };
 
 /** Bounds the admin form and the server both enforce. */
@@ -121,6 +136,10 @@ export const LOYALTY_RULE_LIMITS = {
   inStoreMaxStampsPerVisit: { min: 1, max: 50 },
   inStoreMaxStampsPerDay: { min: 1, max: 100 },
   guestClaimDays: { min: 0, max: 90 },
+  referrerStamps: { min: 0, max: 10 },
+  refereeStamps: { min: 0, max: 10 },
+  referralMinOrderCents: { min: 0, max: 10_000 },
+  referralMonthlyCap: { min: 1, max: 50 },
   adjustment: { min: -20, max: 20 },
 } as const;
 

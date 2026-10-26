@@ -445,6 +445,10 @@
       "renew": "Nouveau code",
       "error": "Le code n’a pas pu être affiché. Réessayez.",
       "label": "Votre code : {code}"
+    },
+    "referral": {
+      "referrer": "Parrainage : votre filleul a fait sa première commande",
+      "referee": "Bienvenue : vous avez été parrainé"
     }
   },
   "Orders": {
@@ -905,7 +909,9 @@
     "team": "Équipe",
     "audit": "Journal",
     "reports": "Rapports",
-    "privacy": "Confidentialité"
+    "privacy": "Confidentialité",
+    "promotions": "Promotions",
+    "marketing": "Courriels"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1163,7 +1169,14 @@
       "generic": "L’enregistrement a échoué. Vérifiez les champs et réessayez."
     },
     "guestClaimDays": "Jours pour réclamer une commande invitée",
-    "guestClaimHint": "Un invité qui crée un compte avec la même adresse courriel dans ce délai reçoit les tampons de ses commandes. 0 = désactivé."
+    "guestClaimHint": "Un invité qui crée un compte avec la même adresse courriel dans ce délai reçoit les tampons de ses commandes. 0 = désactivé.",
+    "referral": "Parrainage",
+    "referralHint": "Un nouveau client entre le code d’un client existant. Quand sa première commande (au moins le minimum, sans le pourboire) est terminée, les deux reçoivent des tampons.",
+    "referralEnabled": "Programme de parrainage actif",
+    "referrerStamps": "Tampons pour le parrain",
+    "refereeStamps": "Tampons de bienvenue pour le filleul",
+    "referralMin": "Première commande minimum ($)",
+    "referralCap": "Parrainages récompensés par parrain, sur 30 jours"
   },
   "AdminTeam": {
     "title": "Équipe",
@@ -1213,7 +1226,9 @@
       "payment": "Paiements",
       "consent": "Consentements",
       "report": "Rapports",
-      "privacy": "Confidentialité"
+      "privacy": "Confidentialité",
+      "promotion": "Promotions",
+      "marketing": "Courriels"
     },
     "when": "Date",
     "who": "Par",
@@ -1255,7 +1270,10 @@
         "rules_changed": "Règles de fidélité modifiées",
         "adjusted": "Carte de fidélité corrigée",
         "in_store_visit": "Tampons au comptoir",
-        "in_store_visit_voided": "Achat au comptoir annulé"
+        "in_store_visit_voided": "Achat au comptoir annulé",
+        "referral_recorded": "Code de parrainage entré",
+        "referral_rewarded": "Parrainage récompensé",
+        "guest_orders_claimed": "Commandes invitées réclamées"
       },
       "staff": {
         "invited": "Accès donné",
@@ -1285,6 +1303,14 @@
         "incident_updated": "Incident modifié",
         "officer_changed": "Responsable modifié",
         "retention_applied": "Délais de conservation appliqués"
+      },
+      "promotion": {
+        "created": "Promotion créée",
+        "updated": "Promotion modifiée"
+      },
+      "marketing": {
+        "sender_changed": "Expéditeur modifié",
+        "campaign_sent": "Campagne envoyée"
       }
     }
   },
@@ -1739,6 +1765,12 @@
       "body": "Nous vous avons remboursé {amount} pour la commande {number}. Le montant apparaîtra sur votre relevé d’ici 5 à 10 jours ouvrables.",
       "pushTitle": "Remboursement pour la commande {number}",
       "pushBody": "Ouvrez la commande pour les détails."
+    },
+    "marketing": {
+      "why": "Vous recevez ce courriel parce que vous avez accepté de recevoir les offres du café.",
+      "unsubscribe": "Se désabonner : {url}",
+      "unsubscribeLink": "Se désabonner en un clic",
+      "test": "ESSAI"
     }
   },
   "Push": {
@@ -1752,5 +1784,137 @@
     "denied": "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages du navigateur, puis réessayez.",
     "error": "L’activation a échoué. Réessayez.",
     "readyCta": "Me prévenir quand c’est prêt"
+  },
+  "AdminPromotions": {
+    "title": "Promotions",
+    "intro": "Codes promo saisis par les clients au panier. Une promotion n’est jamais supprimée : désactivez-la. Les commandes déjà passées gardent leur rabais.",
+    "new": "Nouvelle promotion",
+    "edit": "Modifier",
+    "save": "Enregistrer la promotion",
+    "saved": "Promotion enregistrée.",
+    "empty": "Aucune promotion.",
+    "demo": "Démo",
+    "code": "Code",
+    "codeHint": "Lettres, chiffres et tirets (3 à 32).",
+    "nameFr": "Nom (français)",
+    "nameEn": "Nom (anglais)",
+    "kind": "Type de rabais",
+    "kinds": {
+      "percent_off": "Pourcentage",
+      "amount_off": "Montant fixe"
+    },
+    "percent": "Rabais (%)",
+    "amount": "Rabais ($)",
+    "minSubtotal": "Achat minimum ($)",
+    "optional": "facultatif",
+    "scope": "S’applique à",
+    "scopes": {
+      "order": "Toute la commande",
+      "category": "Des catégories",
+      "product": "Des produits"
+    },
+    "chooseProducts": "Produits visés",
+    "chooseCategories": "Catégories visées",
+    "scopeCount": "{scope, select, product {{count, plural, one {# produit} other {# produits}}} other {{count, plural, one {# catégorie} other {# catégories}}}}",
+    "startsOn": "Début",
+    "endsOn": "Fin (dernier jour)",
+    "maxRedemptions": "Utilisations maximum",
+    "maxPerCustomer": "Maximum par client",
+    "stackable": "Cumulable avec une boisson gratuite",
+    "stackableHint": "Sinon, le code ne s’applique pas quand le client utilise une récompense.",
+    "active": "Active",
+    "activeHint": "Décochez pour arrêter la promotion sans la supprimer.",
+    "states": {
+      "active": "En cours",
+      "scheduled": "À venir",
+      "ended": "Terminée",
+      "off": "Désactivée"
+    },
+    "percentOff": "{percent} % de rabais",
+    "amountOff": "{amount} de rabais",
+    "minimum": "dès {amount}",
+    "window": "Du {from} au {to}",
+    "windowOpen": "Depuis le {from}, sans date de fin",
+    "usage": "{count, plural, =0 {jamais utilisée} one {utilisée # fois} other {utilisée # fois}} ({amount} de rabais)",
+    "limit": "limite de {count}",
+    "errors": {
+      "codeTaken": "Ce code est déjà utilisé par une autre promotion.",
+      "fields": "Vérifiez les champs : code, noms, rabais (jusqu’à 100 %), dates et, si visé, au moins un produit ou une catégorie."
+    }
+  },
+  "AdminMarketing": {
+    "title": "Courriels promotionnels",
+    "intro": "Envoyés seulement aux clients qui l’ont accepté, chacun dans sa langue. Chaque courriel indique qui l’envoie et offre un désabonnement en un clic, appliqué immédiatement (Loi canadienne anti-pourriel).",
+    "sender": {
+      "title": "Expéditeur",
+      "hint": "Obligatoire dans chaque courriel : le nom de l’entreprise et une adresse postale.",
+      "name": "Nom de l’entreprise",
+      "address": "Adresse postale",
+      "addressHint": "Rue, ville, province et code postal.",
+      "save": "Enregistrer",
+      "saved": "Expéditeur enregistré."
+    },
+    "campaigns": "Campagnes",
+    "audience": "{count, plural, =0 {Aucun client n’a accepté de recevoir vos offres pour l’instant.} one {# client a accepté de recevoir vos offres.} other {# clients ont accepté de recevoir vos offres.}}",
+    "new": "Nouvelle campagne",
+    "edit": "Modifier",
+    "empty": "Aucune campagne.",
+    "subjectFr": "Objet (français)",
+    "subjectEn": "Objet (anglais)",
+    "bodyFr": "Message (français)",
+    "bodyEn": "Message (anglais)",
+    "bodyHint": "Texte simple; laissez une ligne vide entre les paragraphes. L’expéditeur et le lien de désabonnement sont ajoutés automatiquement.",
+    "saveDraft": "Enregistrer le brouillon",
+    "draftSaved": "Brouillon enregistré.",
+    "sendTest": "M’envoyer un essai",
+    "testSent": "Essai envoyé à votre adresse.",
+    "send": "Envoyer…",
+    "confirmSend": "{count, plural, one {Envoyer à # client} other {Envoyer à # clients}}",
+    "sent": "{count, plural, =0 {Campagne envoyée.} one {Campagne envoyée à # client.} other {Campagne envoyée à # clients.}}",
+    "statuses": {
+      "draft": "Brouillon",
+      "sent": "Envoyée"
+    },
+    "sentSummary": "Envoyée le {date} à {recipients, plural, one {# client} other {# clients}} : {delivered} remis, {skipped} non envoyés (désabonnés entre-temps), {pending} en attente.",
+    "errors": {
+      "sender": "Indiquez le nom de l’entreprise et son adresse postale avant d’envoyer.",
+      "sent": "Cette campagne a déjà été envoyée.",
+      "fields": "Vérifiez les champs : objets de 3 caractères ou plus, messages de 10 caractères ou plus."
+    }
+  },
+  "Unsubscribe": {
+    "title": "Se désabonner",
+    "body": "Vous ne recevrez plus les offres et nouvelles du café par courriel. Les courriels au sujet de vos commandes continuent.",
+    "confirm": "Me désabonner",
+    "done": "C’est fait : vous êtes désabonné, dès maintenant.",
+    "error": "Le désabonnement a échoué. Réessayez.",
+    "invalid": "Ce lien de désabonnement n’est pas valide. Utilisez le lien le plus récent, ou gérez vos préférences depuis votre compte.",
+    "manage": "Vous pouvez aussi gérer vos préférences dans <link>Mon compte → Communications</link>."
+  },
+  "Referral": {
+    "title": "Parrainage",
+    "intro": "Invitez quelqu’un : quand sa première commande est terminée, vous recevez {referrer, plural, one {# tampon} other {# tampons}} et cette personne en reçoit {referee}.",
+    "yourCode": "Votre code :",
+    "copy": "Copier",
+    "copied": "Copié",
+    "rewarded": "{count, plural, one {# parrainage récompensé} other {# parrainages récompensés}}",
+    "enterLabel": "Quelqu’un vous a invité? Son code",
+    "enterHint": "7 lettres ou chiffres, à entrer avant votre première commande.",
+    "enter": "Valider",
+    "entered": "Code enregistré : {stamps, plural, one {votre tampon de bienvenue arrive} other {vos # tampons de bienvenue arrivent}} avec votre première commande terminée.",
+    "status": {
+      "pending": "Vous avez été parrainé : vos tampons de bienvenue arrivent avec votre première commande terminée.",
+      "rewarded": "Parrainage récompensé. Bienvenue!",
+      "declined": "Ce parrainage n’a pas pu être récompensé."
+    },
+    "errors": {
+      "own_code": "C’est votre propre code.",
+      "already_referred": "Vous avez déjà entré un code.",
+      "not_new_customer": "Les codes de parrainage sont réservés aux nouveaux clients, avant leur première commande.",
+      "referrer_inactive": "Ce code n’est pas encore actif.",
+      "referrals_off": "Le parrainage n’est pas offert en ce moment.",
+      "unknown": "Code inconnu. Vérifiez-le et réessayez.",
+      "generic": "L’enregistrement a échoué. Réessayez."
+    }
   }
 }

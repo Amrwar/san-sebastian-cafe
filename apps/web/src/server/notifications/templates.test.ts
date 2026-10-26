@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { QueuedMessage } from "./outbox";
+import type { OrderMessage } from "./outbox";
 import { renderEmail, renderPush } from "./templates";
 
 /** French number and time formats use non-breaking spaces; compare with plain ones. */
 const plain = (s: string) => s.replace(/[\u00a0\u202f]/g, " ");
 
-const message = (overrides: Partial<QueuedMessage> = {}): QueuedMessage => ({
+const message = (overrides: Partial<OrderMessage> = {}): OrderMessage => ({
   id: "m1",
   channel: "email",
   template: "order_confirmed",

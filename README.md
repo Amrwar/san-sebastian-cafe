@@ -153,6 +153,7 @@ docs/               planning and phase documentation
 | [18 Phase 8 report](docs/18-phase-8-report.md)               | Privacy (Law 25): data export, deletion, requests, incidents, retention       |
 | [19 Phase 9 report](docs/19-phase-9-report.md)               | Live queue and tracking, order emails, Web Push                               |
 | [20 Phase 10 report](docs/20-phase-10-report.md)             | Guest-order stamp claim; accounts and loyalty phases closed                   |
+| [21 Phase 11 report](docs/21-phase-11-report.md)             | Growth: promotions admin, marketing email (CASL), referrals                   |
 
 ## Deployment (Vercel demo)
 

@@ -37,6 +37,8 @@ export interface LedgerDetails {
   forgiven?: number;
   /** redeem: the drink that was free. */
   drink?: LocalizedName;
+  /** earn: stamps from the referral program, as the one who referred or the newcomer. */
+  referral?: "referrer" | "referee";
   /** adjust: what kind of adjustment. */
   action?: "stamps" | "forgive_debt" | "void_reward";
 }

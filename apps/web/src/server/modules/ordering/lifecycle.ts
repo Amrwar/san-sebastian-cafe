@@ -10,6 +10,7 @@ import {
 } from "../loyalty/earning";
 import { releaseReservations } from "../loyalty/ledger";
 import { currentRules } from "../loyalty/program";
+import { rewardReferral } from "../loyalty/referrals";
 
 /** Who is acting on an order, as the services see it. */
 export type OrderActor =
@@ -146,6 +147,8 @@ export async function applyTransition(
     if ((await currentRules(tx)).earnOn === "paid") await earnForOrder(tx, updated, now);
   } else if (to === "completed") {
     if ((await currentRules(tx)).earnOn === "completed") await earnForOrder(tx, updated, now);
+    // A newcomer's first completed order may reward a referral (loyalty/referrals.ts).
+    await rewardReferral(tx, updated, now);
   } else if (to === "expired" || ((to === "cancelled" || to === "rejected") && !order.paidAt)) {
     await releaseReservations(tx, order.id, now);
   } else if (to === "cancelled" || to === "rejected") {

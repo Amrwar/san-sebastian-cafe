@@ -74,6 +74,12 @@ export const loyaltyPrograms = pgTable(
     inStoreMaxStampsPerDay: integer().notNull().default(10),
     /** Days after paying during which a guest can claim the order’s stamps by signing up (0 = off). */
     guestClaimDays: integer().notNull().default(14),
+    /** Referral program (off by default): see LoyaltyRules in @ssc/domain. */
+    referralEnabled: boolean().notNull().default(false),
+    referrerStamps: integer().notNull().default(2),
+    refereeStamps: integer().notNull().default(1),
+    referralMinOrderCents: integer().notNull().default(500),
+    referralMonthlyCap: integer().notNull().default(5),
     /** Why the owner changed the rules (shown in the version history). */
     note: text(),
     createdByUserId: text().references(() => users.id, { onDelete: "set null" }),
@@ -84,6 +90,10 @@ export const loyaltyPrograms = pgTable(
     check("loyalty_programs_stamps", sql`${t.stampsPerReward} between 2 and 20`),
     check("loyalty_programs_min_paid", sql`${t.minPaidCentsPerDrink} >= 0`),
     check("loyalty_programs_guest_claim", sql`${t.guestClaimDays} between 0 and 90`),
+    check(
+      "loyalty_programs_referral",
+      sql`${t.referrerStamps} between 0 and 10 and ${t.refereeStamps} between 0 and 10 and ${t.referralMinOrderCents} >= 0 and ${t.referralMonthlyCap} between 1 and 50`,
+    ),
     check(
       "loyalty_programs_caps",
       sql`(${t.maxStampsPerPurchase} is null or ${t.maxStampsPerPurchase} > 0) and ${t.inStoreMaxStampsPerVisit} > 0 and ${t.inStoreMaxStampsPerDay} > 0`,
@@ -297,4 +307,44 @@ export const loyaltyCardCodes = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("loyalty_card_codes_user_idx").on(t.userId, t.expiresAt)],
+);
+
+/** Each customer's own referral code (created the first time they look at it). */
+export const referralCodes = pgTable("referral_codes", {
+  userId: text()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  code: text().notNull().unique(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+export const REFERRAL_STATUSES = ["pending", "rewarded", "declined"] as const;
+
+/**
+ * A newcomer who entered someone's code. Rewarded (both sides get stamps) when the newcomer's
+ * first qualifying order is completed; declined when a limit applies. One per newcomer.
+ */
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    referrerUserId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    refereeUserId: text()
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text().notNull().default("pending"),
+    /** Why it was declined (e.g. "monthly_cap"). */
+    reason: text(),
+    orderId: uuid().references(() => orders.id, { onDelete: "set null" }),
+    rewardedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("referrals_referrer_idx").on(t.referrerUserId, t.rewardedAt),
+    check("referrals_status", sql`${t.status} in ('pending', 'rewarded', 'declined')`),
+    check("referrals_not_self", sql`${t.referrerUserId} <> ${t.refereeUserId}`),
+  ],
 );

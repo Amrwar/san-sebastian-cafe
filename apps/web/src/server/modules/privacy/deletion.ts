@@ -120,6 +120,8 @@ export async function deleteOwnAccount(
           or ${rewardRedemptions.inStoreVisitId} in (select ${loyaltyInStoreVisits.id} from ${loyaltyInStoreVisits} where ${loyaltyInStoreVisits.accountId} = ${account.id})`,
       );
     }
+    // Marketing emails queued or sent to this address go too.
+    await tx.delete(outboxMessages).where(eq(outboxMessages.recipient, user.email));
     // Everything else tied to the account is removed by the database (ON DELETE CASCADE).
     await tx.delete(users).where(eq(users.id, user.id));
     await recordSelfServiceRequest(tx, null, "deletion", now, { ordersAnonymized });

@@ -65,3 +65,30 @@ export const pushSubscriptions = pgTable(
   },
   (t) => [index("push_subscriptions_user_idx").on(t.userId)],
 );
+
+export const CAMPAIGN_STATUSES = ["draft", "sent"] as const;
+
+/**
+ * A marketing email (CASL): sent only to customers who consented, each in their language, with
+ * the sender's identity and a one-click unsubscribe. Messages go through the outbox.
+ */
+export const marketingCampaigns = pgTable(
+  "marketing_campaigns",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    subjectFr: text().notNull(),
+    subjectEn: text().notNull(),
+    bodyFr: text().notNull(),
+    bodyEn: text().notNull(),
+    status: text().notNull().default("draft"),
+    recipientCount: integer(),
+    sentAt: timestamp({ withTimezone: true }),
+    createdByUserId: text().references(() => users.id, { onDelete: "set null" }),
+    sentByUserId: text().references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    check("marketing_campaigns_status", sql`${t.status} in (${list(CAMPAIGN_STATUSES)})`),
+    check("marketing_campaigns_sent", sql`(${t.status} = 'sent') = (${t.sentAt} is not null)`),
+  ],
+);

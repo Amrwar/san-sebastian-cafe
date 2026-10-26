@@ -11,6 +11,8 @@ export interface OutgoingEmail {
   text: string;
   /** Optional HTML version (the text version is always sent too). */
   html?: string;
+  /** Extra headers, e.g. List-Unsubscribe on marketing email. */
+  headers?: Record<string, string>;
   /** Machine-readable payload for development tooling (e.g. the sign-in code). */
   meta?: Record<string, string>;
 }
@@ -32,6 +34,7 @@ export async function sendEmail(message: OutgoingEmail): Promise<void> {
       subject: message.subject,
       text: message.text,
       ...(message.html ? { html: message.html } : {}),
+      ...(message.headers ? { headers: message.headers } : {}),
     });
     logger().info({ transport: "smtp" }, "email sent");
     return;

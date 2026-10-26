@@ -49,6 +49,9 @@ export const storeSettings = pgTable(
      */
     privacyOfficerName: text(),
     privacyOfficerEmail: text(),
+    /** Sender identification required in marketing emails (CASL): business name and mailing address. */
+    senderName: text(),
+    senderAddress: text(),
     ...demoFlag,
     ...timestamps,
   },

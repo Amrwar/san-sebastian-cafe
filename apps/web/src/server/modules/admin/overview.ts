@@ -79,6 +79,8 @@ export const AUDIT_AREAS = [
   "consent",
   "report",
   "privacy",
+  "promotion",
+  "marketing",
 ] as const;
 export type AuditArea = (typeof AUDIT_AREAS)[number];
 export const AUDIT_PAGE_SIZE = 50;

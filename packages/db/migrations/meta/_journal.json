@@ -57,6 +57,20 @@
       "when": 1792956898833,
       "tag": "0007_guest_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792968893935,
+      "tag": "0008_marketing",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792970907565,
+      "tag": "0009_referrals",
+      "breakpoints": true
     }
   ]
 }

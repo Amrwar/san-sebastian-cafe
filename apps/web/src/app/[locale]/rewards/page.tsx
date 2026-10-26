@@ -7,6 +7,7 @@ import { StampCard } from "@/components/StampCard";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/server/db";
 import { currentRules } from "@/server/modules/loyalty/program";
+import { getMyReferral } from "@/server/modules/loyalty/referrals";
 import {
   getLoyaltySummary,
   HISTORY_PAGE_SIZE,
@@ -14,6 +15,7 @@ import {
 } from "@/server/modules/loyalty/summary";
 import { getSessionUser } from "@/server/session";
 import { CardCode } from "./CardCode.client";
+import { Referral } from "./Referral.client";
 
 export async function generateMetadata({
   params,
@@ -69,7 +71,10 @@ export default async function RewardsPage({
     );
   }
 
-  const loyalty = await getLoyaltySummary(db(), user, { page });
+  const [loyalty, referral] = await Promise.all([
+    getLoyaltySummary(db(), user, { page }),
+    getMyReferral(db(), user),
+  ]);
   const pages = Math.max(1, Math.ceil(loyalty.historyTotal / HISTORY_PAGE_SIZE));
   return (
     <Container className="max-w-3xl">
@@ -175,6 +180,7 @@ export default async function RewardsPage({
           )}
         </section>
 
+        {referral.enabled ? <Referral referral={referral} /> : null}
         {rules}
       </div>
     </Container>
@@ -189,6 +195,7 @@ async function HistoryEntry({ entry: h, locale }: { entry: LedgerEntryView; loca
   const notes: string[] = [];
   if (d.cause) notes.push(t(`causes.${d.cause}`));
   if (d.drink) notes.push(pick(d.drink));
+  if (d.referral) notes.push(t(`referral.${d.referral}`));
   if (d.forgiven) notes.push(t("forgiven", { count: d.forgiven }));
   if (h.debtDelta > 0) notes.push(t("owed", { count: h.debtDelta }));
   return (

@@ -52,6 +52,10 @@ export function RulesForm({
     inStorePerVisit: String(rules.inStoreMaxStampsPerVisit),
     inStorePerDay: String(rules.inStoreMaxStampsPerDay),
     guestClaimDays: String(rules.guestClaimDays),
+    referrerStamps: String(rules.referrerStamps),
+    refereeStamps: String(rules.refereeStamps),
+    referralMin: dollars(rules.referralMinOrderCents),
+    referralCap: String(rules.referralMonthlyCap),
     note: "",
   });
   const [choices, setChoices] = useState({
@@ -60,6 +64,7 @@ export function RulesForm({
     refundShortfallPolicy: rules.refundShortfallPolicy,
     rewardOnRefund: rules.rewardOnRefund,
     inStoreEnabled: rules.inStoreEnabled,
+    referralEnabled: rules.referralEnabled,
   });
   const [excluded, setExcluded] = useState<string[]>([...rules.excludedProductIds]);
   const [rewardExcluded, setRewardExcluded] = useState<string[]>([
@@ -102,6 +107,10 @@ export function RulesForm({
       inStoreMaxStampsPerVisit: whole("inStorePerVisit", L.inStoreMaxStampsPerVisit) ?? 0,
       inStoreMaxStampsPerDay: whole("inStorePerDay", L.inStoreMaxStampsPerDay) ?? 0,
       guestClaimDays: whole("guestClaimDays", L.guestClaimDays) ?? 0,
+      referrerStamps: whole("referrerStamps", L.referrerStamps) ?? 0,
+      refereeStamps: whole("refereeStamps", L.refereeStamps) ?? 0,
+      referralMinOrderCents: money("referralMin", L.referralMinOrderCents) ?? 0,
+      referralMonthlyCap: whole("referralCap", L.referralMonthlyCap) ?? 0,
       excludedProductIds: excluded,
       // Size-level exclusions have no editor yet; keep whatever is in force.
       excludedVariantIds: [...rules.excludedVariantIds],
@@ -315,6 +324,49 @@ export function RulesForm({
             onChange={setField("guestClaimDays")}
             className="sm:max-w-xs"
           />
+        </Surface>
+
+        <Surface className="flex flex-col gap-4">
+          <h2 className="font-display text-2xl text-espresso">{t("referral")}</h2>
+          <p className="text-sm text-espresso-muted">{t("referralHint")}</p>
+          <CheckboxField
+            label={t("referralEnabled")}
+            checked={choices.referralEnabled}
+            onChange={(e) => {
+              const referralEnabled = e.currentTarget.checked;
+              setChoices((c) => ({ ...c, referralEnabled }));
+            }}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              label={t("referrerStamps")}
+              inputMode="numeric"
+              value={text.referrerStamps}
+              error={errors.referrerStamps}
+              onChange={setField("referrerStamps")}
+            />
+            <TextField
+              label={t("refereeStamps")}
+              inputMode="numeric"
+              value={text.refereeStamps}
+              error={errors.refereeStamps}
+              onChange={setField("refereeStamps")}
+            />
+            <TextField
+              label={t("referralMin")}
+              inputMode="decimal"
+              value={text.referralMin}
+              error={errors.referralMin}
+              onChange={setField("referralMin")}
+            />
+            <TextField
+              label={t("referralCap")}
+              inputMode="numeric"
+              value={text.referralCap}
+              error={errors.referralCap}
+              onChange={setField("referralCap")}
+            />
+          </div>
         </Surface>
 
         {canEdit ? (

@@ -5,13 +5,25 @@ import { db } from "../db";
 import { env } from "../env";
 import { logger } from "../logger";
 import { sendEmail } from "../mailer";
-import { processOutbox, type Deliverer, type OutboxRun, type QueuedMessage } from "./outbox";
-import { renderEmail, renderPush } from "./templates";
+import {
+  campaignContent,
+  getSender,
+  hasMarketingConsent,
+  unsubscribeToken,
+} from "../modules/marketing/campaigns";
+import {
+  processOutbox,
+  type Deliverer,
+  type MarketingMessage,
+  type OrderMessage,
+  type OutboxRun,
+} from "./outbox";
+import { renderEmail, renderMarketingEmail, renderPush } from "./templates";
 
 /** Sends a push to every device of the user; drops devices the push service says are gone. */
 export async function sendPush(
   database: Database,
-  message: QueuedMessage,
+  message: OrderMessage,
 ): Promise<"sent" | "skipped"> {
   const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = env();
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY || !VAPID_SUBJECT) return "skipped";
@@ -56,8 +68,55 @@ export async function sendPush(
   return "skipped";
 }
 
+/**
+ * Sends one marketing email, after checking again that the customer still consents (they may
+ * have unsubscribed since the campaign was queued).
+ */
+export async function sendMarketing(
+  database: Database,
+  message: MarketingMessage,
+  { baseUrl, secret }: { baseUrl: string; secret: string },
+): Promise<"sent" | "skipped"> {
+  const { campaignId, userId, test = false } = message.payload;
+  if (!test && (!userId || !(await hasMarketingConsent(database, userId)))) return "skipped";
+  const content = await campaignContent(database, campaignId, message.locale);
+  if (!content) return "skipped";
+  const sender = await getSender(database);
+  if (!sender.name || !sender.address) throw new Error("sender identity missing");
+  const query = userId ? `u=${userId}&t=${unsubscribeToken(userId, secret)}` : null;
+  const unsubscribeUrl = query
+    ? `${baseUrl}/${message.locale}/unsubscribe?${query}`
+    : `${baseUrl}/${message.locale}/account/notifications`;
+  const email = renderMarketingEmail({
+    locale: message.locale,
+    ...content,
+    sender: { name: sender.name, address: sender.address },
+    unsubscribeUrl,
+    test,
+  });
+  await sendEmail({
+    to: message.recipient,
+    ...email,
+    // One-click unsubscribe from the mail app itself (RFC 8058).
+    ...(query
+      ? {
+          headers: {
+            "List-Unsubscribe": `<${baseUrl}/api/v1/unsubscribe?${query}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
+        }
+      : {}),
+  });
+  return "sent";
+}
+
 export const liveDeliverer: Deliverer = {
   async send(message) {
+    if (message.template === "marketing")
+      return sendMarketing(db(), message, {
+        baseUrl: env().BETTER_AUTH_URL,
+        secret: env().BETTER_AUTH_SECRET,
+      });
     if (message.channel === "push") return sendPush(db(), message);
     const email = renderEmail(message, env().BETTER_AUTH_URL);
     await sendEmail({ to: message.recipient, ...email });

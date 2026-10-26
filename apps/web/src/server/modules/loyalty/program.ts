@@ -55,6 +55,11 @@ function toRules(row: ProgramRow): ProgramVersion {
     inStoreMaxStampsPerVisit: row.inStoreMaxStampsPerVisit,
     inStoreMaxStampsPerDay: row.inStoreMaxStampsPerDay,
     guestClaimDays: row.guestClaimDays,
+    referralEnabled: row.referralEnabled,
+    referrerStamps: row.referrerStamps,
+    refereeStamps: row.refereeStamps,
+    referralMinOrderCents: row.referralMinOrderCents,
+    referralMonthlyCap: row.referralMonthlyCap,
     note: row.note,
     createdByUserId: row.createdByUserId,
     createdAt: row.createdAt,
@@ -102,6 +107,11 @@ export const programInput = z
     inStoreMaxStampsPerVisit: count(L.inStoreMaxStampsPerVisit.min, L.inStoreMaxStampsPerVisit.max),
     inStoreMaxStampsPerDay: count(L.inStoreMaxStampsPerDay.min, L.inStoreMaxStampsPerDay.max),
     guestClaimDays: count(L.guestClaimDays.min, L.guestClaimDays.max),
+    referralEnabled: z.boolean(),
+    referrerStamps: count(L.referrerStamps.min, L.referrerStamps.max),
+    refereeStamps: count(L.refereeStamps.min, L.refereeStamps.max),
+    referralMinOrderCents: count(L.referralMinOrderCents.min, L.referralMinOrderCents.max),
+    referralMonthlyCap: count(L.referralMonthlyCap.min, L.referralMonthlyCap.max),
     note: z.string().trim().min(3).max(300),
   })
   .strict();

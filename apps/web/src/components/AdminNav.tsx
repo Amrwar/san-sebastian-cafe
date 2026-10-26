@@ -4,7 +4,17 @@ import { cn } from "@ssc/ui";
 import { Link } from "@/i18n/navigation";
 
 type Section =
-  "overview" | "menu" | "options" | "store" | "loyalty" | "reports" | "privacy" | "team" | "audit";
+  | "overview"
+  | "menu"
+  | "options"
+  | "store"
+  | "loyalty"
+  | "promotions"
+  | "marketing"
+  | "reports"
+  | "privacy"
+  | "team"
+  | "audit";
 
 /** Secondary navigation between administration pages; shows only what the role may open. */
 export async function AdminNav({ current, role }: { current: Section; role: Role }) {
@@ -25,6 +35,18 @@ export async function AdminNav({ current, role }: { current: Section; role: Role
       visible: can(role, "store:configure"),
     },
     { key: "loyalty", href: "/admin/loyalty", label: t("loyalty"), visible: true },
+    {
+      key: "promotions",
+      href: "/admin/promotions",
+      label: t("promotions"),
+      visible: can(role, "promotions:manage"),
+    },
+    {
+      key: "marketing",
+      href: "/admin/marketing",
+      label: t("marketing"),
+      visible: can(role, "promotions:manage"),
+    },
     {
       key: "reports",
       href: "/admin/reports",

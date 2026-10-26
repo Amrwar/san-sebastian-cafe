@@ -172,14 +172,32 @@ async function emailRecipient(tx: Tx, order: OrderRow): Promise<string | null> {
 
 // --- Sending ----------------------------------------------------------------------------------
 
-export interface QueuedMessage {
+interface QueuedBase {
   id: string;
   channel: "email" | "push";
-  template: NotificationTemplate;
   recipient: string;
   locale: "fr" | "en";
+}
+
+/** A notice about an order. */
+export interface OrderMessage extends QueuedBase {
+  template: NotificationTemplate;
   payload: NotificationPayload;
 }
+
+/** A marketing email of a campaign (see modules/marketing). */
+export interface MarketingPayload {
+  campaignId: string;
+  /** The consenting customer; null for a test sent to staff. */
+  userId: string | null;
+  test?: boolean;
+}
+export interface MarketingMessage extends QueuedBase {
+  template: "marketing";
+  payload: MarketingPayload;
+}
+
+export type QueuedMessage = OrderMessage | MarketingMessage;
 
 /**
  * How messages leave. `send` returns "sent", or "skipped" when there was nobody left to reach
@@ -242,14 +260,14 @@ export async function processOutbox(
 
   const run: OutboxRun = { sent: 0, skipped: 0, retried: 0, failed: 0 };
   for (const row of claimed) {
-    const message: QueuedMessage = {
+    const message = {
       id: row.id,
-      channel: row.channel as QueuedMessage["channel"],
-      template: row.template as NotificationTemplate,
+      channel: row.channel,
+      template: row.template,
       recipient: row.recipient,
       locale: row.locale === "en" ? "en" : "fr",
-      payload: row.payload as unknown as NotificationPayload,
-    };
+      payload: row.payload,
+    } as unknown as QueuedMessage;
     try {
       const outcome = await deliverer.send(message);
       await db

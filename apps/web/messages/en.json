@@ -445,6 +445,10 @@
       "renew": "New code",
       "error": "The code couldn’t be shown. Please try again.",
       "label": "Your code: {code}"
+    },
+    "referral": {
+      "referrer": "Referral: your friend placed their first order",
+      "referee": "Welcome: you were referred"
     }
   },
   "Orders": {
@@ -905,7 +909,9 @@
     "team": "Team",
     "audit": "Audit log",
     "reports": "Reports",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "promotions": "Promotions",
+    "marketing": "Email"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1163,7 +1169,14 @@
       "generic": "Saving failed. Check the fields and try again."
     },
     "guestClaimDays": "Days to claim a guest order",
-    "guestClaimHint": "A guest who creates an account with the same email within this time gets the stamps of their orders. 0 = off."
+    "guestClaimHint": "A guest who creates an account with the same email within this time gets the stamps of their orders. 0 = off.",
+    "referral": "Referrals",
+    "referralHint": "A new customer enters an existing customer’s code. When their first order (at least the minimum, before tip) is completed, both get stamps.",
+    "referralEnabled": "Referral program on",
+    "referrerStamps": "Stamps for the referrer",
+    "refereeStamps": "Welcome stamps for the newcomer",
+    "referralMin": "Minimum first order ($)",
+    "referralCap": "Rewarded referrals per referrer, over 30 days"
   },
   "AdminTeam": {
     "title": "Team",
@@ -1213,7 +1226,9 @@
       "payment": "Payments",
       "consent": "Consents",
       "report": "Reports",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "promotion": "Promotions",
+      "marketing": "Email"
     },
     "when": "Date",
     "who": "By",
@@ -1255,7 +1270,10 @@
         "rules_changed": "Loyalty rules changed",
         "adjusted": "Loyalty card corrected",
         "in_store_visit": "Counter stamps",
-        "in_store_visit_voided": "Counter purchase cancelled"
+        "in_store_visit_voided": "Counter purchase cancelled",
+        "referral_recorded": "Referral code entered",
+        "referral_rewarded": "Referral rewarded",
+        "guest_orders_claimed": "Guest orders claimed"
       },
       "staff": {
         "invited": "Access given",
@@ -1285,6 +1303,14 @@
         "incident_updated": "Incident edited",
         "officer_changed": "Person in charge changed",
         "retention_applied": "Retention periods applied"
+      },
+      "promotion": {
+        "created": "Promotion created",
+        "updated": "Promotion edited"
+      },
+      "marketing": {
+        "sender_changed": "Sender changed",
+        "campaign_sent": "Campaign sent"
       }
     }
   },
@@ -1739,6 +1765,12 @@
       "body": "We refunded {amount} for order {number}. It will show on your statement within 5 to 10 business days.",
       "pushTitle": "Refund for order {number}",
       "pushBody": "Open the order for details."
+    },
+    "marketing": {
+      "why": "You are receiving this email because you agreed to receive the café’s offers.",
+      "unsubscribe": "Unsubscribe: {url}",
+      "unsubscribeLink": "Unsubscribe in one click",
+      "test": "TEST"
     }
   },
   "Push": {
@@ -1752,5 +1784,137 @@
     "denied": "Notifications are blocked for this site. Allow them in the browser settings, then try again.",
     "error": "Turning notifications on failed. Try again.",
     "readyCta": "Notify me when it’s ready"
+  },
+  "AdminPromotions": {
+    "title": "Promotions",
+    "intro": "Promo codes customers enter in the cart. A promotion is never deleted: switch it off. Orders already placed keep their discount.",
+    "new": "New promotion",
+    "edit": "Edit",
+    "save": "Save promotion",
+    "saved": "Promotion saved.",
+    "empty": "No promotions.",
+    "demo": "Demo",
+    "code": "Code",
+    "codeHint": "Letters, digits and dashes (3 to 32).",
+    "nameFr": "Name (French)",
+    "nameEn": "Name (English)",
+    "kind": "Discount type",
+    "kinds": {
+      "percent_off": "Percentage",
+      "amount_off": "Fixed amount"
+    },
+    "percent": "Discount (%)",
+    "amount": "Discount ($)",
+    "minSubtotal": "Minimum purchase ($)",
+    "optional": "optional",
+    "scope": "Applies to",
+    "scopes": {
+      "order": "The whole order",
+      "category": "Categories",
+      "product": "Products"
+    },
+    "chooseProducts": "Products covered",
+    "chooseCategories": "Categories covered",
+    "scopeCount": "{scope, select, product {{count, plural, one {# product} other {# products}}} other {{count, plural, one {# category} other {# categories}}}}",
+    "startsOn": "Start",
+    "endsOn": "End (last day)",
+    "maxRedemptions": "Maximum uses",
+    "maxPerCustomer": "Maximum per customer",
+    "stackable": "Can be combined with a free drink",
+    "stackableHint": "Otherwise the code doesn’t apply when the customer uses a reward.",
+    "active": "Active",
+    "activeHint": "Untick to stop the promotion without deleting it.",
+    "states": {
+      "active": "Running",
+      "scheduled": "Upcoming",
+      "ended": "Ended",
+      "off": "Off"
+    },
+    "percentOff": "{percent}% off",
+    "amountOff": "{amount} off",
+    "minimum": "from {amount}",
+    "window": "{from} to {to}",
+    "windowOpen": "From {from}, no end date",
+    "usage": "{count, plural, =0 {never used} one {used # time} other {used # times}} ({amount} in discounts)",
+    "limit": "limit of {count}",
+    "errors": {
+      "codeTaken": "Another promotion already uses this code.",
+      "fields": "Check the fields: code, names, discount (up to 100%), dates and, if targeted, at least one product or category."
+    }
+  },
+  "AdminMarketing": {
+    "title": "Marketing email",
+    "intro": "Sent only to customers who agreed, each in their language. Every email says who sends it and offers a one-click unsubscribe, applied at once (Canada’s anti-spam law).",
+    "sender": {
+      "title": "Sender",
+      "hint": "Required in every email: the business name and a mailing address.",
+      "name": "Business name",
+      "address": "Mailing address",
+      "addressHint": "Street, city, province and postal code.",
+      "save": "Save",
+      "saved": "Sender saved."
+    },
+    "campaigns": "Campaigns",
+    "audience": "{count, plural, =0 {No customer has agreed to receive your offers yet.} one {# customer agreed to receive your offers.} other {# customers agreed to receive your offers.}}",
+    "new": "New campaign",
+    "edit": "Edit",
+    "empty": "No campaigns.",
+    "subjectFr": "Subject (French)",
+    "subjectEn": "Subject (English)",
+    "bodyFr": "Message (French)",
+    "bodyEn": "Message (English)",
+    "bodyHint": "Plain text; leave a blank line between paragraphs. The sender and the unsubscribe link are added automatically.",
+    "saveDraft": "Save draft",
+    "draftSaved": "Draft saved.",
+    "sendTest": "Send me a test",
+    "testSent": "Test sent to your address.",
+    "send": "Send…",
+    "confirmSend": "{count, plural, one {Send to # customer} other {Send to # customers}}",
+    "sent": "{count, plural, =0 {Campaign sent.} one {Campaign sent to # customer.} other {Campaign sent to # customers.}}",
+    "statuses": {
+      "draft": "Draft",
+      "sent": "Sent"
+    },
+    "sentSummary": "Sent {date} to {recipients, plural, one {# customer} other {# customers}}: {delivered} delivered, {skipped} not sent (unsubscribed meanwhile), {pending} pending.",
+    "errors": {
+      "sender": "Enter the business name and its mailing address before sending.",
+      "sent": "This campaign was already sent.",
+      "fields": "Check the fields: subjects of 3 characters or more, messages of 10 or more."
+    }
+  },
+  "Unsubscribe": {
+    "title": "Unsubscribe",
+    "body": "You will no longer receive the café’s offers and news by email. Emails about your orders continue.",
+    "confirm": "Unsubscribe me",
+    "done": "Done: you are unsubscribed, starting now.",
+    "error": "Unsubscribing failed. Try again.",
+    "invalid": "This unsubscribe link isn’t valid. Use the latest link, or manage your preferences from your account.",
+    "manage": "You can also manage your preferences in <link>My account → Communications</link>."
+  },
+  "Referral": {
+    "title": "Referrals",
+    "intro": "Invite someone: when their first order is completed, you get {referrer, plural, one {# stamp} other {# stamps}} and they get {referee}.",
+    "yourCode": "Your code:",
+    "copy": "Copy",
+    "copied": "Copied",
+    "rewarded": "{count, plural, one {# referral rewarded} other {# referrals rewarded}}",
+    "enterLabel": "Someone invited you? Their code",
+    "enterHint": "7 letters or digits, to enter before your first order.",
+    "enter": "Apply",
+    "entered": "Code saved: {stamps, plural, one {your welcome stamp arrives} other {your # welcome stamps arrive}} with your first completed order.",
+    "status": {
+      "pending": "You were referred: your welcome stamps arrive with your first completed order.",
+      "rewarded": "Referral rewarded. Welcome!",
+      "declined": "This referral couldn’t be rewarded."
+    },
+    "errors": {
+      "own_code": "That’s your own code.",
+      "already_referred": "You already entered a code.",
+      "not_new_customer": "Referral codes are for new customers, before their first order.",
+      "referrer_inactive": "This code isn’t active yet.",
+      "referrals_off": "Referrals aren’t offered right now.",
+      "unknown": "Unknown code. Check it and try again.",
+      "generic": "Saving failed. Try again."
+    }
   }
 }
