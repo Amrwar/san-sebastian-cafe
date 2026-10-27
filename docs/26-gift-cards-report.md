@@ -3,7 +3,7 @@
 _2026-10-26. Migration `0012_gift_cards.sql`. Scope: the gift card part of
 [04 Phase 14](04-implementation-plan.md#phase-14--optional-modules-each-needs-an-owner-go-ahead),
 "counter first" (owner's choice the same day): cards are sold at the counter and used online and
-at the counter. Selling cards online is left for later._
+at the counter. **Online sale added the same day** (§4, migration `0013_gift_card_purchases.sql`)._
 
 **Status in one line:** staff sell a card once it is paid at the till and get a code to write or
 print; customers check the balance on the site and pay with it at checkout (all or part of the
@@ -66,7 +66,39 @@ the payment simulator.
 
 ## 3. Not done (options)
 
-- **Selling cards online** (Stripe purchase flow, code emailed to a recipient).
 - **Physical card printing** beyond the browser's print button (card stock, QR code).
 - **POS-native gift cards** if D1 brings a POS that has its own program.
 - The privacy policy and terms should mention gift cards (lawyer review pending anyway).
+
+## 4. Selling cards online (added 2026-10-26)
+
+**On /gift-cards, "Offrir une carte-cadeau":** amount (25 $, 50 $, 100 $ or 10–200 $), the
+recipient's name and email, an optional note (300 characters), the purchaser's name (and email
+for guests). Payment happens on Stripe's page; the card is issued only when Stripe confirms the
+money.
+
+| Step                                                             | What happens                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Payment confirmed                                                | By the verified webhook or the return page's authenticated status check, whichever comes first; the card is issued **once**                                                                                                    |
+| The code                                                         | Emailed to the recipient only (FR/EN), then **erased from the email queue once sent**; never stored, never shown on the site                                                                                                   |
+| The purchaser                                                    | Gets a receipt without the code ("not taxable"), and a page showing the card was sent                                                                                                                                          |
+| Paid after the page expired, a second payment, or a wrong amount | Refunded automatically through Stripe; no card is issued                                                                                                                                                                       |
+| Refund (shift lead and up)                                       | From the staff gift card screen, while the card is unused: the card is emptied and blocked, the money goes back through Stripe                                                                                                 |
+| Fraud                                                            | 5 purchases per visitor per hour; online amounts limited to 10–200 $ (card-testing favours small payments); Stripe Radar                                                                                                       |
+| Personal data (Law 25)                                           | Purchaser and recipient names, emails and the note: in the purchaser's data export (and the recipient's, without the code); removed with the account; cleared by the retention job after one year. The card (money owed) stays |
+| Reports                                                          | The gift card section shows cards bought online and the money received in the period                                                                                                                                           |
+
+Stripe tags these sessions as gift card purchases (`gift_card_purchase_id` in metadata, "Carte-cadeau" as
+the line); they never touch the order tables, the kitchen queue or loyalty.
+
+**Found and fixed while testing:** queued emails are due from the database clock, which can run
+slightly ahead of the app's; the first purchase on a fresh server could then miss the immediate
+send. Gift card emails are now due from the app's clock, as order notices already were.
+
+**Tests:** `gift-card-purchases.int.test.ts` (12): form limits, card issued once with the code
+only in the recipient's email, access by link token or account, the code erased after sending,
+webhook and return-page paths (either order), late and wrong-amount payments refunded, staff
+refund of an unused card (and refused once used, and for staff without the role), data export
+and anonymization, retention. E2E: a guest buys a card, the simulator pays, the recipient's email
+holds a code that works on the balance page. Totals with this addition: integration 258 web + 12
+db, E2E 95 passed (7 skipped, Stripe sandbox).

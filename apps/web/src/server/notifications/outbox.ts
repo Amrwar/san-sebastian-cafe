@@ -197,7 +197,25 @@ export interface MarketingMessage extends QueuedBase {
   payload: MarketingPayload;
 }
 
-export type QueuedMessage = OrderMessage | MarketingMessage;
+/** A gift card bought on the site: the card to its recipient, or the purchaser's receipt. */
+export interface GiftCardPayload {
+  purchaseId: string;
+  amountCents: number;
+  recipientName: string;
+  purchaserName: string;
+  /** Delivery only, until sent: erased from the queue once the email has gone. */
+  code?: string | null;
+  message?: string | null;
+  /** Receipt only. */
+  last4?: string;
+  recipientEmail?: string;
+}
+export interface GiftCardMessage extends QueuedBase {
+  template: "gift_card_delivery" | "gift_card_receipt";
+  payload: GiftCardPayload;
+}
+
+export type QueuedMessage = OrderMessage | MarketingMessage | GiftCardMessage;
 
 /**
  * How messages leave. `send` returns "sent", or "skipped" when there was nobody left to reach
@@ -278,6 +296,10 @@ export async function processOutbox(
           lockedUntil: null,
           lastError: null,
           updatedAt: now,
+          // A gift card code is kept only until its email has gone.
+          ...(row.template === "gift_card_delivery"
+            ? { payload: { ...row.payload, code: null } }
+            : {}),
         })
         .where(eq(outboxMessages.id, row.id));
       run[outcome] += 1;

@@ -1,4 +1,6 @@
 import {
+  giftCardPurchases,
+  or,
   and,
   asc,
   auditEvents,
@@ -120,6 +122,18 @@ export async function exportPersonalData(db: Database, actor: Actor | null, now 
       ])
     : [[], [], []];
   const numberOf = new Map(orderRows.map((o) => [o.id, o.number]));
+  // Gift cards bought on the site by this person, and sent to them (never the code).
+  const purchaseRows = await db
+    .select()
+    .from(giftCardPurchases)
+    .where(
+      or(
+        eq(giftCardPurchases.purchaserUserId, user.id),
+        eq(giftCardPurchases.purchaserEmail, user.email),
+        eq(giftCardPurchases.recipientEmail, user.email),
+      ),
+    )
+    .orderBy(asc(giftCardPurchases.createdAt));
 
   const document = {
     format: EXPORT_FORMAT,
@@ -157,6 +171,25 @@ export async function exportPersonalData(db: Database, actor: Actor | null, now 
       addedAt: iso(d.createdAt),
       lastNotifiedAt: iso(d.lastSuccessAt),
     })),
+    giftCardsBought: purchaseRows
+      .filter((p) => p.purchaserUserId === user.id || p.purchaserEmail === user.email)
+      .map((p) => ({
+        amountCents: p.amountCents,
+        status: p.status,
+        boughtAt: iso(p.createdAt),
+        paidAt: iso(p.paidAt),
+        purchaser: { name: p.purchaserName, email: p.purchaserEmail },
+        recipient: { name: p.recipientName, email: p.recipientEmail },
+        message: p.message,
+      })),
+    giftCardsReceived: purchaseRows
+      .filter((p) => p.recipientEmail === user.email)
+      .map((p) => ({
+        amountCents: p.amountCents,
+        sentAt: iso(p.paidAt),
+        from: p.purchaserName,
+        message: p.message,
+      })),
     orders: orderRows.map((o) => ({
       number: o.number,
       placedAs: o.userId ? "account" : "guest",

@@ -3,6 +3,7 @@ import {
   and,
   desc,
   eq,
+  giftCardPurchases,
   giftCards,
   giftCardTransactions,
   orders,
@@ -35,7 +36,7 @@ function parse<S extends z.ZodType>(schema: S, raw: unknown): z.infer<S> {
   return result.data;
 }
 
-function newCode(): string {
+export function newGiftCardCode(): string {
   for (;;) {
     const code = giftCardCodeFromBytes(randomBytes(64));
     if (code) return code;
@@ -52,7 +53,7 @@ export const issueInput = z.object({
 export async function issueGiftCard(db: Database, actor: Actor | null, raw: unknown) {
   authorize(actor, "gift_cards:issue");
   const input = parse(issueInput, raw);
-  const code = newCode();
+  const code = newGiftCardCode();
   return db.transaction(async (tx) => {
     const [card] = await tx
       .insert(giftCards)
@@ -101,6 +102,10 @@ export async function checkGiftCardBalance(db: Database, raw: unknown) {
 async function cardView(db: Database, id: string) {
   const card = await db.query.giftCards.findFirst({ where: eq(giftCards.id, id) });
   if (!card) throw notFound("Gift card");
+  const purchase = await db.query.giftCardPurchases.findFirst({
+    where: eq(giftCardPurchases.giftCardId, id),
+    columns: { status: true },
+  });
   const history = await db
     .select({
       id: giftCardTransactions.id,
@@ -126,6 +131,8 @@ async function cardView(db: Database, id: string) {
     status: card.status,
     issuedAt: card.issuedAt.toISOString(),
     note: card.note,
+    /** Bought on the site: such a card can be refunded through the provider while unused. */
+    soldOnline: purchase ? { status: purchase.status } : null,
     history: history.map((h) => ({
       ...h,
       // Online purchases are by customers: only staff names are shown.
@@ -272,6 +279,20 @@ export async function giftCardLiability(db: Database, fromBound: Bound, toBound:
     )
     .groupBy(giftCardTransactions.kind);
   const sum = (kind: string) => moved.find((m) => m.kind === kind)?.cents ?? 0;
+  // Cards bought on the site and paid in the period (refunded ones excluded): money received.
+  const [online] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      cents: sql<number>`coalesce(sum(${giftCardPurchases.amountCents}), 0)::int`,
+    })
+    .from(giftCardPurchases)
+    .where(
+      and(
+        eq(giftCardPurchases.status, "paid"),
+        sql`${giftCardPurchases.paidAt} >= ${from}`,
+        sql`${giftCardPurchases.paidAt} < ${to}`,
+      ),
+    );
   return {
     outstandingCents: required(outstanding, "sum").cents,
     cardsWithBalance: required(outstanding, "sum").cards,
@@ -279,5 +300,6 @@ export async function giftCardLiability(db: Database, fromBound: Bound, toBound:
     // Spent net of what came back (unpaid orders released, refunds to the card).
     redeemedCents: -(sum("redeem") + sum("release") + sum("refund")),
     adjustedCents: sum("adjustment"),
+    soldOnline: { count: online?.count ?? 0, cents: online?.cents ?? 0 },
   };
 }

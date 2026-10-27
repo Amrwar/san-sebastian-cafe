@@ -14,11 +14,13 @@ import {
 import {
   processOutbox,
   type Deliverer,
+  type GiftCardMessage,
   type MarketingMessage,
   type OrderMessage,
   type OutboxRun,
+  type QueuedMessage,
 } from "./outbox";
-import { renderEmail, renderMarketingEmail, renderPush } from "./templates";
+import { renderEmail, renderGiftCardEmail, renderMarketingEmail, renderPush } from "./templates";
 
 /** Sends a push to every device of the user; drops devices the push service says are gone. */
 export async function sendPush(
@@ -110,6 +112,9 @@ export async function sendMarketing(
   return "sent";
 }
 
+const isGiftCardMessage = (m: QueuedMessage): m is GiftCardMessage =>
+  m.template === "gift_card_delivery" || m.template === "gift_card_receipt";
+
 export const liveDeliverer: Deliverer = {
   async send(message) {
     if (message.template === "marketing")
@@ -117,6 +122,13 @@ export const liveDeliverer: Deliverer = {
         baseUrl: env().BETTER_AUTH_URL,
         secret: env().BETTER_AUTH_SECRET,
       });
+    if (isGiftCardMessage(message)) {
+      await sendEmail({
+        to: message.recipient,
+        ...renderGiftCardEmail(message, env().BETTER_AUTH_URL),
+      });
+      return "sent";
+    }
     if (message.channel === "push") return sendPush(db(), message);
     const email = renderEmail(message, env().BETTER_AUTH_URL);
     await sendEmail({ to: message.recipient, ...email });

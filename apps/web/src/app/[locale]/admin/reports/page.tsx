@@ -449,7 +449,19 @@ export default async function AdminReportsPage({
               note={t("giftCards.cards", { count: format.number(giftCards.cardsWithBalance) })}
               plain
             />
-            <Tile label={t("giftCards.issued")} value={$(giftCards.issuedCents)} plain />
+            <Tile
+              label={t("giftCards.issued")}
+              value={$(giftCards.issuedCents)}
+              note={
+                giftCards.soldOnline.count > 0
+                  ? t("giftCards.online", {
+                      count: format.number(giftCards.soldOnline.count),
+                      amount: $(giftCards.soldOnline.cents),
+                    })
+                  : undefined
+              }
+              plain
+            />
             <Tile label={t("giftCards.redeemed")} value={$(giftCards.redeemedCents)} plain />
             <Tile label={t("giftCards.adjusted")} value={$(giftCards.adjustedCents)} plain />
           </dl>

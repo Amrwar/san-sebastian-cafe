@@ -1,6 +1,7 @@
 import {
   and,
   eq,
+  giftCardPurchases,
   paymentAttempts,
   paymentDisputes,
   paymentEvents,
@@ -10,6 +11,7 @@ import {
 } from "@ssc/db";
 import type { CheckoutSnapshot, PaymentProviderName } from "@ssc/domain";
 import { recordAudit } from "../../audit";
+import { applyPurchaseCheckout, refundPayment } from "../gift-cards/purchases";
 import { lockOrder, recordOrderEvent } from "../ordering/lifecycle";
 import { applyCheckoutInTx, recordPaymentFailure } from "./checkout";
 import {
@@ -59,6 +61,7 @@ export async function handlePaymentWebhook(
   if (seen?.processedAt) return result(true);
 
   let checkout: CheckoutSnapshot | null = null;
+  let purchaseCheckout: CheckoutSnapshot | null = null;
   let refund: RefundSnapshot | null = null;
   if (event.kind === "checkout") {
     // Only sessions this app created are ours to reconcile (not, e.g., dashboard payment links).
@@ -69,6 +72,16 @@ export async function handlePaymentWebhook(
       ),
     });
     if (known) checkout = await provider.getCheckout(event.sessionId);
+    // Or a gift card bought on the site (its own payment page, not an order).
+    else if (
+      await db.query.giftCardPurchases.findFirst({
+        where: and(
+          eq(giftCardPurchases.provider, providerName),
+          eq(giftCardPurchases.providerSessionId, event.sessionId),
+        ),
+      })
+    )
+      purchaseCheckout = await provider.getCheckout(event.sessionId);
   }
   if (event.kind === "refund") refund = await provider.getRefund(event.refundId);
 
@@ -84,12 +97,19 @@ export async function handlePaymentWebhook(
       })
       .onConflictDoNothing()
       .returning({ id: paymentEvents.id });
-    if (!inbox) return { duplicate: true, note: null, refundIds: [] as string[] };
+    if (!inbox)
+      return { duplicate: true, note: null, refundIds: [] as string[], purchaseRefund: null };
 
     let note: string | null = null;
     let refundIds: string[] = [];
+    let purchaseRefund: Awaited<ReturnType<typeof applyPurchaseCheckout>> = null;
     switch (event.kind) {
       case "checkout": {
+        if (purchaseCheckout) {
+          purchaseRefund = await applyPurchaseCheckout(tx, providerName, purchaseCheckout, now);
+          note = "gift_card_purchase";
+          break;
+        }
         if (!checkout) {
           note = "unknown_session";
           break;
@@ -120,10 +140,11 @@ export async function handlePaymentWebhook(
       .update(paymentEvents)
       .set({ processedAt: now, error: note })
       .where(eq(paymentEvents.id, inbox.id));
-    return { duplicate: false, note, refundIds };
+    return { duplicate: false, note, refundIds, purchaseRefund };
   });
 
   await submitRefunds(db, outcome.refundIds, now);
+  if (outcome.purchaseRefund?.refund) await refundPayment(outcome.purchaseRefund.refund);
   return result(outcome.duplicate, outcome.note);
 }
 

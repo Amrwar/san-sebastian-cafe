@@ -1,4 +1,5 @@
 import {
+  giftCardPurchases,
   and,
   inArray,
   isNotNull,
@@ -16,7 +17,7 @@ import {
 } from "@ssc/db";
 import type { OrderStatus } from "@ssc/domain";
 import { recordAudit } from "../../audit";
-import { ANONYMIZED_EMAIL, anonymizeOrders } from "./deletion";
+import { ANONYMIZED_EMAIL, ANONYMIZED_NAME, anonymizeOrders } from "./deletion";
 
 /*
  * Retention (Law 25: keep personal information only as long as needed). Run daily by
@@ -54,6 +55,7 @@ export interface RetentionSummary {
   guestOrdersAnonymized: number;
   paymentEventsRedacted: number;
   notificationsDeleted: number;
+  giftCardPurchasesAnonymized: number;
 }
 
 export async function runRetention(db: Database, now = new Date()): Promise<RetentionSummary> {
@@ -114,6 +116,26 @@ export async function runRetention(db: Database, now = new Date()): Promise<Rete
       )
       .returning({ id: outboxMessages.id });
 
+    // Gift card purchases: names, emails and the note, a year on (the card stays, it's money owed).
+    const oldPurchases = await tx
+      .update(giftCardPurchases)
+      .set({
+        purchaserName: ANONYMIZED_NAME,
+        purchaserEmail: ANONYMIZED_EMAIL,
+        recipientName: ANONYMIZED_NAME,
+        recipientEmail: ANONYMIZED_EMAIL,
+        message: null,
+        purchaserUserId: null,
+      })
+      .where(
+        and(
+          ne(giftCardPurchases.status, "awaiting_payment"),
+          ne(giftCardPurchases.purchaserEmail, ANONYMIZED_EMAIL),
+          lt(giftCardPurchases.createdAt, daysBefore(now, RETENTION.guestContactDays)),
+        ),
+      )
+      .returning({ id: giftCardPurchases.id });
+
     const summary: RetentionSummary = {
       sessions: sessionRows.length,
       verifications: verificationRows.length,
@@ -122,6 +144,7 @@ export async function runRetention(db: Database, now = new Date()): Promise<Rete
       guestOrdersAnonymized,
       paymentEventsRedacted: redacted.length,
       notificationsDeleted: notifications.length,
+      giftCardPurchasesAnonymized: oldPurchases.length,
     };
     if (guestOrdersAnonymized > 0 || redacted.length > 0) {
       await recordAudit(tx, {

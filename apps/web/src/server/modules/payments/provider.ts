@@ -14,6 +14,8 @@ import { createStripeProvider } from "./stripe";
 export interface CreateCheckoutInput {
   /** Our attempt id — also the provider idempotency key, so a retried request can't create two. */
   attemptId: string;
+  /** What is being paid: an order (default) or a gift card bought online (orderId = purchase id). */
+  kind?: "order" | "gift_card";
   orderId: string;
   orderNumber: string;
   amountCents: number;

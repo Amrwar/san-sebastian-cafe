@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import type { GiftCardStatus } from "@ssc/domain";
+import type { GiftCardPurchaseStatus, GiftCardStatus } from "@ssc/domain";
 import { demoFlag, timestamps } from "./columns";
+import { paymentProviderEnum } from "./enums";
 import { users } from "./identity";
 
 /*
@@ -32,5 +33,53 @@ export const giftCards = pgTable(
     index("gift_cards_status_idx").on(t.status),
     check("gift_cards_amounts", sql`${t.initialCents} > 0 and ${t.balanceCents} >= 0`),
     check("gift_cards_status", sql`${t.status} in ('active', 'disabled')`),
+  ],
+);
+
+/**
+ * A gift card bought on the site: paid through the provider's hosted page, then the card is issued
+ * and its code emailed to the recipient (never stored). Personal details here (names, emails,
+ * message) are cleared by the retention job a year on.
+ */
+export const giftCardPurchases = pgTable(
+  "gift_card_purchases",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    status: text().$type<GiftCardPurchaseStatus>().notNull().default("awaiting_payment"),
+    amountCents: integer().notNull(),
+    purchaserUserId: text().references(() => users.id, { onDelete: "set null" }),
+    purchaserName: text().notNull(),
+    purchaserEmail: text().notNull(),
+    recipientName: text().notNull(),
+    recipientEmail: text().notNull(),
+    /** Short note from the purchaser, sent with the card. */
+    message: text(),
+    locale: text().notNull().default("fr-CA"),
+    /** Hash of the link token guests use to follow their purchase (the token is never stored). */
+    accessTokenHash: text(),
+    provider: paymentProviderEnum().notNull(),
+    providerSessionId: text().unique(),
+    checkoutUrl: text(),
+    /** The hosted page can't be paid after this; a later payment is refunded. */
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    providerPaymentId: text(),
+    paidAt: timestamp({ withTimezone: true }),
+    giftCardId: uuid().references(() => giftCards.id, { onDelete: "restrict" }),
+    providerRefundId: text(),
+    refundedAt: timestamp({ withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("gift_card_purchases_status_idx").on(t.status, t.expiresAt),
+    index("gift_card_purchases_user_idx").on(t.purchaserUserId),
+    check("gift_card_purchases_amount", sql`${t.amountCents} > 0`),
+    check(
+      "gift_card_purchases_status",
+      sql`${t.status} in ('awaiting_payment', 'paid', 'expired', 'refunded')`,
+    ),
+    check(
+      "gift_card_purchases_paid_has_card",
+      sql`${t.status} not in ('paid', 'refunded') or ${t.giftCardId} is not null`,
+    ),
   ],
 );

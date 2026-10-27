@@ -550,10 +550,54 @@
     "tooMany": "Too many checks. Please try again later.",
     "error": "The check failed. Please try again.",
     "howTitle": "How it works",
-    "howBuy": "Cards are sold at the counter, from $5 to $500.",
+    "howBuy": "Buy a card here ($10 to $200, code sent by email) or at the counter ($5 to $500).",
     "howUse": "Enter the code when you pay for an online order, or show the card at the counter. If the balance doesn’t cover everything, you pay the rest by credit or debit card.",
     "policyTitle": "No expiry, no fees",
-    "policyBody": "In line with Québec’s Consumer Protection Act, our gift cards have no expiry date and no usage fees. The balance stays available until it is used."
+    "policyBody": "In line with Québec’s Consumer Protection Act, our gift cards have no expiry date and no usage fees. The balance stays available until it is used.",
+    "buy": {
+      "title": "Give a gift card",
+      "intro": "Pay online: the card’s code is emailed to whoever you choose.",
+      "unavailable": "Buying online isn’t available yet. Cards are sold at the counter.",
+      "amount": "Amount",
+      "otherAmount": "Other amount",
+      "otherLabel": "Amount ($)",
+      "otherHint": "From $10 to $200",
+      "recipientName": "To (name)",
+      "recipientEmail": "Their email",
+      "recipientEmailHint": "The card’s code is sent there. Enter your own to receive it yourself.",
+      "message": "Short note (optional)",
+      "messageHint": "Up to 300 characters, sent with the card.",
+      "purchaserName": "From (your name)",
+      "purchaserEmail": "Your email",
+      "purchaserEmailHint": "For your receipt.",
+      "pay": "Pay {amount}",
+      "payNoAmount": "Pay",
+      "noTax": "Gift cards aren’t taxable. They never expire and have no fees.",
+      "errors": {
+        "amount": "Choose an amount from $10 to $200.",
+        "name": "Enter a name.",
+        "email": "Enter a valid email address.",
+        "tooMany": "Too many purchases in a short time. Please try again later.",
+        "generic": "The purchase couldn’t start. Please try again."
+      }
+    },
+    "purchase": {
+      "title": "Your gift card",
+      "pending": "{amount} gift card for {name} ({email}): waiting for payment.",
+      "pay": "Pay {amount}",
+      "confirming": "Confirming your payment…",
+      "cancelled": "The payment was cancelled. You can try again.",
+      "paidTitle": "Thank you! The card is on its way.",
+      "paidBody": "The {amount} gift card was sent to {name} ({email}). The code is only in that email.",
+      "receipt": "Your receipt was emailed to you.",
+      "expiredTitle": "Payment not received",
+      "expiredBody": "The payment page expired without payment. Nothing was charged.",
+      "refundedTitle": "Purchase refunded",
+      "refundedBody": "This purchase was refunded and the card cancelled.",
+      "again": "Start again",
+      "simulatorTitle": "Payment simulator (development)",
+      "simulatorApprove": "Simulate an approved payment"
+    }
   },
   "Promotions": {
     "eyebrow": "Promotions",
@@ -1505,7 +1549,8 @@
       "cards": "{count} cards with a balance",
       "issued": "Cards sold in the period",
       "redeemed": "Spent in the period",
-      "adjusted": "Corrections in the period"
+      "adjusted": "Corrections in the period",
+      "online": "of which {count} bought online ({amount} received)"
     }
   },
   "AccountData": {
@@ -1841,6 +1886,20 @@
       "unsubscribe": "Unsubscribe: {url}",
       "unsubscribeLink": "Unsubscribe in one click",
       "test": "TEST"
+    },
+    "giftCard": {
+      "hello": "Hello {name},",
+      "deliverySubject": "{purchaser} sent you a San Sebastian Café gift card",
+      "deliveryBody": "{purchaser} is treating you to a {amount} gift card at San Sebastian Café.",
+      "note": "Their note: “{message}”",
+      "code": "Your code: {code}",
+      "howToUse": "Enter this code when you pay for an online order, or show it at the counter. The card never expires and has no fees.",
+      "balance": "Check the balance: {url}",
+      "footerDelivery": "Keep this email: the code can’t be shown again.",
+      "receiptSubject": "Your gift card for {recipient} is on its way",
+      "receiptBody": "Thank you! The {amount} gift card (•••• {last4}) was sent to {recipient} ({email}).",
+      "noTax": "A gift card isn’t taxable: taxes apply to what is bought with it.",
+      "footerReceipt": "Receipt for your purchase. Questions? Ask us at the counter."
     }
   },
   "Push": {
@@ -2060,7 +2119,13 @@
       "invalid": "Please check the fields.",
       "amount": "Enter a valid amount.",
       "reason": "Give a reason (3 characters or more).",
-      "generic": "That didn’t work. Please try again."
+      "generic": "That didn’t work. Please try again.",
+      "used": "This card has been used: the purchase can no longer be refunded."
+    },
+    "refundPurchase": {
+      "title": "Refund the online purchase (unused card)",
+      "submit": "Refund",
+      "done": "Purchase refunded and card cancelled."
     }
   }
 }

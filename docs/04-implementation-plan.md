@@ -117,7 +117,7 @@ Promotions engine and admin, promo code at checkout (stacking rules), referral p
 
 Gift cards (no expiry/fees, liability ledger, or POS-native), delivery (zones, fees, third-party courier adapter), inventory (stock counts → auto-86).
 
-**Gift cards done 2026-10-26** ([report 26](26-gift-cards-report.md)), counter first: sold at the counter, used online and at the counter, no expiry or fees, ledger and liability report; online sale left for later.
+**Gift cards done 2026-10-26** ([report 26](26-gift-cards-report.md)), sold at the counter and online (code emailed to the recipient), used online and at the counter, no expiry or fees, ledger and liability report.
 
 **Inventory done 2026-10-26** ([report 25](25-inventory-report.md)): optional counts per product and option, auto-86 at zero, stock taken at order placement and returned when an order is stopped before preparation, ledger and audit.
 

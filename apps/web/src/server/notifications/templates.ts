@@ -3,7 +3,7 @@ import { formatCad, cents } from "@ssc/domain";
 import en from "../../../messages/en.json";
 import fr from "../../../messages/fr.json";
 import { TIME_ZONE } from "@/i18n/routing";
-import type { NotificationTemplate, OrderMessage } from "./outbox";
+import type { GiftCardMessage, NotificationTemplate, OrderMessage } from "./outbox";
 
 /*
  * Customer messages in French and English, rendered when sent (from the outbox payload), so the
@@ -161,6 +161,51 @@ export function renderMarketingEmail(input: {
 ${paragraphs.map((p) => `<p style="margin:0 0 12px;line-height:1.5">${escape(p).replace(/\n/g, "<br>")}</p>`).join("\n")}
 </div>
 <p style="font-size:12px;color:#5c4a43;margin:16px 0 0;line-height:1.5">${escape(input.sender.name)} · ${escape(input.sender.address)}<br>${escape(t("marketing.why"))}<br><a href="${escape(input.unsubscribeUrl)}" style="color:#772f3b">${escape(t("marketing.unsubscribeLink"))}</a></p>
+</div></body></html>`;
+  return { subject, text, html };
+}
+
+/**
+ * A gift card bought on the site: the card (with its code) to the recipient, or a receipt without
+ * the code to the purchaser. A gift card is not a taxable sale; the receipt says so.
+ */
+export function renderGiftCardEmail(message: GiftCardMessage, baseUrl: string): RenderedEmail {
+  const t = translator(message.locale);
+  const p = message.payload;
+  const amount = formatCad(cents(p.amountCents), message.locale === "en" ? "en-CA" : "fr-CA");
+  const balanceUrl = `${baseUrl}/${message.locale}/gift-cards`;
+  const delivery = message.template === "gift_card_delivery";
+  const subject = delivery
+    ? t("giftCard.deliverySubject", { purchaser: p.purchaserName })
+    : t("giftCard.receiptSubject", { recipient: p.recipientName });
+  const body = delivery
+    ? [
+        t("giftCard.deliveryBody", { purchaser: p.purchaserName, amount }),
+        ...(p.message ? [t("giftCard.note", { message: p.message })] : []),
+        t("giftCard.code", { code: p.code ?? "—" }),
+        t("giftCard.howToUse"),
+        t("giftCard.balance", { url: balanceUrl }),
+      ]
+    : [
+        t("giftCard.receiptBody", {
+          amount,
+          last4: p.last4 ?? "",
+          recipient: p.recipientName,
+          email: p.recipientEmail ?? "",
+        }),
+        t("giftCard.noTax"),
+      ];
+  const footer = delivery ? t("giftCard.footerDelivery") : t("giftCard.footerReceipt");
+  const greeting = delivery ? t("giftCard.hello", { name: p.recipientName }) : t("hello");
+  const text = [greeting, "", ...body, "", "—", "San Sebastian Café · Montréal", footer].join("\n");
+  const html = `<!doctype html><html lang="${message.locale}"><body style="margin:0;background:#f6f0e6;font-family:Arial,Helvetica,sans-serif;color:#38251f">
+<div style="max-width:560px;margin:0 auto;padding:24px">
+<p style="font-size:20px;font-family:Georgia,serif;margin:0 0 16px">San Sebastian Café</p>
+<div style="background:#fbf8f3;border:1px solid #ddd0bd;border-radius:8px;padding:20px">
+<p style="margin:0 0 12px">${escape(greeting)}</p>
+${body.map((l) => `<p style="margin:0 0 12px;line-height:1.5">${escape(l)}</p>`).join("\n")}
+</div>
+<p style="font-size:12px;color:#5c4a43;margin:16px 0 0;line-height:1.5">San Sebastian Café · Montréal<br>${escape(footer)}</p>
 </div></body></html>`;
   return { subject, text, html };
 }

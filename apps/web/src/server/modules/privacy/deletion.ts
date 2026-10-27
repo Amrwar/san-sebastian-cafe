@@ -1,4 +1,6 @@
 import {
+  giftCardPurchases,
+  or,
   and,
   eq,
   inArray,
@@ -32,6 +34,8 @@ import { recordSelfServiceRequest } from "./requests";
 
 /** Stands in for the customer's email on anonymized orders (an order must name a customer). */
 export const ANONYMIZED_EMAIL = "anonymized@deleted.invalid";
+/** Stands in for a name where one is required (gift card purchases). */
+export const ANONYMIZED_NAME = "—";
 
 /** Statuses during which the café is still preparing or charging the order. */
 const IN_PROGRESS = ["awaiting_payment", "paid", "accepted", "in_preparation", "ready"] as const;
@@ -107,6 +111,7 @@ export async function deleteOwnAccount(
     if (pending) throw unprocessable("refund_pending");
 
     const ordersAnonymized = await anonymizeOrders(tx, orderIds);
+    await anonymizeGiftCardPurchases(tx, { userId: user.id, email: user.email });
 
     // Free drinks used on orders or at the counter: the orders keep their discount amounts; the
     // link to the deleted card goes.
@@ -128,4 +133,34 @@ export async function deleteOwnAccount(
     return { ordersAnonymized };
   });
   return result;
+}
+
+/**
+ * Removes a person from gift card purchases: as purchaser (name, email) and as recipient (name,
+ * email, the note sent to them). Amounts and the cards themselves stay (they are money owed).
+ */
+export async function anonymizeGiftCardPurchases(
+  tx: Tx,
+  who: { userId?: string; email: string },
+): Promise<number> {
+  const asPurchaser = await tx
+    .update(giftCardPurchases)
+    .set({
+      purchaserName: ANONYMIZED_NAME,
+      purchaserEmail: ANONYMIZED_EMAIL,
+      purchaserUserId: null,
+    })
+    .where(
+      or(
+        eq(giftCardPurchases.purchaserEmail, who.email),
+        ...(who.userId ? [eq(giftCardPurchases.purchaserUserId, who.userId)] : []),
+      ),
+    )
+    .returning({ id: giftCardPurchases.id });
+  const asRecipient = await tx
+    .update(giftCardPurchases)
+    .set({ recipientName: ANONYMIZED_NAME, recipientEmail: ANONYMIZED_EMAIL, message: null })
+    .where(eq(giftCardPurchases.recipientEmail, who.email))
+    .returning({ id: giftCardPurchases.id });
+  return asPurchaser.length + asRecipient.length;
 }

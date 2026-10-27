@@ -201,3 +201,8 @@ the order's own ledger rows, so it is never returned twice.
 | `gift_card_transactions`                        | payments | Ledger: `issue` / `redeem` / `release` / `refund` / `adjustment`, delta, balance after (≥ 0), order, refund, staff member |
 | `orders.gift_card_id`, `orders.gift_card_cents` | ordering | Part of the total paid by a gift card (0 ≤ cents ≤ total); the amount charged by card is total − gift card                |
 | `refunds.gift_card_id`                          | payments | Refund credited back to the gift card (settled at once). A refund names a payment or a gift card, never both              |
+
+`gift_card_purchases` (migration `0013_gift_card_purchases.sql`, owner payments): a card bought on
+the site — amount, purchaser and recipient names and emails, note, status (`awaiting_payment`,
+`paid`, `expired`, `refunded`), the provider session and payment, the issued card, the hash of the
+guest's link token. Personal fields are cleared by the retention job after a year.

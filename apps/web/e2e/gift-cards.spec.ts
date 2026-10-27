@@ -1,3 +1,5 @@
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { choosePickupTime, expectNoSeriousA11yViolations } from "./helpers";
 
@@ -76,4 +78,50 @@ test("staff without the right role can't sell cards, and unknown codes are refus
   } finally {
     await context.close();
   }
+});
+
+/** The code in the gift card email the development mail transport captured for `email`. */
+async function emailedCode(email: string): Promise<string> {
+  const dir = join(process.cwd(), ".dev-mail");
+  // Messages are saved as <address>__<timestamp>.json.
+  const prefix = `${email.replace(/[^a-z0-9]+/g, "_")}__`;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    for (const name of await readdir(dir).catch(() => [] as string[])) {
+      if (!name.startsWith(prefix)) continue;
+      const mail = JSON.parse(await readFile(join(dir, name), "utf8")) as { text?: string };
+      const code = /[2-9A-Z]{4}(?:-[2-9A-Z]{4}){3}/.exec(mail.text ?? "")?.[0];
+      if (code) return code;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`No gift card email captured for ${email}`);
+}
+
+test("a guest buys a card online; the recipient gets the code by email and can use it", async ({
+  page,
+}) => {
+  const recipient = `gift-${Date.now()}@example.test`;
+  await page.goto("/fr/gift-cards");
+  await page.getByRole("radio", { name: amount("25,00 $") }).check();
+  await page.getByLabel("Pour (nom)").fill("Camille");
+  await page.getByLabel("Courriel de la personne").fill(recipient);
+  await page.getByLabel("Petit mot (facultatif)").fill("Bonne fête!");
+  await page.getByLabel("De (votre nom)").fill("Robin");
+  await page.getByLabel("Votre courriel").fill("robin@example.test");
+  await expectNoSeriousA11yViolations(page);
+  await page.getByRole("button", { name: amount("Payer 25,00 $") }).click();
+
+  // The payment step (development simulator in place of Stripe's page).
+  await page.waitForURL(/\/fr\/gift-cards\/purchase\/[\w-]+\?token=/);
+  await expect(page.getByText("en attente du paiement")).toBeVisible();
+  await page.getByRole("button", { name: "Simuler un paiement accepté" }).click();
+  await expect(page.getByText("Merci! La carte est envoyée.")).toBeVisible();
+  await expectNoSeriousA11yViolations(page);
+
+  // The recipient's email holds the code, and the card works.
+  const code = await emailedCode(recipient);
+  await page.goto("/fr/gift-cards");
+  await page.getByLabel("Code de la carte").fill(code);
+  await page.getByRole("button", { name: "Vérifier" }).click();
+  await expect(page.getByText(amount(`•••• ${code.slice(-4)} : 25,00 $`))).toBeVisible();
 });

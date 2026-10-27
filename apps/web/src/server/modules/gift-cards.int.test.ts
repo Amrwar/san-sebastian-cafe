@@ -430,6 +430,7 @@ describe("liability", () => {
       issuedCents: 3000,
       redeemedCents: 730,
       adjustedCents: 0,
+      soldOnline: { count: 0, cents: 0 },
     });
   });
 });

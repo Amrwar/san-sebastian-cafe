@@ -60,6 +60,9 @@ votre compte (menu **Personnel**).
 - **Carte perdue ou volée** (chef d’équipe et plus) : **Bloquer**. Le solde est conservé; débloquez
   quand le client la retrouve.
 - **Erreur de montant** : seul un gérant peut corriger le solde, avec un motif.
+- **Carte achetée en ligne, pas encore utilisée** (chef d’équipe et plus) : la fiche de la carte
+  propose « Rembourser l’achat en ligne ». La carte est vidée et bloquée, l’argent retourne sur la
+  carte de crédit de l’acheteur. Une carte déjà utilisée ne peut plus être remboursée.
 - Les cartes **n’expirent jamais et n’ont aucuns frais** : ne refusez jamais une carte « trop
   vieille ».
 

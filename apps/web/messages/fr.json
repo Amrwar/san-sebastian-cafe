@@ -550,10 +550,54 @@
     "tooMany": "Trop de vérifications. Réessayez plus tard.",
     "error": "La vérification a échoué. Réessayez.",
     "howTitle": "Comment ça marche",
-    "howBuy": "Les cartes s’achètent au comptoir, de 5 $ à 500 $.",
+    "howBuy": "Achetez une carte ici (10 $ à 200 $, code envoyé par courriel) ou au comptoir (5 $ à 500 $).",
     "howUse": "Entrez le code au moment de payer votre commande en ligne, ou présentez la carte au comptoir. Si le solde ne couvre pas tout, vous payez le reste par carte de crédit ou de débit.",
     "policyTitle": "Sans date d’expiration, sans frais",
-    "policyBody": "Conformément à la Loi sur la protection du consommateur du Québec, nos cartes-cadeaux n’ont pas de date d’expiration ni de frais d’utilisation. Le solde reste disponible jusqu’à ce qu’il soit utilisé."
+    "policyBody": "Conformément à la Loi sur la protection du consommateur du Québec, nos cartes-cadeaux n’ont pas de date d’expiration ni de frais d’utilisation. Le solde reste disponible jusqu’à ce qu’il soit utilisé.",
+    "buy": {
+      "title": "Offrir une carte-cadeau",
+      "intro": "Payez en ligne : le code de la carte est envoyé par courriel à la personne de votre choix.",
+      "unavailable": "L’achat en ligne n’est pas encore offert. Les cartes s’achètent au comptoir.",
+      "amount": "Montant",
+      "otherAmount": "Autre montant",
+      "otherLabel": "Montant ($)",
+      "otherHint": "De 10 $ à 200 $",
+      "recipientName": "Pour (nom)",
+      "recipientEmail": "Courriel de la personne",
+      "recipientEmailHint": "Le code de la carte lui sera envoyé. Inscrivez le vôtre pour la recevoir vous-même.",
+      "message": "Petit mot (facultatif)",
+      "messageHint": "300 caractères au plus, envoyé avec la carte.",
+      "purchaserName": "De (votre nom)",
+      "purchaserEmail": "Votre courriel",
+      "purchaserEmailHint": "Pour votre reçu.",
+      "pay": "Payer {amount}",
+      "payNoAmount": "Payer",
+      "noTax": "Une carte-cadeau n’est pas taxable. Elle n’expire jamais et n’a aucuns frais.",
+      "errors": {
+        "amount": "Choisissez un montant de 10 $ à 200 $.",
+        "name": "Entrez un nom.",
+        "email": "Entrez une adresse courriel valide.",
+        "tooMany": "Trop d’achats en peu de temps. Réessayez plus tard.",
+        "generic": "L’achat n’a pas pu commencer. Réessayez."
+      }
+    },
+    "purchase": {
+      "title": "Votre carte-cadeau",
+      "pending": "Carte-cadeau de {amount} pour {name} ({email}) : en attente du paiement.",
+      "pay": "Payer {amount}",
+      "confirming": "Confirmation du paiement en cours…",
+      "cancelled": "Le paiement a été annulé. Vous pouvez réessayer.",
+      "paidTitle": "Merci! La carte est envoyée.",
+      "paidBody": "La carte-cadeau de {amount} a été envoyée à {name} ({email}). Le code ne figure que dans ce courriel.",
+      "receipt": "Votre reçu vous a été envoyé par courriel.",
+      "expiredTitle": "Paiement non reçu",
+      "expiredBody": "La page de paiement a expiré sans paiement. Aucune somme n’a été prélevée.",
+      "refundedTitle": "Achat remboursé",
+      "refundedBody": "Cet achat a été remboursé et la carte annulée.",
+      "again": "Recommencer",
+      "simulatorTitle": "Simulateur de paiement (développement)",
+      "simulatorApprove": "Simuler un paiement accepté"
+    }
   },
   "Promotions": {
     "eyebrow": "Promotions",
@@ -1505,7 +1549,8 @@
       "cards": "{count} cartes avec un solde",
       "issued": "Cartes vendues dans la période",
       "redeemed": "Utilisé dans la période",
-      "adjusted": "Corrections dans la période"
+      "adjusted": "Corrections dans la période",
+      "online": "dont {count} achetées en ligne ({amount} encaissés)"
     }
   },
   "AccountData": {
@@ -1841,6 +1886,20 @@
       "unsubscribe": "Se désabonner : {url}",
       "unsubscribeLink": "Se désabonner en un clic",
       "test": "ESSAI"
+    },
+    "giftCard": {
+      "hello": "Bonjour {name},",
+      "deliverySubject": "{purchaser} vous offre une carte-cadeau San Sebastian Café",
+      "deliveryBody": "{purchaser} vous offre une carte-cadeau de {amount} au San Sebastian Café.",
+      "note": "Son mot : « {message} »",
+      "code": "Votre code : {code}",
+      "howToUse": "Entrez ce code au moment de payer une commande en ligne, ou présentez-le au comptoir. La carte n’expire jamais et n’a aucuns frais.",
+      "balance": "Vérifier le solde : {url}",
+      "footerDelivery": "Gardez ce courriel : le code ne peut pas être affiché de nouveau.",
+      "receiptSubject": "Votre carte-cadeau pour {recipient} est envoyée",
+      "receiptBody": "Merci! La carte-cadeau de {amount} (•••• {last4}) a été envoyée à {recipient} ({email}).",
+      "noTax": "Une carte-cadeau n’est pas taxable : les taxes s’appliquent aux achats faits avec elle.",
+      "footerReceipt": "Reçu de votre achat. Pour toute question, adressez-vous au comptoir."
     }
   },
   "Push": {
@@ -2060,7 +2119,13 @@
       "invalid": "Vérifiez les champs.",
       "amount": "Entrez un montant valide.",
       "reason": "Indiquez un motif (3 caractères ou plus).",
-      "generic": "L’opération a échoué. Réessayez."
+      "generic": "L’opération a échoué. Réessayez.",
+      "used": "Cette carte a déjà été utilisée : l’achat ne peut plus être remboursé."
+    },
+    "refundPurchase": {
+      "title": "Rembourser l’achat en ligne (carte non utilisée)",
+      "submit": "Rembourser",
+      "done": "Achat remboursé et carte annulée."
     }
   }
 }

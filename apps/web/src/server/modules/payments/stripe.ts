@@ -154,9 +154,15 @@ export function createStripeProvider(config: StripeProviderConfig): PaymentProvi
     },
 
     async createCheckout(input: CreateCheckoutInput) {
-      const metadata = { order_id: input.orderId, attempt_id: input.attemptId };
-      const name =
-        input.locale === "fr"
+      const giftCard = input.kind === "gift_card";
+      const metadata: Record<string, string> = giftCard
+        ? { gift_card_purchase_id: input.orderId, attempt_id: input.attemptId }
+        : { order_id: input.orderId, attempt_id: input.attemptId };
+      const name = giftCard
+        ? input.locale === "fr"
+          ? "Carte-cadeau — San Sebastian Café"
+          : "Gift card — San Sebastian Café"
+        : input.locale === "fr"
           ? `Commande ${input.orderNumber} — San Sebastian Café`
           : `Order ${input.orderNumber} — San Sebastian Café`;
       const session = await stripe.checkout.sessions.create(
@@ -181,7 +187,8 @@ export function createStripeProvider(config: StripeProviderConfig): PaymentProvi
             metadata,
             description: `San Sebastian Café ${input.orderNumber}`,
           },
-          ...(input.providerCustomerId
+          // Saved cards are offered for orders only.
+          ...(input.providerCustomerId && !giftCard
             ? {
                 customer: input.providerCustomerId,
                 saved_payment_method_options: { payment_method_save: "enabled" },

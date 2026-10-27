@@ -14,6 +14,7 @@ interface CardView {
   status: "active" | "disabled";
   issuedAt: string;
   note: string | null;
+  soldOnline: { status: "awaiting_payment" | "paid" | "expired" | "refunded" } | null;
   history: Array<{
     id: string;
     kind: "issue" | "redeem" | "release" | "refund" | "adjustment";
@@ -44,6 +45,7 @@ function useProblem() {
       const reason = e.failure.kind === "unprocessable" ? e.failure.reason : undefined;
       if (reason === "gift_card_insufficient") return t("errors.insufficient");
       if (reason === "gift_card_disabled") return t("errors.disabled");
+      if (reason === "gift_card_used") return t("errors.used");
       if (e.failure.kind === "validation") return t("errors.invalid");
     }
     return t("errors.generic");
@@ -298,6 +300,37 @@ function CardPanel({
           onSubmit={(amountCents, note) =>
             act("redeem", { amountCents, note: note || undefined }, t("redeem.done"))
           }
+        />
+      ) : null}
+
+      {canIssue && card.soldOnline?.status === "paid" && card.balanceCents === card.initialCents ? (
+        <ReasonForm
+          title={t("refundPurchase.title")}
+          submitLabel={t("refundPurchase.submit")}
+          busy={busy}
+          onSubmit={async (reason) => {
+            setBusy(true);
+            setMessage(null);
+            try {
+              await apiFetch(`/api/v1/staff/gift-cards/${card.id}/refund-purchase`, {
+                method: "POST",
+                body: JSON.stringify({ reason }),
+              });
+              onChange({
+                ...card,
+                balanceCents: 0,
+                status: "disabled",
+                soldOnline: { status: "refunded" },
+              });
+              setMessage({ ok: true, text: t("refundPurchase.done") });
+              return true;
+            } catch (e) {
+              setMessage({ ok: false, text: problem(e) });
+              return false;
+            } finally {
+              setBusy(false);
+            }
+          }}
         />
       ) : null}
 

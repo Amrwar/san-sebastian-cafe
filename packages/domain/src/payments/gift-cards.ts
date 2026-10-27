@@ -10,6 +10,21 @@ import { MIN_CARD_CHARGE_CENTS } from "./payments";
 export const GIFT_CARD_MIN_CENTS = 500;
 export const GIFT_CARD_MAX_CENTS = 50_000;
 
+/**
+ * Cards bought online: a narrower range than at the counter (a stolen card number buys less, and
+ * card-testing fraud favours small online purchases, which the minimum discourages).
+ */
+export const GIFT_CARD_ONLINE_MIN_CENTS = 1_000;
+export const GIFT_CARD_ONLINE_MAX_CENTS = 20_000;
+
+export const GIFT_CARD_PURCHASE_STATUSES = [
+  "awaiting_payment",
+  "paid",
+  "expired",
+  "refunded",
+] as const;
+export type GiftCardPurchaseStatus = (typeof GIFT_CARD_PURCHASE_STATUSES)[number];
+
 /** No 0/O, 1/I/L: codes are read aloud and typed from a printed card. */
 export const GIFT_CARD_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 export const GIFT_CARD_CODE_LENGTH = 16;
