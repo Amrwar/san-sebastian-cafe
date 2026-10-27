@@ -5,9 +5,19 @@ import {
   type BrowserContext,
   type Page,
 } from "@playwright/test";
-import { createDb, eq, orders, paymentDisputes, payments, refunds } from "@ssc/db";
+import {
+  count,
+  createDb,
+  eq,
+  giftCardPurchases,
+  giftCards,
+  orders,
+  paymentDisputes,
+  payments,
+  refunds,
+} from "@ssc/db";
 import Stripe from "stripe";
-import { choosePickupTime } from "./helpers";
+import { choosePickupTime, emailedGiftCardCode } from "./helpers";
 
 /*
  * STRIPE SANDBOX END-TO-END — real Stripe test mode, real hosted Checkout, Stripe test cards.
@@ -253,6 +263,79 @@ test.describe("Stripe sandbox", () => {
       const staff = await manager.newPage();
       await staff.goto("/fr/staff/payments");
       await expect(staff.getByText("Litige ouvert").first()).toBeVisible();
+    });
+
+    test("a gift card paid on Stripe's page is issued once, emailed, and refunded through Stripe", async ({
+      page,
+      request,
+    }) => {
+      const recipient = `sandbox-gift-${Date.now()}@example.test`;
+      await page.goto("/fr/gift-cards");
+      await page.getByRole("radio", { name: /^25,00\s\$$/ }).check();
+      await page.getByLabel("Pour (nom)").fill("Camille");
+      await page.getByLabel("Courriel de la personne").fill(recipient);
+      await page.getByLabel("De (votre nom)").fill("Sandbox");
+      await page.getByLabel("Votre courriel").fill("sandbox@example.test");
+      await page.getByRole("button", { name: /^Payer 25,00/ }).click();
+      await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
+      await payWithCard(page, "4242424242424242");
+
+      // Back on the site: the return page confirms with Stripe before showing the card as sent.
+      await page.waitForURL(/\/fr\/gift-cards\/purchase\/[\w-]+/, { timeout: 60_000 });
+      await expect(page.getByText("Merci! La carte est envoyée.")).toBeVisible({ timeout: 30_000 });
+      const purchaseId = /\/purchase\/([\w-]+)/.exec(page.url())![1]!;
+      const purchaseOf = () =>
+        withDb(async (db) =>
+          db.query.giftCardPurchases.findFirst({ where: eq(giftCardPurchases.id, purchaseId) }),
+        );
+      const paid = await purchaseOf();
+      expect(paid).toMatchObject({ status: "paid", amountCents: 2500 });
+      expect(paid?.providerPaymentId).toMatch(/^pi_/);
+      const cardCount = () =>
+        withDb(async (db) => (await db.select({ n: count() }).from(giftCards))[0]!.n);
+      const cardsBefore = await cardCount();
+
+      // Stripe's own confirmation arriving afterwards issues nothing more.
+      const [completed] = await stripeEvents(
+        ["checkout.session.completed"],
+        (e) => (e.data.object as Stripe.Checkout.Session).id === paid!.providerSessionId,
+      );
+      expect(await deliver(request, completed!)).toMatchObject({ duplicate: false });
+      expect((await purchaseOf())?.giftCardId).toBe(paid!.giftCardId);
+      expect(await cardCount()).toBe(cardsBefore);
+
+      // The recipient's email holds a code worth the amount paid.
+      const code = await emailedGiftCardCode(recipient);
+      await page.goto("/fr/gift-cards");
+      await page.getByLabel("Code de la carte").fill(code);
+      await page.getByRole("button", { name: "Vérifier" }).click();
+      await expect(
+        page.getByText(new RegExp(`•••• ${code.slice(-4)} : 25,00\\s\\$`)),
+      ).toBeVisible();
+
+      // Bought by mistake: a manager refunds the unused card; the money goes back through Stripe.
+      const refunded = await manager.request.post(
+        `/api/v1/staff/gift-cards/${paid!.giftCardId}/refund-purchase`,
+        { data: { reason: "Sandbox: bought by mistake" } },
+      );
+      expect(refunded.ok(), await refunded.text()).toBe(true);
+      const after = await purchaseOf();
+      expect(after?.status).toBe("refunded");
+      expect(after?.providerRefundId).toMatch(/^re_/);
+      const refund = await stripe().refunds.retrieve(after!.providerRefundId!);
+      expect(refund).toMatchObject({ amount: 2500, payment_intent: paid!.providerPaymentId });
+      expect(["pending", "succeeded"]).toContain(refund.status);
+      const card = await withDb(async (db) =>
+        db.query.giftCards.findFirst({ where: eq(giftCards.id, paid!.giftCardId!) }),
+      );
+      expect(card).toMatchObject({ balanceCents: 0, status: "disabled" });
+
+      // Stripe's refund events reach the webhook and are accepted without touching any order.
+      const events = await stripeEvents(
+        ["refund.created", "refund.updated"],
+        (e) => (e.data.object as Stripe.Refund).id === after!.providerRefundId,
+      );
+      for (const event of events) await deliver(request, event);
     });
   });
 });

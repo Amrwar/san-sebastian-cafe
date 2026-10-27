@@ -1,7 +1,5 @@
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { choosePickupTime, expectNoSeriousA11yViolations } from "./helpers";
+import { choosePickupTime, emailedGiftCardCode, expectNoSeriousA11yViolations } from "./helpers";
 
 /* Amounts are written with a non-breaking space before "$" in French. */
 const amount = (text: string) => new RegExp(text.replace(/ /g, "\\s").replace("$", "\\$"));
@@ -80,23 +78,6 @@ test("staff without the right role can't sell cards, and unknown codes are refus
   }
 });
 
-/** The code in the gift card email the development mail transport captured for `email`. */
-async function emailedCode(email: string): Promise<string> {
-  const dir = join(process.cwd(), ".dev-mail");
-  // Messages are saved as <address>__<timestamp>.json.
-  const prefix = `${email.replace(/[^a-z0-9]+/g, "_")}__`;
-  for (let attempt = 0; attempt < 40; attempt++) {
-    for (const name of await readdir(dir).catch(() => [] as string[])) {
-      if (!name.startsWith(prefix)) continue;
-      const mail = JSON.parse(await readFile(join(dir, name), "utf8")) as { text?: string };
-      const code = /[2-9A-Z]{4}(?:-[2-9A-Z]{4}){3}/.exec(mail.text ?? "")?.[0];
-      if (code) return code;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`No gift card email captured for ${email}`);
-}
-
 test("a guest buys a card online; the recipient gets the code by email and can use it", async ({
   page,
 }) => {
@@ -119,7 +100,7 @@ test("a guest buys a card online; the recipient gets the code by email and can u
   await expectNoSeriousA11yViolations(page);
 
   // The recipient's email holds the code, and the card works.
-  const code = await emailedCode(recipient);
+  const code = await emailedGiftCardCode(recipient);
   await page.goto("/fr/gift-cards");
   await page.getByLabel("Code de la carte").fill(code);
   await page.getByRole("button", { name: "Vérifier" }).click();

@@ -177,7 +177,7 @@ allows daily runs) or any external scheduler. It is not scheduled in this reposi
 | Refunded                | partial pending → webhook; concurrent over-refund blocked; timeout → idempotent retry; failed refund; dashboard refund; cancel → refund |
 | Signature verification  | `stripe.test.ts` with Stripe's own test-header generator: valid, tampered, wrong secret, stale, missing                                 |
 | Requests sent to Stripe | `stripe.test.ts` against a local HTTP stand-in: amounts, CAD, metadata, idempotency keys, no card fields                                |
-| **Real Stripe sandbox** | `e2e/stripe-sandbox.spec.ts` (`STRIPE_E2E=1`, test keys): the checklist below, automated. **7/7 passed 2026-10-26**                     |
+| **Real Stripe sandbox** | `e2e/stripe-sandbox.spec.ts` (`STRIPE_E2E=1`, test keys): the checklist below, automated. **8/8 passed 2026-10-26**                     |
 
 Integration tests use `src/test/stripe-double.ts`, a scripted stand-in for Stripe. They verify our
 reconciliation, not Stripe; that is what the sandbox run and the checklist below are for.
@@ -185,18 +185,20 @@ reconciliation, not Stripe; that is what the sandbox run and the checklist below
 **Sandbox run:** `STRIPE_E2E=1 npx playwright test stripe-sandbox --project=desktop` (test keys in
 `.env`). It needs no `stripe listen`: webhook scenarios fetch the real events from Stripe's API and
 deliver them to the endpoint signed with `STRIPE_WEBHOOK_SECRET`, as the CLI does, and the app reads
-the current state back from Stripe as usual. **2026-10-26: 7/7 passed.**
+the current state back from Stripe as usual. **2026-10-26: 8/8 passed** (the gift card purchase
+added the same day).
 
-| Scenario                            | Card / action                    | Result                                          |
-| ----------------------------------- | -------------------------------- | ----------------------------------------------- |
-| Payment                             | `4242 4242 4242 4242`            | paid, confirmed by Stripe (not the redirect)    |
-| Declined                            | `4000 0000 0000 0002`            | refused on Stripe's page, order unpaid          |
-| Insufficient funds                  | `4000 0000 0000 9995`            | refused on Stripe's page                        |
-| 3-D Secure                          | `4000 0027 6000 3184` → Complete | paid after authentication                       |
-| Partial refund of a completed order | Staff refund 0,50 $              | refund succeeded, payment `partially_refunded`  |
-| Replayed event                      | same `refund.*` event again      | recorded as duplicate, nothing changes          |
-| Paid order cancelled by staff       | Staff → Annuler                  | refunded in full through Stripe                 |
-| Chargeback on a real order          | `4000 0000 0000 0259`            | dispute recorded on that order, _Litige ouvert_ |
+| Scenario                            | Card / action                    | Result                                                                                                                                                                                                         |
+| ----------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Payment                             | `4242 4242 4242 4242`            | paid, confirmed by Stripe (not the redirect)                                                                                                                                                                   |
+| Declined                            | `4000 0000 0000 0002`            | refused on Stripe's page, order unpaid                                                                                                                                                                         |
+| Insufficient funds                  | `4000 0000 0000 9995`            | refused on Stripe's page                                                                                                                                                                                       |
+| 3-D Secure                          | `4000 0027 6000 3184` → Complete | paid after authentication                                                                                                                                                                                      |
+| Partial refund of a completed order | Staff refund 0,50 $              | refund succeeded, payment `partially_refunded`                                                                                                                                                                 |
+| Replayed event                      | same `refund.*` event again      | recorded as duplicate, nothing changes                                                                                                                                                                         |
+| Paid order cancelled by staff       | Staff → Annuler                  | refunded in full through Stripe                                                                                                                                                                                |
+| Chargeback on a real order          | `4000 0000 0000 0259`            | dispute recorded on that order, _Litige ouvert_                                                                                                                                                                |
+| Gift card bought online (25 $)      | `4242 4242 4242 4242`            | card issued once (return page, then Stripe's `checkout.session.completed` changes nothing), code emailed and valid; staff refund → Stripe refund of 25 $, card emptied and blocked, `refund.*` events accepted |
 
 Stripe test-mode refunds succeed at once, so the refund is settled from Stripe's answer and the
 webhook re-applies it idempotently. A refund that stays pending until its webhook is covered by the

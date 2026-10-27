@@ -60,9 +60,9 @@ card; the reports reconcile it and show what the café owes on cards.
 | Integration (real Postgres)   | ✔ 248 web + 12 db (new `gift-cards.int.test.ts`, 17: issue with only the hash stored, balance check, roles and limits, counter use, blocked card, simultaneous use never below zero, partial and full cover, the 0,50 $ rule, changed balance refused, expiry releases once, cancel and partial refunds card-first, gift-only refund, report reconciliation, liability) |
 | E2E — Playwright + axe        | ✔ 94 passed, 7 skipped (Stripe sandbox, opt-in); new: a manager sells a card → a guest checks it and pays an order with it → staff see the payment in its history; staff without the role can't sell                                                                                                                                                                    |
 
-The Stripe sandbox run (report 13 §7) was not repeated for gift cards: a partly covered order
-sends Stripe a smaller amount through the same code path, which the integration tests cover with
-the payment simulator.
+The Stripe sandbox run (report 13 §7) was not repeated for gift cards used on orders: a partly
+covered order sends Stripe a smaller amount through the same code path, which the integration tests
+cover with the payment simulator. Online purchases were run in the sandbox (§4).
 
 ## 3. Not done (options)
 
@@ -102,3 +102,10 @@ refund of an unused card (and refused once used, and for staff without the role)
 and anonymization, retention. E2E: a guest buys a card, the simulator pays, the recipient's email
 holds a code that works on the balance page. Totals with this addition: integration 258 web + 12
 db, E2E 95 passed (7 skipped, Stripe sandbox).
+
+**Stripe sandbox (2026-10-26):** a 25 $ card bought on Stripe's real test page with
+`4242 4242 4242 4242`. The return page confirmed the payment with Stripe and the card was issued;
+Stripe's own `checkout.session.completed` delivered afterwards issued nothing more; the recipient's
+email held a code worth 25 $; a manager's refund created a 25 $ Stripe refund on the same payment,
+emptied and blocked the card, and Stripe's `refund.*` events were accepted by the webhook
+(`stripe-sandbox.spec.ts`, now 8/8).
