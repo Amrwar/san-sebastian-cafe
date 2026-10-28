@@ -679,6 +679,27 @@
     "demo": "Demo",
     "demoWarning": "The catalog contains {count, plural, one {# demonstration product} other {# demonstration products}}. Remove them before going live (npm run db:purge-demo).",
     "auditTitle": "Audit log",
+    "statusTitle": "System status",
+    "statusSummary": {
+      "ok": "Everything is running",
+      "warn": "Something needs a look",
+      "fail": "Customers are affected"
+    },
+    "statusLevel": {
+      "ok": "OK",
+      "warn": "Warning",
+      "fail": "Problem"
+    },
+    "signalNames": {
+      "schema": "Database",
+      "notifications": "Notifications",
+      "notification-failures": "Failed notifications",
+      "job_outbox": "Notification sender",
+      "job_payments": "Payment recovery",
+      "job_retention": "Data clean-up"
+    },
+    "alertsOff": "Alerts aren’t set up, so problems only appear in the logs. Set ALERT_WEBHOOK_URL to get a message.",
+    "jobsOff": "Scheduled jobs are off (CRON_SECRET isn’t set), so they aren’t watched.",
     "auditEmpty": "No actions recorded yet.",
     "auditWhen": "Date",
     "auditAction": "Action",

@@ -12,3 +12,4 @@ export * from "./privacy";
 export * from "./notifications";
 export * from "./inventory";
 export * from "./gift-cards";
+export * from "./monitoring";

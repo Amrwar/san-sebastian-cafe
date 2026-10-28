@@ -5,6 +5,7 @@ import type { z } from "zod";
 import { AppError, fromZodError, toProblem } from "./errors";
 import { env } from "./env";
 import { logger } from "./logger";
+import { reportError } from "./monitoring/alerts";
 import { drainOutbox } from "./notifications/deliver";
 
 export const REQUEST_ID_HEADER = "x-request-id";
@@ -48,15 +49,23 @@ export function apiRoute<P = Record<string, never>>(handler: Handler<P>) {
       response = await handler(req, { requestId, log, params: await segment.params });
     } catch (error) {
       const problem = toProblem(error, requestId);
-      if (problem.status >= 500) log.error({ err: error }, "request failed");
-      else log.info({ code: problem.code }, "request rejected");
+      if (problem.status >= 500) {
+        log.error({ err: error }, "request failed");
+        const ctx = {
+          method: req.method,
+          path: req.nextUrl.pathname,
+          requestId,
+          source: "api" as const,
+        };
+        afterResponse(() => reportError(error, ctx));
+      } else log.info({ code: problem.code }, "request rejected");
       response = NextResponse.json(problem, {
         status: problem.status,
         headers: { "content-type": "application/problem+json" },
       });
     }
     // A change may have queued customer notifications: send them once the response is out.
-    if (!SAFE_METHODS.has(req.method) && response.status < 400) after(() => drainOutbox());
+    if (!SAFE_METHODS.has(req.method) && response.status < 400) afterResponse(() => drainOutbox());
     response.headers.set(REQUEST_ID_HEADER, requestId);
     log.debug(
       { status: response.status, ms: Math.round(performance.now() - started) },
@@ -64,6 +73,15 @@ export function apiRoute<P = Record<string, never>>(handler: Handler<P>) {
     );
     return response;
   };
+}
+
+/** Runs work once the response is sent; outside a request (tests, scripts) it just starts it. */
+function afterResponse(task: () => Promise<unknown>): void {
+  try {
+    after(task);
+  } catch {
+    void task();
+  }
 }
 
 /** Parses and validates a JSON body. Malformed JSON and schema violations become 400 problems. */

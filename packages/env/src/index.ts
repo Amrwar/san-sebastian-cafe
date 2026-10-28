@@ -68,6 +68,13 @@ export const serverEnvSchema = z
     ),
     /** Bearer secret for the payment recovery job (/api/cron/payments). Unset = job disabled. */
     CRON_SECRET: optional(z.string().min(32, "must be at least 32 characters")),
+    /** Bearer token for /api/health/details (the uptime monitor sends it). Unset = route off. */
+    MONITORING_TOKEN: optional(z.string().min(32, "must be at least 32 characters")),
+    /**
+     * Incoming webhook for alerts (Slack, Discord, Teams, or a monitoring service): server
+     * errors and signals turning bad or recovering. Unset = alerts only in the logs.
+     */
+    ALERT_WEBHOOK_URL: optional(z.url()),
     /**
      * Where product photos live. "local": files under apps/web/.dev-uploads (development only;
      * hosted filesystems are read-only). "vercel-blob": a public Vercel Blob store.
@@ -118,6 +125,13 @@ export const serverEnvSchema = z
         code: "custom",
         path: ["VAPID_PUBLIC_KEY"],
         message: "set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT together",
+      });
+    }
+    if (deployed && env.ALERT_WEBHOOK_URL && !env.ALERT_WEBHOOK_URL.startsWith("https://")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ALERT_WEBHOOK_URL"],
+        message: "must be an https:// URL outside development",
       });
     }
     if (deployed && env.PAYMENT_PROVIDER === "fake") {

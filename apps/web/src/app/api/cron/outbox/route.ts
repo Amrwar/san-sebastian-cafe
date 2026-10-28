@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { assertCronRequest } from "@/server/cron";
+import { db } from "@/server/db";
 import { apiRoute } from "@/server/http";
+import { withJobRun } from "@/server/monitoring/jobs";
 import { drainOutbox } from "@/server/notifications/deliver";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 export const GET = apiRoute(async (req, { log }) => {
   assertCronRequest(req);
-  const run = await drainOutbox();
+  const run = await withJobRun(db(), "outbox", drainOutbox, { isFailure: (r) => r === null });
   log.info(run ?? {}, "outbox run");
   return NextResponse.json(run ?? { error: true }, { headers: { "cache-control": "no-store" } });
 });

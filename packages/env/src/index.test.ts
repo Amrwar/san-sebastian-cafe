@@ -126,4 +126,36 @@ describe("parseServerEnv", () => {
       }),
     ).toThrow(/BETTER_AUTH_SECRET[\s\S]*EMAIL_TRANSPORT[\s\S]*BETTER_AUTH_URL/);
   });
+
+  it("takes monitoring settings only when they are safe", () => {
+    expect(parseServerEnv({ ...valid, MONITORING_TOKEN: "", ALERT_WEBHOOK_URL: "" })).toMatchObject(
+      {
+        MONITORING_TOKEN: undefined,
+        ALERT_WEBHOOK_URL: undefined,
+      },
+    );
+    expect(() => parseServerEnv({ ...valid, MONITORING_TOKEN: "short" })).toThrow(
+      /MONITORING_TOKEN/,
+    );
+    expect(() => parseServerEnv({ ...valid, ALERT_WEBHOOK_URL: "not a url" })).toThrow(
+      /ALERT_WEBHOOK_URL/,
+    );
+    // Alerts can carry error details: never over plain HTTP once deployed.
+    const staging = {
+      ...valid,
+      APP_ENV: "staging",
+      EMAIL_TRANSPORT: "smtp",
+      SMTP_URL: "smtps://u:p@smtp.example.com:465",
+      BETTER_AUTH_URL: "https://staging.example.com",
+      STORAGE_DRIVER: "vercel-blob",
+      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
+    };
+    expect(() =>
+      parseServerEnv({ ...staging, ALERT_WEBHOOK_URL: "http://hooks.example.com/x" }),
+    ).toThrow(/ALERT_WEBHOOK_URL: must be an https/);
+    expect(
+      parseServerEnv({ ...staging, ALERT_WEBHOOK_URL: "https://hooks.example.com/x" })
+        .ALERT_WEBHOOK_URL,
+    ).toBe("https://hooks.example.com/x");
+  });
 });

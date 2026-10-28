@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { can } from "@ssc/domain";
-import { Alert, Container, EmptyState, PageHeader, Surface } from "@ssc/ui";
+import { Alert, Badge, Container, EmptyState, PageHeader, Surface, type Tone } from "@ssc/ui";
 import { AdminNav } from "@/components/AdminNav";
 import { Forbidden } from "@/components/Forbidden";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/server/db";
-import { getCatalogOverview, listRecentAuditEvents } from "@/server/modules/admin/overview";
+import {
+  getCatalogOverview,
+  getOperationalStatus,
+  listRecentAuditEvents,
+} from "@/server/modules/admin/overview";
 import { requirePermissionForPage } from "@/server/session";
 
 export async function generateMetadata({
@@ -23,11 +27,12 @@ export default async function AdminPage({ params }: PageProps<"/[locale]/admin">
   if (access.status === "forbidden") return <Forbidden />;
   const { user } = access;
 
-  const [t, format, overview, audit] = await Promise.all([
+  const [t, format, overview, audit, health] = await Promise.all([
     getTranslations("Admin"),
     getFormatter(),
     getCatalogOverview(db(), user),
     can(user.role, "audit:read") ? listRecentAuditEvents(db(), user) : Promise.resolve([]),
+    getOperationalStatus(db(), user),
   ]);
 
   const rows = [
@@ -47,6 +52,32 @@ export default async function AdminPage({ params }: PageProps<"/[locale]/admin">
           {t("demoWarning", { count: overview.products.demo })}
         </Alert>
       ) : null}
+
+      <Surface className="mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl text-espresso">{t("statusTitle")}</h2>
+          <Badge tone={STATUS_TONE[health.status]}>{t(`statusSummary.${health.status}`)}</Badge>
+        </div>
+        <ul className="mt-4 divide-y divide-line/60">
+          {health.signals.map((s) => (
+            <li key={s.signal} className="flex flex-wrap items-start justify-between gap-2 py-2.5">
+              <div className="flex min-w-0 flex-col">
+                <span className="font-medium text-espresso">
+                  {t(`signalNames.${s.signal.replace(":", "_")}`)}
+                </span>
+                <span className="text-sm text-espresso-muted">{s.detail}</span>
+              </div>
+              <Badge tone={STATUS_TONE[s.status]}>{t(`statusLevel.${s.status}`)}</Badge>
+            </li>
+          ))}
+        </ul>
+        {!health.alertsConfigured ? (
+          <p className="mt-3 text-sm text-espresso-muted">{t("alertsOff")}</p>
+        ) : null}
+        {!health.jobsScheduled ? (
+          <p className="mt-1 text-sm text-espresso-muted">{t("jobsOff")}</p>
+        ) : null}
+      </Surface>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">
         <Surface>
@@ -128,3 +159,9 @@ export default async function AdminPage({ params }: PageProps<"/[locale]/admin">
     </Container>
   );
 }
+
+const STATUS_TONE: Record<"ok" | "warn" | "fail", Tone> = {
+  ok: "success",
+  warn: "warning",
+  fail: "danger",
+};

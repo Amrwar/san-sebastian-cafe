@@ -37,9 +37,13 @@ Set `CRON_SECRET` (32+ random characters) in Vercel. Vercel Cron sends it as
 | `GET /api/cron/outbox`    | every minute      | Sends notifications not sent right after the change (retries)                 |
 | `GET /api/cron/payments`  | every 5–10 min    | Reconciles payments stuck in checkout, resubmits pending refunds              |
 | `GET /api/cron/retention` | daily (e.g. 3:00) | Deletes expired sign-in data, old guest contact details, old webhook payloads |
+| `GET /api/cron/monitor`   | every 5–10 min    | Checks the signals in §3 and alerts once when one goes bad, once on recovery  |
+
+Every job records its runs (`job_runs` table), so a job that stops running shows up as overdue
+on the admin overview and in alerts (§3).
 
 Vercel's **Hobby plan allows only daily cron jobs**. On Hobby, schedule the retention job on
-Vercel and the two others with an external scheduler (e.g. cron-job.org or GitHub Actions)
+Vercel and the others with an external scheduler (e.g. cron-job.org or GitHub Actions)
 calling the URLs with the bearer secret, or move to Pro. Example `vercel.json` for Pro:
 
 ```json
@@ -47,6 +51,7 @@ calling the URLs with the bearer secret, or move to Pro. Example `vercel.json` f
   "crons": [
     { "path": "/api/cron/outbox", "schedule": "* * * * *" },
     { "path": "/api/cron/payments", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/monitor", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/retention", "schedule": "0 7 * * *" }
   ]
 }
@@ -56,12 +61,36 @@ calling the URLs with the bearer secret, or move to Pro. Example `vercel.json` f
 
 ## 3. Monitoring and alerts
 
-| Watch                          | How                                                                                          | Alert when                     |
-| ------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------ |
-| Site and database up, migrated | Uptime monitor (e.g. Better Stack, UptimeRobot) on `/api/health`, every minute               | non-200 twice in a row         |
-| Notifications flowing          | Same monitor, keyword check `"delayed":false`                                                | `delayed: true` for 15 minutes |
-| Errors                         | Vercel → Logs, filter `level:error`; or a log drain to the monitoring tool                   | any `request failed` burst     |
-| Payments                       | Staff → Paiements shows anything needing attention; Stripe Dashboard → Developers → Webhooks | failed webhook deliveries      |
+**Set up once** (Vercel → Settings → Environment Variables, then redeploy):
+
+1. `ALERT_WEBHOOK_URL`: an incoming webhook where alerts are posted. Slack (Apps → Incoming
+   Webhooks), Discord (channel → Integrations → Webhooks), Teams, or a monitoring service. It
+   must be `https://` outside development. Without it, alerts are only log lines.
+2. `MONITORING_TOKEN`: 32+ random characters. Turns on `GET /api/health/details`.
+3. Schedule `/api/cron/monitor` every 5–10 minutes (§2).
+4. Point an uptime monitor (e.g. Better Stack, UptimeRobot) at `/api/health` every minute, and
+   optionally at `/api/health/details` with the header `Authorization: Bearer <MONITORING_TOKEN>`.
+5. Check: Admin → overview shows **System status**. Send a test alert by calling the monitor job
+   once the webhook is set; a signal that is already bad alerts immediately.
+
+**What is watched** (the same list on the admin overview, in `/api/health/details` and in alerts):
+
+| Signal               | Warning                                                             | Problem                                            | What to do                                                              |
+| -------------------- | ------------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- |
+| Database (`schema`)  | —                                                                   | fewer migrations than the code                     | Run the migrations (§1 step 2)                                          |
+| Notifications        | oldest waiting 10 min                                               | oldest waiting 30 min                              | Check the outbox job is scheduled; check the email settings             |
+| Failed notifications | any gave up in 24 h                                                 | —                                                  | Check `SMTP_URL` / the email provider; see the logs                     |
+| Each scheduled job   | never ran, or late (outbox 15 min, payments 30 min, retention 26 h) | very late (1 h, 2 h, 50 h), or its last run failed | Check the scheduler and `CRON_SECRET` on both sides; the error is shown |
+| Server errors        | —                                                                   | any 5xx response or page crash                     | Search the logs for the request id in the alert                         |
+
+Alerts are sent **once when a signal goes bad or changes severity, and once when it recovers**,
+not on every check. A problem whose alert couldn't be delivered is retried on the next check.
+A server error alerts once per 10 minutes per route and error, so a crash under traffic sends one
+message. Alerts carry routes, counts and scrubbed error texts: emails, phone numbers, ids, keys
+and tokens are removed (tested).
+
+**Also watch:** Staff → Paiements for payments needing attention, and Stripe Dashboard →
+Developers → Webhooks for failed webhook deliveries.
 
 Logs are JSON, carry a request id (`x-request-id` header on every API response, also shown to
 customers on errors), and never contain contact details (tested).

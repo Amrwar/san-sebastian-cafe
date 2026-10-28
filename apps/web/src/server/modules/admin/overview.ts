@@ -12,6 +12,13 @@ import {
 } from "@ssc/db";
 import type { Role } from "@ssc/domain";
 import { authorize, type Actor } from "../../authz";
+import { env } from "../../env";
+import {
+  collectSignals,
+  overallStatus,
+  type Signal,
+  type SignalStatus,
+} from "../../monitoring/signals";
 
 export interface CatalogOverview {
   categories: { real: number; demo: number };
@@ -129,5 +136,30 @@ export async function listAuditLog(
       metadata: (r.metadata ?? {}) as Record<string, unknown>,
     })),
     total: total?.n ?? 0,
+  };
+}
+
+export interface OperationalStatus {
+  status: SignalStatus;
+  signals: Signal[];
+  /** Server errors are sent to the alert webhook; without one they're only in the logs. */
+  alertsConfigured: boolean;
+  /** Without CRON_SECRET the scheduled jobs are off, so they aren't watched. */
+  jobsScheduled: boolean;
+}
+
+/** The same signals the monitor job watches, for the admin overview. */
+export async function getOperationalStatus(
+  db: Database,
+  actor: Actor | null,
+): Promise<OperationalStatus> {
+  authorize(actor, "admin_console:access");
+  const jobsScheduled = Boolean(env().CRON_SECRET);
+  const signals = await collectSignals(db, { jobsScheduled });
+  return {
+    status: overallStatus(signals),
+    signals,
+    alertsConfigured: Boolean(env().ALERT_WEBHOOK_URL),
+    jobsScheduled,
   };
 }

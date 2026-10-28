@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertCronRequest } from "@/server/cron";
 import { db } from "@/server/db";
 import { apiRoute } from "@/server/http";
+import { withJobRun } from "@/server/monitoring/jobs";
 import { runRetention } from "@/server/modules/privacy/retention";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 export const GET = apiRoute(async (req, { log }) => {
   assertCronRequest(req);
-  const summary = await runRetention(db());
+  const summary = await withJobRun(db(), "retention", () => runRetention(db()));
   log.info(summary, "retention run");
   return NextResponse.json(summary, { headers: { "cache-control": "no-store" } });
 });

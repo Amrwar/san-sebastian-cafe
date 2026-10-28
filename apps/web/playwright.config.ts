@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { loadRootEnv } from "@ssc/env";
+import { E2E_CRON_SECRET, E2E_MONITORING_TOKEN } from "./e2e/secrets";
 
 loadRootEnv();
 
@@ -45,6 +46,9 @@ export default defineConfig({
       DATABASE_URL: E2E_DATABASE_URL,
       BETTER_AUTH_URL: BASE_URL,
       EMAIL_TRANSPORT: "console",
+      CRON_SECRET: E2E_CRON_SECRET,
+      MONITORING_TOKEN: E2E_MONITORING_TOKEN,
+      ALERT_WEBHOOK_URL: "",
       // Development payment simulator by default; the Stripe sandbox spec opts in to real test mode.
       PAYMENT_PROVIDER: process.env.STRIPE_E2E === "1" ? "stripe" : "fake",
     },

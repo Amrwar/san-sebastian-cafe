@@ -679,6 +679,27 @@
     "demo": "Démo",
     "demoWarning": "Le catalogue contient {count, plural, one {# produit de démonstration} other {# produits de démonstration}}. Supprimez-les avant la mise en ligne (npm run db:purge-demo).",
     "auditTitle": "Journal d’audit",
+    "statusTitle": "État du système",
+    "statusSummary": {
+      "ok": "Tout fonctionne",
+      "warn": "Quelque chose demande votre attention",
+      "fail": "Les clients sont touchés"
+    },
+    "statusLevel": {
+      "ok": "OK",
+      "warn": "Avertissement",
+      "fail": "Problème"
+    },
+    "signalNames": {
+      "schema": "Base de données",
+      "notifications": "Notifications",
+      "notification-failures": "Notifications en échec",
+      "job_outbox": "Envoi des notifications",
+      "job_payments": "Récupération des paiements",
+      "job_retention": "Nettoyage des données"
+    },
+    "alertsOff": "Les alertes ne sont pas configurées : les problèmes n’apparaissent que dans les journaux. Définissez ALERT_WEBHOOK_URL pour recevoir un message.",
+    "jobsOff": "Les tâches planifiées sont désactivées (CRON_SECRET n’est pas défini) : elles ne sont pas surveillées.",
     "auditEmpty": "Aucune action enregistrée pour le moment.",
     "auditWhen": "Date",
     "auditAction": "Action",
