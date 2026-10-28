@@ -99,6 +99,13 @@
       "when": 1793048509067,
       "tag": "0013_gift_card_purchases",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793206356147,
+      "tag": "0014_delivery_out_for_delivery",
+      "breakpoints": true
     }
   ]
 }

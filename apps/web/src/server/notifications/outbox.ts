@@ -38,6 +38,7 @@ export const NOTIFICATION_TEMPLATES = [
   "order_cancelled",
   "order_rejected",
   "order_refunded",
+  "order_on_the_way",
 ] as const;
 export type NotificationTemplate = (typeof NOTIFICATION_TEMPLATES)[number];
 
@@ -53,6 +54,8 @@ export interface NotificationPayload {
   reason?: string | null;
   refundedCents?: number;
   paid?: boolean;
+  /** Delivery orders: the estimated delivery time, ISO (absent for pickup). */
+  deliverBy?: string | null;
 }
 
 const EMAIL_TEMPLATES: Record<OrderStatus, NotificationTemplate | null> = {
@@ -67,10 +70,12 @@ const EMAIL_TEMPLATES: Record<OrderStatus, NotificationTemplate | null> = {
   rejected: "order_rejected",
   refunded: "order_refunded",
   partially_refunded: "order_refunded",
+  out_for_delivery: "order_on_the_way",
 };
 /** Push is for what needs attention now. */
 const PUSH_TEMPLATES: readonly NotificationTemplate[] = [
   "order_ready",
+  "order_on_the_way",
   "order_cancelled",
   "order_rejected",
 ];
@@ -85,6 +90,9 @@ export async function queueOrderNotifications(
   const to = after.status;
   const template = EMAIL_TEMPLATES[to];
   if (!template) return;
+  // A delivery order waiting for its courier is not "ready at the counter": its notice is
+  // "on the way", sent when it leaves.
+  if (template === "order_ready" && after.fulfilment === "delivery") return;
   // A cancelled order's refund was already announced with the cancellation.
   if (
     template === "order_refunded" &&
@@ -99,6 +107,8 @@ export async function queueOrderNotifications(
     pickupAt: (after.scheduledFor ?? after.slotStart)?.toISOString() ?? null,
     hasAccount: after.userId !== null,
   };
+  if (after.fulfilment === "delivery")
+    payload.deliverBy = (after.pricingSnapshot as { deliverBy?: string }).deliverBy ?? null;
   let key = `${after.id}:${template}`;
   if (template === "order_cancelled" || template === "order_rejected") {
     payload.reason = after.cancellationReason;

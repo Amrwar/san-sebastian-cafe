@@ -14,7 +14,14 @@ import { currentRules } from "./program";
  * an order still in the kitchen earns when it is completed, like any account order.
  */
 
-const CLAIMABLE: OrderStatus[] = ["paid", "accepted", "in_preparation", "ready", "completed"];
+const CLAIMABLE: OrderStatus[] = [
+  "paid",
+  "accepted",
+  "in_preparation",
+  "ready",
+  "out_for_delivery",
+  "completed",
+];
 const DAY_MS = 86_400_000;
 
 export interface ClaimResult {

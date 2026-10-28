@@ -259,7 +259,8 @@
       "name": "Entrez un nom.",
       "email": "Entrez une adresse courriel valide.",
       "slot": "Choisissez une heure de cueillette.",
-      "tip": "Entrez un montant entre 0 et 100 $."
+      "tip": "Entrez un montant entre 0 et 100 $.",
+      "phone": "Entrez un numéro de téléphone : le livreur doit pouvoir vous joindre."
     },
     "review": "Vérifier ma commande",
     "reviewOk": "Tout est en ordre. Votre commande pourra être transmise dès que le paiement en ligne sera offert.",
@@ -299,7 +300,8 @@
       "not_found": "Ce code de carte-cadeau n’existe pas. Vérifiez-le.",
       "disabled": "Cette carte-cadeau est bloquée. Adressez-vous au comptoir.",
       "empty": "Cette carte-cadeau n’a plus de solde."
-    }
+    },
+    "phoneDelivery": "Téléphone (pour le livreur)"
   },
   "SignIn": {
     "eyebrow": "Compte",
@@ -509,7 +511,8 @@
     "deliveryTo": "Livraison : {address}",
     "reason": "Raison : {reason}",
     "claimStamps": "Créez un compte avec l’adresse courriel de cette commande d’ici le {date} : ses tampons seront ajoutés à votre carte fidélité.",
-    "claimCta": "Créer mon compte"
+    "claimCta": "Créer mon compte",
+    "deliverBy": "Livraison prévue vers {time}"
   },
   "Tracking": {
     "title": "Suivi",
@@ -525,7 +528,9 @@
       "accepted": "Acceptée",
       "in_preparation": "En préparation",
       "ready": "Prête",
-      "completed": "Remise"
+      "completed": "Remise",
+      "out_for_delivery": "En route",
+      "delivered": "Livrée"
     },
     "stepState": {
       "done": "terminée",
@@ -533,7 +538,9 @@
       "upcoming": "à venir"
     },
     "cancelled": "Cette commande a été annulée.",
-    "refunded": "Cette commande a été remboursée."
+    "refunded": "Cette commande a été remboursée.",
+    "onTheWay": "Votre commande est en route!",
+    "onTheWayHint": "Elle arrive bientôt à l’adresse indiquée. Gardez votre téléphone à portée de main."
   },
   "GiftCards": {
     "eyebrow": "Cartes-cadeaux",
@@ -635,7 +642,10 @@
     "cancelled": "Annulée",
     "expired": "Expirée",
     "refunded": "Remboursée",
-    "partially_refunded": "Partiellement remboursée"
+    "partially_refunded": "Partiellement remboursée",
+    "rejected": "Refusée",
+    "out_for_delivery": "En livraison",
+    "delivered": "Livrée"
   },
   "Staff": {
     "eyebrow": "Personnel",
@@ -728,7 +738,9 @@
       "ready": "Prête",
       "completed": "Remise au client",
       "rejected": "Refuser",
-      "cancelled": "Annuler"
+      "cancelled": "Annuler",
+      "out_for_delivery": "Remise au livreur",
+      "delivered": "Livrée"
     },
     "reasonTitle": "Raison",
     "reasonLabel": "Raison (visible dans l’historique)",
@@ -757,7 +769,12 @@
     "stockLow": "{name} : {count, plural, one {# restant} other {# restants}}",
     "stockOut": "{name} : épuisé",
     "stockLink": "Gérer le stock",
-    "giftCards": "Cartes-cadeaux"
+    "giftCards": "Cartes-cadeaux",
+    "onTheWay": "En route",
+    "deliveryTo": "Adresse de livraison",
+    "deliveryInstructions": "Instructions",
+    "phone": "Téléphone",
+    "deliverBy": "Livraison prévue vers {time}"
   },
   "StaffAvailability": {
     "title": "Disponibilité des produits",
@@ -1015,7 +1032,8 @@
     "reports": "Rapports",
     "privacy": "Confidentialité",
     "promotions": "Promotions",
-    "marketing": "Courriels"
+    "marketing": "Courriels",
+    "delivery": "Livraison"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1455,7 +1473,8 @@
       "sales": "Ventes",
       "refunds": "Remboursements",
       "net": "Net",
-      "discounts": "Rabais accordés : {promo} en promotions, {reward} en boissons offertes."
+      "discounts": "Rabais accordés : {promo} en promotions, {reward} en boissons offertes.",
+      "deliveryFees": "Frais de livraison facturés : {amount} ({count, plural, one {# livraison} other {# livraisons}}), compris dans les biens."
     },
     "reconciliation": {
       "ok": "Ventes et paiements concordent : {amount} encaissés pour ces commandes.",
@@ -1855,7 +1874,8 @@
       "total": "Total payé : {total}.",
       "pickup": "Cueillette prévue : {time}.",
       "pushTitle": "Commande {number} confirmée",
-      "pushBody": "Nous la préparons."
+      "pushBody": "Nous la préparons.",
+      "delivery": "Livraison prévue vers : {time}."
     },
     "ready": {
       "subject": "Votre commande {number} est prête",
@@ -1900,6 +1920,12 @@
       "receiptBody": "Merci! La carte-cadeau de {amount} (•••• {last4}) a été envoyée à {recipient} ({email}).",
       "noTax": "Une carte-cadeau n’est pas taxable : les taxes s’appliquent aux achats faits avec elle.",
       "footerReceipt": "Reçu de votre achat. Pour toute question, adressez-vous au comptoir."
+    },
+    "onTheWay": {
+      "subject": "Votre commande {number} est en route",
+      "body": "Votre commande {number} est partie : elle arrive bientôt à l’adresse indiquée.",
+      "pushTitle": "Commande {number} en route",
+      "pushBody": "Elle arrive bientôt."
     }
   },
   "Push": {
@@ -2126,6 +2152,38 @@
       "title": "Rembourser l’achat en ligne (carte non utilisée)",
       "submit": "Rembourser",
       "done": "Achat remboursé et carte annulée."
+    }
+  },
+  "AdminDelivery": {
+    "title": "Livraison",
+    "intro": "Les zones desservies, par début de code postal (ex. H2T), avec leurs frais, leur commande minimum et le temps de route habituel. La livraison est offerte au moment de payer seulement si une zone est activée.",
+    "offered": "La livraison est offerte : les clients des zones activées peuvent la choisir au moment de payer.",
+    "notOffered": "La livraison n’est pas offerte : aucune zone n’est activée. Les clients ne voient que la cueillette.",
+    "new": "Ajouter une zone",
+    "empty": "Aucune zone pour l’instant.",
+    "nameFr": "Nom (français)",
+    "nameEn": "Nom (anglais)",
+    "prefixes": "Débuts de code postal",
+    "prefixesHint": "Les 3 premiers caractères, séparés par des virgules : H2T, H2V, H2S.",
+    "fee": "Frais de livraison ($)",
+    "minimum": "Commande minimum ($)",
+    "minutes": "Temps de route (min)",
+    "minutesHint": "Ajouté au temps de préparation pour l’heure d’arrivée annoncée.",
+    "optional": "facultatif",
+    "active": "Zone activée",
+    "activeHint": "Les clients de cette zone peuvent choisir la livraison.",
+    "save": "Enregistrer la zone",
+    "saved": "Zone enregistrée.",
+    "edit": "Modifier",
+    "on": "Activée",
+    "off": "Désactivée",
+    "demo": "Démo",
+    "summary": "Frais {fee} · environ {minutes} min",
+    "minimumShort": "minimum {amount}",
+    "orders": "{count, plural, =0 {aucune commande} one {# commande} other {# commandes}}",
+    "errors": {
+      "prefixTaken": "Un de ces codes postaux est déjà desservi par une autre zone activée.",
+      "fields": "Vérifiez les champs : un nom dans chaque langue, des débuts de code postal valides (ex. H2T), des frais de 0 à 50 $ et un temps de route de 5 à 180 minutes."
     }
   }
 }

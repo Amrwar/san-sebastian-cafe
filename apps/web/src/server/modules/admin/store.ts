@@ -31,7 +31,14 @@ function parse<S extends z.ZodType>(schema: S, raw: unknown): z.infer<S> {
 }
 
 /** Statuses of orders that still have a pickup ahead of them. */
-const UPCOMING = ["awaiting_payment", "paid", "accepted", "in_preparation", "ready"] as const;
+const UPCOMING = [
+  "awaiting_payment",
+  "paid",
+  "accepted",
+  "in_preparation",
+  "ready",
+  "out_for_delivery",
+] as const;
 
 const pad = (n: number) => String(n).padStart(2, "0");
 

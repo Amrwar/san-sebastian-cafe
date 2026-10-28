@@ -6,7 +6,15 @@ import type { OrderStatus } from "@ssc/domain";
 import { Alert, cn } from "@ssc/ui";
 import { ApiError, apiFetch } from "@/lib/api-client";
 
-const STEPS = ["paid", "accepted", "in_preparation", "ready", "completed"] as const;
+const PICKUP_STEPS = ["paid", "accepted", "in_preparation", "ready", "completed"] as const;
+const DELIVERY_STEPS = [
+  "paid",
+  "accepted",
+  "in_preparation",
+  "ready",
+  "out_for_delivery",
+  "completed",
+] as const;
 const FINAL: readonly OrderStatus[] = [
   "completed",
   "cancelled",
@@ -32,11 +40,13 @@ export function Tracking({
   orderId,
   number,
   initialStatus,
+  fulfilment = "pickup",
   token = null,
 }: {
   orderId: string;
   number: string;
   initialStatus: OrderStatus;
+  fulfilment?: "pickup" | "delivery";
   token?: string | null;
 }) {
   const t = useTranslations("Tracking");
@@ -132,7 +142,9 @@ export function Tracking({
     };
   }, [orderId, done, token]);
 
-  const currentIndex = STEPS.indexOf(status as (typeof STEPS)[number]);
+  const delivery = fulfilment === "delivery";
+  const steps: readonly OrderStatus[] = delivery ? DELIVERY_STEPS : PICKUP_STEPS;
+  const currentIndex = steps.indexOf(status);
   const time = new Intl.DateTimeFormat(locale === "en" ? "en-CA" : "fr-CA", {
     hour: "numeric",
     minute: "2-digit",
@@ -160,14 +172,19 @@ export function Tracking({
         </p>
       </div>
 
-      {status === "ready" ? (
+      {status === "ready" && !delivery ? (
         <Alert tone="success" title={t("ready")} role="status">
           {t("readyHint", { number })}
         </Alert>
       ) : null}
+      {status === "out_for_delivery" ? (
+        <Alert tone="success" title={t("onTheWay")} role="status">
+          {t("onTheWayHint")}
+        </Alert>
+      ) : null}
 
       <ol className="flex flex-col gap-0">
-        {STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const state = i < currentIndex ? "done" : i === currentIndex ? "current" : "upcoming";
           return (
             <li
@@ -175,7 +192,7 @@ export function Tracking({
               className="relative flex items-start gap-4 pb-6 last:pb-0"
               aria-current={state === "current" ? "step" : undefined}
             >
-              {i < STEPS.length - 1 ? (
+              {i < steps.length - 1 ? (
                 <span
                   aria-hidden="true"
                   className={cn(
@@ -203,7 +220,7 @@ export function Tracking({
                     state === "upcoming" ? "text-espresso-muted" : "text-espresso",
                   )}
                 >
-                  {t(`steps.${step}`)}
+                  {t(`steps.${delivery && step === "completed" ? "delivered" : step}`)}
                 </span>
                 <span className="sr-only"> — {t(`stepState.${state}`)}</span>
               </span>

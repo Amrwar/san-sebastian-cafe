@@ -18,7 +18,18 @@ const FORWARD: Partial<Record<OrderStatus, OrderStatus>> = {
   accepted: "in_preparation",
   in_preparation: "ready",
   ready: "completed",
+  out_for_delivery: "completed",
 };
+/** The next step for this order: a delivery order goes to the courier before it is completed. */
+function forwardOf(order: QueueOrder): OrderStatus | undefined {
+  if (order.status === "ready" && order.fulfilment === "delivery") return "out_for_delivery";
+  return FORWARD[order.status];
+}
+/** Button text for the next step (completing a delivery means it was delivered). */
+function forwardLabel(order: QueueOrder, to: OrderStatus) {
+  if (to === "completed" && order.fulfilment === "delivery") return "delivered" as const;
+  return to as "accepted" | "in_preparation" | "ready" | "completed" | "out_for_delivery";
+}
 /** Polling while the live stream is unavailable. */
 const POLL_MS = 10_000;
 
@@ -146,7 +157,11 @@ export function QueueBoard({
 
   const time = new Intl.DateTimeFormat(tag, { hour: "numeric", minute: "2-digit" });
   const now = updatedAt.getTime();
-  const byColumn = (c: Column) => queue.orders.filter((o) => o.status === c);
+  // Orders on their way stay with the ready ones until they are delivered.
+  const byColumn = (c: Column) =>
+    queue.orders.filter(
+      (o) => o.status === c || (c === "ready" && o.status === "out_for_delivery"),
+    );
 
   return (
     <div className="flex flex-col gap-5">
@@ -357,7 +372,7 @@ function OrderCard({
   const due = new Date(order.readyBy).getTime();
   const minutes = Math.round((due - now) / 60_000);
   const late = minutes < 0;
-  const forward = FORWARD[order.status];
+  const forward = forwardOf(order);
   const canForward = forward !== undefined && order.actions.includes(forward);
   const time = new Intl.DateTimeFormat(en ? "en-CA" : "fr-CA", {
     hour: "numeric",
@@ -374,7 +389,9 @@ function OrderCard({
       aria-labelledby={`order-${order.id}`}
       className={cn(
         "flex flex-col gap-3 rounded-md border-2 bg-ivory-raised p-4 shadow-soft",
-        late && order.status !== "ready" ? "border-danger" : "border-line",
+        late && order.status !== "ready" && order.status !== "out_for_delivery"
+          ? "border-danger"
+          : "border-line",
       )}
     >
       <header className="flex flex-col gap-2">
@@ -408,6 +425,9 @@ function OrderCard({
             </span>
           )}
           {order.fulfilment === "delivery" ? <Badge tone="brand">{t("delivery")}</Badge> : null}
+          {order.status === "out_for_delivery" ? (
+            <Badge tone="success">{t("onTheWay")}</Badge>
+          ) : null}
           {order.isDemo ? <Badge tone="warning">{tCommon("demo")}</Badge> : null}
         </div>
       </header>
@@ -434,6 +454,8 @@ function OrderCard({
         ))}
       </ul>
 
+      {order.delivery ? <DeliveryDetails delivery={order.delivery} /> : null}
+
       {order.notes ? (
         <p className="rounded-sm bg-crema-soft px-3 py-2 text-sm text-espresso">
           <span className="font-semibold">{t("customerNote")} :</span> {order.notes}
@@ -452,7 +474,7 @@ function OrderCard({
             onForward(forward);
           }}
         >
-          {t(`actions.${forward as "accepted" | "in_preparation" | "ready" | "completed"}`)}
+          {t(`actions.${forwardLabel(order, forward)}`)}
         </Button>
       ) : null}
       <div className="flex flex-wrap gap-2">
@@ -474,6 +496,48 @@ function OrderCard({
           ))}
       </div>
     </article>
+  );
+}
+
+function DeliveryDetails({ delivery }: { delivery: NonNullable<QueueOrder["delivery"]> }) {
+  const t = useTranslations("StaffQueue");
+  const locale = useLocale();
+  const time = new Intl.DateTimeFormat(locale === "en" ? "en-CA" : "fr-CA", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return (
+    <section
+      aria-label={t("deliveryTo")}
+      className="flex flex-col gap-1 rounded-sm border border-line bg-ivory px-3 py-2 text-sm"
+    >
+      <p className="font-semibold text-espresso">{t("deliveryTo")}</p>
+      <address className="not-italic">
+        {delivery.line1}
+        {delivery.line2 ? `, ${delivery.line2}` : ""}
+        <br />
+        {delivery.city} {delivery.postalCode}
+      </address>
+      {delivery.instructions ? (
+        <p>
+          <span className="font-semibold">{t("deliveryInstructions")} :</span>{" "}
+          {delivery.instructions}
+        </p>
+      ) : null}
+      {delivery.phone ? (
+        <p>
+          <span className="font-semibold">{t("phone")} :</span>{" "}
+          <a href={`tel:${delivery.phone.replace(/[^\d+]/g, "")}`} className="underline">
+            {delivery.phone}
+          </a>
+        </p>
+      ) : null}
+      {delivery.deliverBy ? (
+        <p className="text-espresso-muted">
+          {t("deliverBy", { time: time.format(new Date(delivery.deliverBy)) })}
+        </p>
+      ) : null}
+    </section>
   );
 }
 

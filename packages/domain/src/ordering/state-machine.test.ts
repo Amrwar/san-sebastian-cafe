@@ -6,7 +6,12 @@ import {
   customerCanModify,
   refundRequiredOnCancel,
 } from "./policies";
-import { allowedTransitions, checkTransition, type TransitionActor } from "./state-machine";
+import {
+  allowedTransitions,
+  checkTransition,
+  stockReturnsOn,
+  type TransitionActor,
+} from "./state-machine";
 
 const system: TransitionActor = { kind: "system" };
 const owner: TransitionActor = { kind: "customer", ownsOrder: true };
@@ -126,6 +131,54 @@ describe("order state machine", () => {
     });
     expect(allowedTransitions(at("ready"), staff)).toEqual(["completed"]);
     expect(allowedTransitions(at("completed"), staff)).toEqual([]);
+  });
+
+  describe("delivery orders", () => {
+    const delivery = (status: OrderStatus) => ({ ...at(status), fulfilment: "delivery" as const });
+
+    it("go ready → out for delivery → completed (delivered)", () => {
+      expect(checkTransition(delivery("ready"), "out_for_delivery", staff)).toEqual({ ok: true });
+      expect(checkTransition(delivery("out_for_delivery"), "completed", staff)).toEqual({
+        ok: true,
+      });
+      expect(allowedTransitions(delivery("ready"), staff)).toEqual(["out_for_delivery"]);
+      expect(allowedTransitions(delivery("out_for_delivery"), staff)).toEqual(["completed"]);
+    });
+
+    it("can't skip the courier, and pickup orders never go out for delivery", () => {
+      expect(checkTransition(delivery("ready"), "completed", staff)).toEqual({
+        ok: false,
+        error: "invalid_transition",
+      });
+      expect(checkTransition(at("ready"), "out_for_delivery", staff)).toEqual({
+        ok: false,
+        error: "invalid_transition",
+      });
+      expect(
+        checkTransition({ ...at("ready"), fulfilment: "pickup" }, "out_for_delivery", lead),
+      ).toEqual({ ok: false, error: "invalid_transition" });
+    });
+
+    it("a failed delivery is cancelled by a shift lead with a reason", () => {
+      expect(
+        checkTransition(delivery("out_for_delivery"), "cancelled", staff, "no answer"),
+      ).toEqual({ ok: false, error: "not_permitted" });
+      expect(checkTransition(delivery("out_for_delivery"), "cancelled", lead)).toEqual({
+        ok: false,
+        error: "reason_required",
+      });
+      expect(
+        checkTransition(delivery("out_for_delivery"), "cancelled", lead, "nobody at the door"),
+      ).toEqual({ ok: true });
+      // On its way: refunds wait until it is delivered or cancelled.
+      expect(checkTransition(delivery("out_for_delivery"), "refunded", lead, "late")).toMatchObject(
+        { ok: false, error: "invalid_transition" },
+      );
+    });
+
+    it("the food left the kitchen: cancelling on the way returns no stock", () => {
+      expect(stockReturnsOn("out_for_delivery", "cancelled")).toBe(false);
+    });
   });
 });
 

@@ -83,6 +83,9 @@ export interface SalesReport {
     itemsCents: number;
     discountCents: number;
     rewardDiscountCents: number;
+    /** Delivery fees charged (part of goods; taxed like them). */
+    deliveryFeeCents: number;
+    deliveryOrders: number;
     averageCents: number | null;
   };
   refunds: RefundTotals & {
@@ -293,6 +296,8 @@ export async function getSalesReport(
         itemsCents: int(orders.subtotalCents),
         discountCents: int(orders.discountCents),
         rewardDiscountCents: int(orders.rewardDiscountCents),
+        deliveryFeeCents: int(orders.deliveryFeeCents),
+        deliveryOrders: sql<number>`count(*) filter (where ${orders.fulfilment} = 'delivery')::int`,
       })
       .from(orders)
       .where(paid),
@@ -386,6 +391,8 @@ export async function getSalesReport(
     itemsCents: 0,
     discountCents: 0,
     rewardDiscountCents: 0,
+    deliveryFeeCents: 0,
+    deliveryOrders: 0,
   };
   const refundSplit = refundRows.reduce<MoneySplit>((s, r) => addSplit(s, r), ZERO);
   const refundTotal = splitTotal(refundSplit);
@@ -430,6 +437,8 @@ export async function getSalesReport(
       itemsCents: t.itemsCents,
       discountCents: t.discountCents,
       rewardDiscountCents: t.rewardDiscountCents,
+      deliveryFeeCents: t.deliveryFeeCents,
+      deliveryOrders: t.deliveryOrders,
       averageCents: t.orders > 0 ? Math.round(t.totalCents / t.orders) : null,
     },
     refunds: {

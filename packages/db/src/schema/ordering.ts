@@ -89,6 +89,8 @@ export const orders = pgTable(
     completedAt: timestamp({ withTimezone: true }),
     acceptedAt: timestamp({ withTimezone: true }),
     readyAt: timestamp({ withTimezone: true }),
+    /** Delivery orders: handed to the courier. */
+    outForDeliveryAt: timestamp({ withTimezone: true }),
     ...demoFlag,
     ...timestamps,
   },

@@ -36,9 +36,18 @@ import { recordSelfServiceRequest } from "./requests";
 export const ANONYMIZED_EMAIL = "anonymized@deleted.invalid";
 /** Stands in for a name where one is required (gift card purchases). */
 export const ANONYMIZED_NAME = "—";
+/** Stands in for a delivery address (the order must still show it was a delivery). */
+export const ANONYMIZED_ADDRESS = { anonymized: true };
 
 /** Statuses during which the café is still preparing or charging the order. */
-const IN_PROGRESS = ["awaiting_payment", "paid", "accepted", "in_preparation", "ready"] as const;
+const IN_PROGRESS = [
+  "awaiting_payment",
+  "paid",
+  "accepted",
+  "in_preparation",
+  "ready",
+  "out_for_delivery",
+] as const;
 
 export const deletionInput = z.object({ confirmEmail: z.string().trim().min(3).max(320) }).strict();
 

@@ -63,7 +63,9 @@ export default async function OrderDetailPage({
   const claimUntil =
     claimDays > 0 &&
     order.paidAt &&
-    ["paid", "accepted", "in_preparation", "ready", "completed"].includes(order.status)
+    ["paid", "accepted", "in_preparation", "ready", "out_for_delivery", "completed"].includes(
+      order.status,
+    )
       ? new Date(order.paidAt.getTime() + claimDays * 86_400_000)
       : null;
   const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
@@ -98,7 +100,13 @@ export default async function OrderDetailPage({
       ) : null}
       <PageHeader title={t("title", { number: order.number })}>
         <p className="flex flex-wrap items-center gap-2 text-base">
-          <Badge tone="brand">{tStatus(order.status)}</Badge>
+          <Badge tone="brand">
+            {tStatus(
+              order.fulfilment === "delivery" && order.status === "completed"
+                ? "delivered"
+                : order.status,
+            )}
+          </Badge>
           {order.isDemo ? <Badge tone="warning">{tCommon("demo")}</Badge> : null}
           <span>
             {order.fulfilment === "pickup" ? t("pickup") : t("delivery")} ·{" "}
@@ -108,9 +116,11 @@ export default async function OrderDetailPage({
           </span>
         </p>
         <p className="text-base">
-          {order.scheduledFor
-            ? t("scheduledFor", { time: time(order.scheduledFor) })
-            : t("readyBy", { time: time(order.readyBy) })}
+          {order.deliverBy
+            ? t("deliverBy", { time: time(order.deliverBy) })
+            : order.scheduledFor
+              ? t("scheduledFor", { time: time(order.scheduledFor) })
+              : t("readyBy", { time: time(order.readyBy) })}
         </p>
         {token ? <p className="text-sm">{t("guestNotice")}</p> : null}
       </PageHeader>
@@ -161,6 +171,7 @@ export default async function OrderDetailPage({
               orderId={order.id}
               number={order.number}
               initialStatus={order.status}
+              fulfilment={order.fulfilment}
               token={token}
             />
             {/* The customer who owns it (signed in, no guest link) can ask to be notified. */}

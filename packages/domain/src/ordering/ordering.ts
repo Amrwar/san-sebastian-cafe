@@ -14,6 +14,8 @@ export const ORDER_STATUSES = [
   "refunded",
   "partially_refunded",
   "rejected",
+  /** Delivery orders: handed to the courier, on the way to the customer. */
+  "out_for_delivery",
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 

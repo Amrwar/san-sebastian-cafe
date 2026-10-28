@@ -29,6 +29,17 @@ export interface QueueOrder {
   version: number;
   customerName: string | null;
   fulfilment: "pickup" | "delivery";
+  /** Delivery orders: where it goes and how to reach the customer (null for pickup). */
+  delivery: {
+    line1: string;
+    line2: string | null;
+    city: string;
+    postalCode: string;
+    instructions: string | null;
+    phone: string | null;
+    /** Estimated arrival, UTC ISO. */
+    deliverBy: string | null;
+  } | null;
   /** When the order should be ready (scheduled time or ASAP estimate), UTC ISO. */
   readyBy: string;
   scheduled: boolean;
@@ -51,9 +62,32 @@ export interface QueueOrder {
   actions: OrderStatus[];
 }
 
+interface StoredAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  postalCode: string;
+  instructions?: string;
+}
+
+function deliveryDetails(o: typeof orders.$inferSelect): QueueOrder["delivery"] {
+  if (o.fulfilment !== "delivery" || !o.deliveryAddress) return null;
+  const address = o.deliveryAddress as StoredAddress;
+  return {
+    line1: address.line1,
+    line2: address.line2 ?? null,
+    city: address.city,
+    postalCode: address.postalCode,
+    instructions: address.instructions ?? null,
+    phone: o.guestPhone,
+    deliverBy: (o.pricingSnapshot as { deliverBy?: string }).deliverBy ?? null,
+  };
+}
+
 /**
- * Live kitchen queue: paid → accepted → in preparation → ready, oldest due first, plus the last
- * completed orders for reference. Unpaid orders are not shown (they may never be paid).
+ * Live kitchen queue: paid → accepted → in preparation → ready (→ out for delivery), oldest due
+ * first, plus the last completed orders for reference. Unpaid orders are not shown (they may never
+ * be paid).
  */
 export async function getStaffQueue(db: Database, actor: Actor | null, now = new Date()) {
   authorize(actor, "staff_console:access");
@@ -86,6 +120,7 @@ export async function getStaffQueue(db: Database, actor: Actor | null, now = new
     version: o.version,
     customerName: o.guestName,
     fulfilment: o.fulfilment,
+    delivery: deliveryDetails(o),
     readyBy: (
       o.scheduledFor ?? new Date((o.pricingSnapshot as { readyAt?: string }).readyAt ?? o.placedAt)
     ).toISOString(),
@@ -105,9 +140,10 @@ export async function getStaffQueue(db: Database, actor: Actor | null, now = new
       modifiersEn: i.modifiers.map((m) => m.nameEn),
       notes: i.notes,
     })),
-    actions: allowedTransitions({ status: o.status, paid: o.paidAt !== null }, staff).filter(
-      (s) => s !== "refunded" && s !== "partially_refunded",
-    ),
+    actions: allowedTransitions(
+      { status: o.status, paid: o.paidAt !== null, fulfilment: o.fulfilment },
+      staff,
+    ).filter((s) => s !== "refunded" && s !== "partially_refunded"),
   });
 
   return {

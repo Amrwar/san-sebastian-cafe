@@ -26,7 +26,7 @@ Legend: ☐ not started · ◐ in progress · ☑ done · ⛔ blocked on owner d
 | 11  | Privacy & compliance features                            | ☑ legal text pending lawyer review                   |
 | 12  | POS / SRS integration                                    | ⛔ D1                                                |
 | 13  | Growth: promotions, referrals, communications            | ☑ referral terms pending (D17)                       |
-| 14  | Gift cards · delivery · inventory (each optional)        | ◐ inventory, gift cards ☑ 2026-10-26; delivery ⛔    |
+| 14  | Gift cards · delivery · inventory (each optional)        | ☑ delivery built off 2026-10-28 (D12 to switch on)   |
 | 15  | Hardening & launch readiness                             | ◐ platform done; launch items need owner decisions   |
 
 ---
@@ -118,6 +118,8 @@ Promotions engine and admin, promo code at checkout (stacking rules), referral p
 Gift cards (no expiry/fees, liability ledger, or POS-native), delivery (zones, fees, third-party courier adapter), inventory (stock counts → auto-86).
 
 **Gift cards done 2026-10-26** ([report 26](26-gift-cards-report.md)), sold at the counter and online (code emailed to the recipient), used online and at the counter, no expiry or fees, ledger and liability report.
+
+**Delivery built 2026-10-28, switched off** ([report 27](27-delivery-report.md)): zones by postal-code prefix (Administration → Livraison), phone and estimated arrival at checkout, ready → out for delivery → delivered on the staff queue, "on its way" notice, fees in reports, addresses erased after 180 days. Offered to customers only once a manager switches a zone on (D12). Third-party couriers need an account.
 
 **Inventory done 2026-10-26** ([report 25](25-inventory-report.md)): optional counts per product and option, auto-86 at zero, stock taken at order placement and returned when an order is stopped before preparation, ledger and audit.
 

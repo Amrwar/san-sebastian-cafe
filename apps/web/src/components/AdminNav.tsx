@@ -8,6 +8,7 @@ type Section =
   | "menu"
   | "options"
   | "store"
+  | "delivery"
   | "loyalty"
   | "promotions"
   | "marketing"
@@ -32,6 +33,12 @@ export async function AdminNav({ current, role }: { current: Section; role: Role
       key: "store",
       href: "/admin/store",
       label: t("store"),
+      visible: can(role, "store:configure"),
+    },
+    {
+      key: "delivery",
+      href: "/admin/delivery",
+      label: t("delivery"),
       visible: can(role, "store:configure"),
     },
     { key: "loyalty", href: "/admin/loyalty", label: t("loyalty"), visible: true },

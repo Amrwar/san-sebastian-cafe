@@ -205,6 +205,13 @@ export async function placeOrder(
       { path: "contact.email", code: "required" },
     ]);
   }
+  // The courier needs a way to reach the customer at the door.
+  const phoneDigits = input.contact.phone?.replace(/\D/g, "").length ?? 0;
+  if (input.fulfilment.method === "delivery" && phoneDigits < 7) {
+    throw new AppError("validation_failed", "Delivery needs a phone number", [
+      { path: "contact.phone", code: "required" },
+    ]);
+  }
   const now = options.now ?? new Date();
 
   const replay = await findReplay(db, input, actor);
@@ -356,6 +363,14 @@ export async function placeOrder(
             quote,
             requestHash: requestHash(input, actor),
             readyAt: readyAt.toISOString(),
+            // Delivery: ready, then the zone's travel time.
+            ...(priced.result.delivery.status === "available"
+              ? {
+                  deliverBy: new Date(
+                    readyAt.getTime() + priced.result.delivery.estimatedMinutes * 60_000,
+                  ).toISOString(),
+                }
+              : {}),
             rewardedOrderItemId: null,
           },
           idempotencyKey: input.idempotencyKey,

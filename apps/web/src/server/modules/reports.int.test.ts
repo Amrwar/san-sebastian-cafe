@@ -426,7 +426,7 @@ describe("CSV exports", () => {
     const lines = csv.trim().split("\r\n");
     expect(lines).toHaveLength(5);
     expect(lines[1]).toMatch(
-      /^[^,]+,2026-10-12 10:00,\w+,2\.00,0\.00,0\.00,2\.00,0\.10,0\.20,0\.00,2\.30,0\.00,fake$/,
+      /^[^,]+,2026-10-12 10:00,\w+,2\.00,0\.00,0\.00,0\.00,2\.00,0\.10,0\.20,0\.00,2\.30,0\.00,fake$/,
     );
     expect(csv).toContain(",2.30,2.30,fake"); // order 3, refunded in full
     expect(csv).not.toMatch(/example\.test|Alex/);

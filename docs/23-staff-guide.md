@@ -16,6 +16,10 @@ votre compte (menu **Personnel**).
   activées) quand c’est prêt.
 - Si deux personnes touchent la même commande en même temps, l’écran le dit et se met à jour :
   rien n’est fait deux fois.
+- **Livraison** (si le café l’offre) : la carte porte l’étiquette « Livraison », l’adresse, les
+  instructions et le téléphone du client (touchez-le pour appeler). Une fois prête :
+  **Remise au livreur** quand le livreur part (le client reçoit « en route »), puis **Livrée** à son
+  retour. Personne à l’adresse? Un chef d’équipe **annule** avec le motif : le client est remboursé.
 
 ## Quand ça déborde
 

@@ -268,6 +268,9 @@ export default async function AdminReportsPage({
             promo: $(sales.discountCents),
             reward: $(sales.rewardDiscountCents),
           })}
+          {sales.deliveryOrders > 0
+            ? ` ${t("taxes.deliveryFees", { amount: $(sales.deliveryFeeCents), count: sales.deliveryOrders })}`
+            : ""}
         </p>
       </Section>
 

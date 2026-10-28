@@ -1,13 +1,16 @@
 import { can, type Permission, type Role } from "../identity/roles";
-import type { OrderStatus } from "./ordering";
+import type { FulfilmentMethod, OrderStatus } from "./ordering";
 
 /**
  * Order lifecycle (owner-configurable policies are in ./policies.ts):
  *
  *   awaiting_payment ─┬─► paid ─┬─► accepted ─► in_preparation ─► ready ─► completed
+ *                     │         │                                   └─► out_for_delivery ─► completed
+ *                     │         │                                       (delivery orders only)
  *                     │         ├─► rejected (café can't fulfil; refund follows)
  *                     ├─► expired (unpaid too long)
- *                     └─► cancelled ◄── paid / accepted / in_preparation / ready (with reason)
+ *                     └─► cancelled ◄── paid / accepted / in_preparation / ready /
+ *                                       out_for_delivery (with reason)
  *   completed / cancelled / rejected (paid) ──► partially_refunded ──► refunded
  *
  * Every change goes through `checkTransition`; nothing writes `orders.status` directly.
@@ -24,6 +27,8 @@ interface Rule {
   who: readonly Who[];
   /** A written reason is mandatory (stored in the event history and shown to staff). */
   reasonRequired?: boolean;
+  /** The rule applies only to orders with this fulfilment method. */
+  fulfilment?: FulfilmentMethod;
 }
 
 /**
@@ -62,14 +67,22 @@ export const TRANSITION_RULES: readonly Rule[] = [
   // Customers may cancel until the café accepts the order (see policies.customerCanCancel).
   { from: ["paid"], to: "cancelled", who: ["owner", "orders:cancel"] },
   {
-    from: ["accepted", "in_preparation", "ready"],
+    from: ["accepted", "in_preparation", "ready", "out_for_delivery"],
     to: "cancelled",
     who: ["orders:cancel"],
     reasonRequired: true,
   },
   { from: ["accepted"], to: "in_preparation", who: ["orders:transition"] },
   { from: ["in_preparation"], to: "ready", who: ["orders:transition"] },
-  { from: ["ready"], to: "completed", who: ["orders:transition"] },
+  // Picked up at the counter, or handed to the courier and then delivered.
+  { from: ["ready"], to: "completed", who: ["orders:transition"], fulfilment: "pickup" },
+  {
+    from: ["ready"],
+    to: "out_for_delivery",
+    who: ["orders:transition"],
+    fulfilment: "delivery",
+  },
+  { from: ["out_for_delivery"], to: "completed", who: ["orders:transition"] },
   {
     from: [...REFUNDABLE_STATES, "partially_refunded"],
     to: "partially_refunded",
@@ -91,6 +104,8 @@ export interface TransitionContext {
   status: OrderStatus;
   /** Refund transitions require that the order was actually paid. */
   paid: boolean;
+  /** Pickup when omitted. */
+  fulfilment?: FulfilmentMethod;
 }
 
 function actorMatches(actor: TransitionActor, who: readonly Who[]): boolean {
@@ -107,7 +122,13 @@ export function checkTransition(
   actor: TransitionActor,
   reason?: string | null,
 ): { ok: true } | { ok: false; error: TransitionError } {
-  const rules = TRANSITION_RULES.filter((r) => r.to === to && r.from.includes(order.status));
+  const fulfilment = order.fulfilment ?? "pickup";
+  const rules = TRANSITION_RULES.filter(
+    (r) =>
+      r.to === to &&
+      r.from.includes(order.status) &&
+      (r.fulfilment === undefined || r.fulfilment === fulfilment),
+  );
   if (rules.length === 0) return { ok: false, error: "invalid_transition" };
   const rule = rules.find((r) => actorMatches(actor, r.who));
   if (!rule) return { ok: false, error: "not_permitted" };
@@ -140,10 +161,11 @@ export const TERMINAL_STATUSES: readonly OrderStatus[] = [
   "refunded",
 ];
 
-/** Statuses in which the café is (or will be) preparing the order. */
+/** Statuses on the staff queue: being prepared, or (delivery) on its way to the customer. */
 export const KITCHEN_STATUSES: readonly OrderStatus[] = [
   "paid",
   "accepted",
   "in_preparation",
   "ready",
+  "out_for_delivery",
 ];

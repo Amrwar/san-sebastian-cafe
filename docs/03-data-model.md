@@ -206,3 +206,8 @@ the order's own ledger rows, so it is never returned twice.
 the site — amount, purchaser and recipient names and emails, note, status (`awaiting_payment`,
 `paid`, `expired`, `refunded`), the provider session and payment, the issued card, the hash of the
 guest's link token. Personal fields are cleared by the retention job after a year.
+
+Delivery (migration `0014_delivery_out_for_delivery.sql`): order status `out_for_delivery`
+(delivery orders only, between `ready` and `completed`) and `orders.out_for_delivery_at`. The
+estimated arrival is kept in the order's pricing snapshot (`deliverBy`). Delivery addresses are
+replaced by `{"anonymized": true}` by the retention job 180 days after the order.

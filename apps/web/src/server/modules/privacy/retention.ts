@@ -17,7 +17,7 @@ import {
 } from "@ssc/db";
 import type { OrderStatus } from "@ssc/domain";
 import { recordAudit } from "../../audit";
-import { ANONYMIZED_EMAIL, ANONYMIZED_NAME, anonymizeOrders } from "./deletion";
+import { ANONYMIZED_ADDRESS, ANONYMIZED_EMAIL, ANONYMIZED_NAME, anonymizeOrders } from "./deletion";
 
 /*
  * Retention (Law 25: keep personal information only as long as needed). Run daily by
@@ -28,6 +28,11 @@ import { ANONYMIZED_EMAIL, ANONYMIZED_NAME, anonymizeOrders } from "./deletion";
 export const RETENTION = {
   /** Guest orders: name, email, phone and notes, kept for receipts, support and chargebacks. */
   guestContactDays: 365,
+  /**
+   * Delivery addresses (customers with an account too): a home address isn't needed once the
+   * order is long finished; kept past the card-dispute window.
+   */
+  deliveryAddressDays: 180,
   /** Payment provider webhook payloads (they contain the payer's email and address). */
   paymentEventPayloadDays: 90,
   /** Notifications already sent (or given up): their recipient address and content. */
@@ -56,6 +61,7 @@ export interface RetentionSummary {
   paymentEventsRedacted: number;
   notificationsDeleted: number;
   giftCardPurchasesAnonymized: number;
+  deliveryAddressesErased: number;
 }
 
 export async function runRetention(db: Database, now = new Date()): Promise<RetentionSummary> {
@@ -93,6 +99,19 @@ export async function runRetention(db: Database, now = new Date()): Promise<Rete
       tx,
       oldGuestOrders.map((o) => o.id),
     );
+
+    const addresses = await tx
+      .update(orders)
+      .set({ deliveryAddress: ANONYMIZED_ADDRESS, updatedAt: now })
+      .where(
+        and(
+          isNotNull(orders.deliveryAddress),
+          sql`not jsonb_exists(${orders.deliveryAddress}, 'anonymized')`,
+          inArray(orders.status, FINISHED),
+          lt(orders.placedAt, daysBefore(now, RETENTION.deliveryAddressDays)),
+        ),
+      )
+      .returning({ id: orders.id });
 
     const redacted = await tx
       .update(paymentEvents)
@@ -145,13 +164,18 @@ export async function runRetention(db: Database, now = new Date()): Promise<Rete
       paymentEventsRedacted: redacted.length,
       notificationsDeleted: notifications.length,
       giftCardPurchasesAnonymized: oldPurchases.length,
+      deliveryAddressesErased: addresses.length,
     };
-    if (guestOrdersAnonymized > 0 || redacted.length > 0) {
+    if (guestOrdersAnonymized > 0 || redacted.length > 0 || addresses.length > 0) {
       await recordAudit(tx, {
         actorUserId: null,
         action: "privacy.retention_applied",
         entityType: "retention",
-        metadata: { guestOrdersAnonymized, paymentEventsRedacted: redacted.length },
+        metadata: {
+          guestOrdersAnonymized,
+          paymentEventsRedacted: redacted.length,
+          deliveryAddressesErased: addresses.length,
+        },
       });
     }
     return summary;

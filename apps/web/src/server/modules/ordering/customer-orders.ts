@@ -10,10 +10,8 @@ export const ACTIVE_STATUSES: readonly OrderStatus[] = [
   "accepted",
   "in_preparation",
   "ready",
+  "out_for_delivery",
 ];
-
-/** Tracking timeline steps, in order. */
-export const TRACKING_STEPS = ["paid", "accepted", "in_preparation", "ready", "completed"] as const;
 
 export interface OrderSummary {
   id: string;
@@ -59,6 +57,11 @@ export async function findActiveOrder(
   return all.find((o) => ACTIVE_STATUSES.includes(o.status)) ?? null;
 }
 
+function deliverByOf(order: typeof orders.$inferSelect): Date | null {
+  const at = (order.pricingSnapshot as { deliverBy?: string }).deliverBy;
+  return order.fulfilment === "delivery" && at ? new Date(at) : null;
+}
+
 /**
  * One order with items and status history, for its owner, staff (orders:read_all) or a guest
  * holding the order's tracking token. Unknown/foreign orders and wrong tokens all return 404.
@@ -90,6 +93,8 @@ export async function getOrderDetail(
     readyBy:
       order.scheduledFor ??
       new Date((order.pricingSnapshot as { readyAt?: string }).readyAt ?? order.placedAt),
+    /** Delivery orders: the estimated arrival (null for pickup). */
+    deliverBy: deliverByOf(order),
     placedAt: order.placedAt,
     paidAt: order.paidAt,
     completedAt: order.completedAt,
@@ -99,12 +104,16 @@ export async function getOrderDetail(
     customerName: order.guestName,
     notes: order.notes,
     cancellationReason: order.cancellationReason,
-    deliveryAddress: order.deliveryAddress as {
-      line1: string;
-      line2?: string;
-      city: string;
-      postalCode: string;
-    } | null,
+    // An anonymized order keeps only a marker in place of the address.
+    deliveryAddress:
+      typeof (order.deliveryAddress as { line1?: unknown } | null)?.line1 === "string"
+        ? (order.deliveryAddress as {
+            line1: string;
+            line2?: string;
+            city: string;
+            postalCode: string;
+          })
+        : null,
     totals: {
       subtotalCents: order.subtotalCents,
       discountCents: order.discountCents,

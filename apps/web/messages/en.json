@@ -259,7 +259,8 @@
       "name": "Enter a name.",
       "email": "Enter a valid email address.",
       "slot": "Choose a pickup time.",
-      "tip": "Enter an amount between $0 and $100."
+      "tip": "Enter an amount between $0 and $100.",
+      "phone": "Enter a phone number: the courier needs to be able to reach you."
     },
     "review": "Review my order",
     "reviewOk": "Everything looks good. Your order can be sent as soon as online payment is available.",
@@ -299,7 +300,8 @@
       "not_found": "That gift card code doesn’t exist. Please check it.",
       "disabled": "This gift card is blocked. Please ask at the counter.",
       "empty": "This gift card has no balance left."
-    }
+    },
+    "phoneDelivery": "Phone (for the courier)"
   },
   "SignIn": {
     "eyebrow": "Account",
@@ -509,7 +511,8 @@
     "deliveryTo": "Delivery: {address}",
     "reason": "Reason: {reason}",
     "claimStamps": "Create an account with this order’s email address by {date}: its stamps will be added to your loyalty card.",
-    "claimCta": "Create my account"
+    "claimCta": "Create my account",
+    "deliverBy": "Estimated delivery around {time}"
   },
   "Tracking": {
     "title": "Tracking",
@@ -525,7 +528,9 @@
       "accepted": "Accepted",
       "in_preparation": "Preparing",
       "ready": "Ready",
-      "completed": "Picked up"
+      "completed": "Picked up",
+      "out_for_delivery": "On its way",
+      "delivered": "Delivered"
     },
     "stepState": {
       "done": "done",
@@ -533,7 +538,9 @@
       "upcoming": "upcoming"
     },
     "cancelled": "This order was cancelled.",
-    "refunded": "This order was refunded."
+    "refunded": "This order was refunded.",
+    "onTheWay": "Your order is on its way!",
+    "onTheWayHint": "It will arrive at your address soon. Keep your phone nearby."
   },
   "GiftCards": {
     "eyebrow": "Gift cards",
@@ -635,7 +642,10 @@
     "cancelled": "Cancelled",
     "expired": "Expired",
     "refunded": "Refunded",
-    "partially_refunded": "Partially refunded"
+    "partially_refunded": "Partially refunded",
+    "rejected": "Declined",
+    "out_for_delivery": "Out for delivery",
+    "delivered": "Delivered"
   },
   "Staff": {
     "eyebrow": "Staff",
@@ -728,7 +738,9 @@
       "ready": "Ready",
       "completed": "Handed over",
       "rejected": "Reject",
-      "cancelled": "Cancel"
+      "cancelled": "Cancel",
+      "out_for_delivery": "Handed to courier",
+      "delivered": "Delivered"
     },
     "reasonTitle": "Reason",
     "reasonLabel": "Reason (kept in the history)",
@@ -757,7 +769,12 @@
     "stockLow": "{name}: {count} left",
     "stockOut": "{name}: sold out",
     "stockLink": "Manage stock",
-    "giftCards": "Gift cards"
+    "giftCards": "Gift cards",
+    "onTheWay": "On its way",
+    "deliveryTo": "Delivery address",
+    "deliveryInstructions": "Instructions",
+    "phone": "Phone",
+    "deliverBy": "Estimated delivery around {time}"
   },
   "StaffAvailability": {
     "title": "Product availability",
@@ -1015,7 +1032,8 @@
     "reports": "Reports",
     "privacy": "Privacy",
     "promotions": "Promotions",
-    "marketing": "Email"
+    "marketing": "Email",
+    "delivery": "Delivery"
   },
   "AdminMenu": {
     "title": "Menu",
@@ -1455,7 +1473,8 @@
       "sales": "Sales",
       "refunds": "Refunds",
       "net": "Net",
-      "discounts": "Discounts given: {promo} in promotions, {reward} in free drinks."
+      "discounts": "Discounts given: {promo} in promotions, {reward} in free drinks.",
+      "deliveryFees": "Delivery fees charged: {amount} ({count, plural, one {# delivery} other {# deliveries}}), included in goods."
     },
     "reconciliation": {
       "ok": "Sales and payments match: {amount} collected for these orders.",
@@ -1855,7 +1874,8 @@
       "total": "Total paid: {total}.",
       "pickup": "Pickup planned: {time}.",
       "pushTitle": "Order {number} confirmed",
-      "pushBody": "We’re preparing it."
+      "pushBody": "We’re preparing it.",
+      "delivery": "Estimated delivery: {time}."
     },
     "ready": {
       "subject": "Your order {number} is ready",
@@ -1900,6 +1920,12 @@
       "receiptBody": "Thank you! The {amount} gift card (•••• {last4}) was sent to {recipient} ({email}).",
       "noTax": "A gift card isn’t taxable: taxes apply to what is bought with it.",
       "footerReceipt": "Receipt for your purchase. Questions? Ask us at the counter."
+    },
+    "onTheWay": {
+      "subject": "Your order {number} is on its way",
+      "body": "Your order {number} has left the café and will arrive at your address soon.",
+      "pushTitle": "Order {number} on its way",
+      "pushBody": "It will arrive soon."
     }
   },
   "Push": {
@@ -2126,6 +2152,38 @@
       "title": "Refund the online purchase (unused card)",
       "submit": "Refund",
       "done": "Purchase refunded and card cancelled."
+    }
+  },
+  "AdminDelivery": {
+    "title": "Delivery",
+    "intro": "The areas you deliver to, by the start of the postal code (e.g. H2T), with their fee, minimum order and usual travel time. Delivery is offered at checkout only while a zone is on.",
+    "offered": "Delivery is offered: customers in zones that are on can choose it at checkout.",
+    "notOffered": "Delivery isn't offered: no zone is on. Customers only see pickup.",
+    "new": "Add a zone",
+    "empty": "No zones yet.",
+    "nameFr": "Name (French)",
+    "nameEn": "Name (English)",
+    "prefixes": "Postal code prefixes",
+    "prefixesHint": "The first 3 characters, separated by commas: H2T, H2V, H2S.",
+    "fee": "Delivery fee ($)",
+    "minimum": "Minimum order ($)",
+    "minutes": "Travel time (min)",
+    "minutesHint": "Added to the preparation time for the arrival time shown to customers.",
+    "optional": "optional",
+    "active": "Zone on",
+    "activeHint": "Customers in this zone can choose delivery.",
+    "save": "Save zone",
+    "saved": "Zone saved.",
+    "edit": "Edit",
+    "on": "On",
+    "off": "Off",
+    "demo": "Demo",
+    "summary": "Fee {fee} · about {minutes} min",
+    "minimumShort": "minimum {amount}",
+    "orders": "{count, plural, =0 {no orders} one {# order} other {# orders}}",
+    "errors": {
+      "prefixTaken": "One of these postal codes is already served by another zone that is on.",
+      "fields": "Check the fields: a name in each language, valid postal code prefixes (e.g. H2T), a fee from 0 to 50 $ and a travel time of 5 to 180 minutes."
     }
   }
 }

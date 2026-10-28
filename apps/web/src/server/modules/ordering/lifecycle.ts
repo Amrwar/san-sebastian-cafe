@@ -71,11 +71,12 @@ function toTransitionActor(
 }
 
 const STATUS_TIMESTAMPS: Partial<
-  Record<OrderStatus, "paidAt" | "acceptedAt" | "readyAt" | "completedAt">
+  Record<OrderStatus, "paidAt" | "acceptedAt" | "readyAt" | "outForDeliveryAt" | "completedAt">
 > = {
   paid: "paidAt",
   accepted: "acceptedAt",
   ready: "readyAt",
+  out_for_delivery: "outForDeliveryAt",
   completed: "completedAt",
 };
 
@@ -100,7 +101,7 @@ export async function applyTransition(
     throw new AppError("conflict", "Order changed since it was displayed");
   }
   const check = checkTransition(
-    { status: order.status, paid: order.paidAt !== null },
+    { status: order.status, paid: order.paidAt !== null, fulfilment: order.fulfilment },
     to,
     toTransitionActor(actor, order, options.guestVerified ?? false),
     options.reason,

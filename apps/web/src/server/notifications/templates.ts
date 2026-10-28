@@ -43,23 +43,27 @@ function lines(message: OrderMessage) {
   const { locale, template, payload: p } = message;
   const t = translator(locale);
   const money = (v: number) => formatCad(cents(v), locale === "en" ? "en-CA" : "fr-CA");
-  const time = p.pickupAt
+  const at = p.deliverBy ?? p.pickupAt;
+  const time = at
     ? new Intl.DateTimeFormat(locale === "en" ? "en-CA" : "fr-CA", {
         timeZone: TIME_ZONE,
         weekday: "long",
         hour: "numeric",
         minute: "2-digit",
-      }).format(new Date(p.pickupAt))
+      }).format(new Date(at))
     : null;
   const vars = { number: p.number, total: money(p.totalCents) };
   const body: string[] = [];
   switch (template) {
     case "order_confirmed":
       body.push(t("confirmed.body", vars), t("confirmed.total", vars));
-      if (time) body.push(t("confirmed.pickup", { time }));
+      if (time) body.push(t(p.deliverBy ? "confirmed.delivery" : "confirmed.pickup", { time }));
       break;
     case "order_ready":
       body.push(t("ready.body", vars));
+      break;
+    case "order_on_the_way":
+      body.push(t("onTheWay.body", vars));
       break;
     case "order_cancelled":
     case "order_rejected":
@@ -83,13 +87,14 @@ function lines(message: OrderMessage) {
 
 const TEMPLATE_KEYS: Record<
   NotificationTemplate,
-  "confirmed" | "ready" | "cancelled" | "rejected" | "refunded"
+  "confirmed" | "ready" | "cancelled" | "rejected" | "refunded" | "onTheWay"
 > = {
   order_confirmed: "confirmed",
   order_ready: "ready",
   order_cancelled: "cancelled",
   order_rejected: "rejected",
   order_refunded: "refunded",
+  order_on_the_way: "onTheWay",
 };
 
 export function renderEmail(message: OrderMessage, baseUrl: string): RenderedEmail {

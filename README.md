@@ -131,35 +131,36 @@ docs/               planning and phase documentation
 
 ## Documentation
 
-| Doc                                                          | Contents                                                                             |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| [00 Repository inspection](docs/00-repository-inspection.md) | Environment and tooling findings                                                     |
-| [01 Product requirements](docs/01-product-requirements.md)   | Goals, personas, functional & non-functional requirements                            |
-| [02 Architecture](docs/02-architecture.md)                   | Stack, rationale, module boundaries, API, payment evaluation                         |
-| [03 Data model](docs/03-data-model.md)                       | Implemented schema: ownership, constraints, transaction boundaries                   |
-| [04 Implementation plan](docs/04-implementation-plan.md)     | Phased roadmap and checklist                                                         |
-| [05 Risk register](docs/05-risk-register.md)                 | Risks and mitigations                                                                |
-| [06 Acceptance criteria](docs/06-acceptance-criteria.md)     | Testable criteria                                                                    |
-| [07 Open decisions](docs/07-open-decisions.md)               | What the owner must decide or supply                                                 |
-| [08 Compliance notes](docs/08-compliance-notes.md)           | Québec/Canada obligations (requires professional confirmation)                       |
-| [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                                               |
-| [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                                  |
-| [11 Phase 2 report](docs/11-phase-2-report.md)               | Customer experience: pages, contracts, states, tests, limitations                    |
-| [12 Phase 3 report](docs/12-phase-3-report.md)               | Ordering domain, staff queue, API, tests, limitations                                |
-| [13 Payments](docs/13-payments.md)                           | Provider decision, flow, setup, webhooks, refunds, recovery, launch checklist        |
-| [14 Phase 4 report](docs/14-phase-4-report.md)               | Payments: what was built, tests, limitations                                         |
-| [15 Phase 5 report](docs/15-phase-5-report.md)               | Loyalty engine, counter stamps, staff support                                        |
-| [16 Phase 6 report](docs/16-phase-6-report.md)               | Admin console, product photos (Vercel Blob)                                          |
-| [17 Phase 7 report](docs/17-phase-7-report.md)               | Reporting: sales, taxes, tips, refunds, loyalty, CSV exports                         |
-| [18 Phase 8 report](docs/18-phase-8-report.md)               | Privacy (Law 25): data export, deletion, requests, incidents, retention              |
-| [19 Phase 9 report](docs/19-phase-9-report.md)               | Live queue and tracking, order emails, Web Push                                      |
-| [20 Phase 10 report](docs/20-phase-10-report.md)             | Guest-order stamp claim; accounts and loyalty phases closed                          |
-| [21 Phase 11 report](docs/21-phase-11-report.md)             | Growth: promotions admin, marketing email (CASL), referrals                          |
-| [22 Operations runbook](docs/22-operations-runbook.md)       | Deploys and migrations, jobs, monitoring, incidents, restore drill, launch checklist |
-| [23 Staff guide](docs/23-staff-guide.md)                     | Guide de l’équipe (French): queue, pause, refunds, counter loyalty                   |
-| [24 Phase 12 report](docs/24-phase-12-report.md)             | Hardening: security upgrade, CSP, rate limits, route sweep, health                   |
-| [26 Gift cards report](docs/26-gift-cards-report.md)         | Gift cards: counter and online sale, online and counter use, refunds, liability      |
-| [25 Inventory report](docs/25-inventory-report.md)           | Stock counts, auto-86 at zero, low-stock alerts, history, ledger                     |
+| Doc                                                          | Contents                                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| [00 Repository inspection](docs/00-repository-inspection.md) | Environment and tooling findings                                                      |
+| [01 Product requirements](docs/01-product-requirements.md)   | Goals, personas, functional & non-functional requirements                             |
+| [02 Architecture](docs/02-architecture.md)                   | Stack, rationale, module boundaries, API, payment evaluation                          |
+| [03 Data model](docs/03-data-model.md)                       | Implemented schema: ownership, constraints, transaction boundaries                    |
+| [04 Implementation plan](docs/04-implementation-plan.md)     | Phased roadmap and checklist                                                          |
+| [05 Risk register](docs/05-risk-register.md)                 | Risks and mitigations                                                                 |
+| [06 Acceptance criteria](docs/06-acceptance-criteria.md)     | Testable criteria                                                                     |
+| [07 Open decisions](docs/07-open-decisions.md)               | What the owner must decide or supply                                                  |
+| [08 Compliance notes](docs/08-compliance-notes.md)           | Québec/Canada obligations (requires professional confirmation)                        |
+| [09 Design direction](docs/09-design-direction.md)           | Palette, type, references, key screens                                                |
+| [10 Phase 1 report](docs/10-phase-1-report.md)               | What was built, test results, open issues, blockers                                   |
+| [11 Phase 2 report](docs/11-phase-2-report.md)               | Customer experience: pages, contracts, states, tests, limitations                     |
+| [12 Phase 3 report](docs/12-phase-3-report.md)               | Ordering domain, staff queue, API, tests, limitations                                 |
+| [13 Payments](docs/13-payments.md)                           | Provider decision, flow, setup, webhooks, refunds, recovery, launch checklist         |
+| [14 Phase 4 report](docs/14-phase-4-report.md)               | Payments: what was built, tests, limitations                                          |
+| [15 Phase 5 report](docs/15-phase-5-report.md)               | Loyalty engine, counter stamps, staff support                                         |
+| [16 Phase 6 report](docs/16-phase-6-report.md)               | Admin console, product photos (Vercel Blob)                                           |
+| [17 Phase 7 report](docs/17-phase-7-report.md)               | Reporting: sales, taxes, tips, refunds, loyalty, CSV exports                          |
+| [18 Phase 8 report](docs/18-phase-8-report.md)               | Privacy (Law 25): data export, deletion, requests, incidents, retention               |
+| [19 Phase 9 report](docs/19-phase-9-report.md)               | Live queue and tracking, order emails, Web Push                                       |
+| [20 Phase 10 report](docs/20-phase-10-report.md)             | Guest-order stamp claim; accounts and loyalty phases closed                           |
+| [21 Phase 11 report](docs/21-phase-11-report.md)             | Growth: promotions admin, marketing email (CASL), referrals                           |
+| [22 Operations runbook](docs/22-operations-runbook.md)       | Deploys and migrations, jobs, monitoring, incidents, restore drill, launch checklist  |
+| [23 Staff guide](docs/23-staff-guide.md)                     | Guide de l’équipe (French): queue, pause, refunds, counter loyalty                    |
+| [24 Phase 12 report](docs/24-phase-12-report.md)             | Hardening: security upgrade, CSP, rate limits, route sweep, health                    |
+| [26 Gift cards report](docs/26-gift-cards-report.md)         | Gift cards: counter and online sale, online and counter use, refunds, liability       |
+| [25 Inventory report](docs/25-inventory-report.md)           | Stock counts, auto-86 at zero, low-stock alerts, history, ledger                      |
+| [27 Delivery report](docs/27-delivery-report.md)             | Delivery zones, courier step, on-its-way notice, fees in reports (built switched off) |
 
 ## Deployment (Vercel demo)
 

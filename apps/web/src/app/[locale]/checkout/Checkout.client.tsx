@@ -172,6 +172,8 @@ export function Checkout({
     email: !signedInEmail && !EMAIL.test(email.trim()) ? t("errors.email") : undefined,
     slot: method === "pickup" && timing === "scheduled" && !slot ? t("errors.slot") : undefined,
     tip: tipChoice === "custom" && !customValid ? t("errors.tip") : undefined,
+    phone:
+      method === "delivery" && phone.replace(/\D/g, "").length < 7 ? t("errors.phone") : undefined,
     address:
       method === "delivery" &&
       (address.line1.trim().length < 3 || address.city.trim().length < 2 || !postalValid)
@@ -492,7 +494,7 @@ export function Checkout({
             />
           )}
           <TextField
-            label={t("phone")}
+            label={method === "delivery" ? t("phoneDelivery") : t("phone")}
             name="phone"
             type="tel"
             autoComplete="tel"
@@ -501,6 +503,7 @@ export function Checkout({
             onChange={(e) => {
               setPhone(e.currentTarget.value);
             }}
+            error={show("phone")}
           />
           <div className="flex flex-col gap-1.5">
             <label htmlFor="order-notes" className="text-sm font-semibold text-espresso">
