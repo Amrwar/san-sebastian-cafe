@@ -26,6 +26,10 @@
     "db:seed": "npm run seed -w @ssc/db",
     "db:purge-demo": "npm run purge-demo -w @ssc/db",
     "db:reset": "npm run reset -w @ssc/db",
+    "db:backup": "npm run backup -w @ssc/db --",
+    "db:restore": "npm run restore -w @ssc/db --",
+    "db:verify": "npm run verify -w @ssc/db",
+    "db:restore-drill": "npm run restore-drill -w @ssc/db --",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "devDependencies": {

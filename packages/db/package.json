@@ -21,6 +21,10 @@
     "seed": "tsx scripts/seed.ts",
     "purge-demo": "tsx scripts/purge-demo.ts",
     "reset": "tsx scripts/reset.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restore": "tsx scripts/restore.ts",
+    "verify": "tsx scripts/verify.ts",
+    "restore-drill": "tsx scripts/restore-drill.ts",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {

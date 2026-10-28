@@ -20,6 +20,9 @@ Thumbs.db
 !.vscode/extensions.json
 .dev-mail/
 .dev-uploads/
+# Database dumps hold personal information: never commit them.
+backups/
+*.dump
 next-env.d.ts
 
 .vercel

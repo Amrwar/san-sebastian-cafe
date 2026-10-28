@@ -118,6 +118,14 @@ Integration: **217 passed** (14 files). E2E: **84 passed, 2 skipped** (Stripe sa
 
 ## 4. Follow-up (2026-10-26)
 
+- **Backup and restore drill (2026-10-28):** `npm run db:restore-drill` dumps the database,
+  restores it into a scratch database and checks the copy (integrity rules: migrations,
+  constraints, loyalty and gift card balances against their ledgers, refunds against payments,
+  paid orders against money received, stock against movements; row counts against the dump's
+  own snapshot). Local run passed in 3.7 s; see [runbook §5](22-operations-runbook.md#5-backups-and-restore-drill).
+  `db:backup`, `db:restore` (empty targets only, file checked against its manifest) and
+  `db:verify` are separate commands. Still to do on the production Neon project before launch.
+
 - **Performance budgets** (`e2e/performance.spec.ts`, part of `npm run test:e2e`): each key page
   is loaded cold on the production build and must stay within its JavaScript budget (compressed),
   LCP ≤ 2.5 s and CLS ≤ 0.1.

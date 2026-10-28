@@ -104,14 +104,18 @@ Manual smoke test: `GET http://localhost:3000/api/health` → `{"status":"ok","d
 
 ## Data scripts
 
-| Command                                  | Effect                                                          |
-| ---------------------------------------- | --------------------------------------------------------------- |
-| `npm run db:generate -- --name <change>` | Generate a SQL migration after editing `packages/db/src/schema` |
-| `npm run db:migrate`                     | Apply pending migrations                                        |
-| `npm run db:seed`                        | Replace all demo rows with a fresh copy (real rows untouched)   |
-| `npm run db:purge-demo`                  | Delete every `is_demo` row — run before going live              |
-| `npm run db:reset`                       | Drop, migrate and re-seed (development only)                    |
-| `npm run db:down`                        | Stop Postgres (data volume kept)                                |
+| Command                                       | Effect                                                          |
+| --------------------------------------------- | --------------------------------------------------------------- |
+| `npm run db:generate -- --name <change>`      | Generate a SQL migration after editing `packages/db/src/schema` |
+| `npm run db:migrate`                          | Apply pending migrations                                        |
+| `npm run db:seed`                             | Replace all demo rows with a fresh copy (real rows untouched)   |
+| `npm run db:purge-demo`                       | Delete every `is_demo` row — run before going live              |
+| `npm run db:reset`                            | Drop, migrate and re-seed (development only)                    |
+| `npm run db:verify`                           | Integrity checks (balances vs ledgers, payments, migrations)    |
+| `npm run db:backup`                           | Dump with a manifest to `backups/` (personal data: encrypt it)  |
+| `npm run db:restore -- <file> --target <url>` | Restore into an empty database, then check the copy             |
+| `npm run db:restore-drill`                    | Backup → restore → verify into a scratch database, timed        |
+| `npm run db:down`                             | Stop Postgres (data volume kept)                                |
 
 ## Repository layout
 

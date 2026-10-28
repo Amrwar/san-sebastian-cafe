@@ -113,20 +113,58 @@ customers on errors), and never contain contact details (tested).
 
 ## 5. Backups and restore drill
 
-Neon keeps the database's history (point-in-time restore; the window depends on the plan, check
-Neon → Project settings).
+Two layers:
 
-**Drill (do it once before launch, then every quarter):**
+- **Neon's history** (point-in-time restore; the window depends on the plan, check Neon → Project
+  settings). The first resort: nothing to run, restores to any second in the window.
+- **Logical dumps** (`npm run db:backup`): a file of the whole database with a manifest beside it
+  (source without password, schema version, rows per table counted in the dump's own snapshot,
+  SHA-256). For keeping a copy outside Neon (e.g. weekly, and before risky migrations). **A dump
+  holds customers' personal information:** store it encrypted, in Canada, never in the repository
+  (`backups/` and `*.dump` are git-ignored), and delete old ones on the retention schedule.
 
-1. Neon console → Branches → create a branch from a past point in time (e.g. one hour ago).
-2. Run against the branch's connection string: `DATABASE_URL=<branch url> npm run db:migrate` (it
-   should report nothing to apply), then query a few known orders.
-3. Write down how long it took and the point in time used. Delete the branch.
+The tools use `pg_dump`/`pg_restore` when installed, otherwise the `postgres:17` Docker image
+(nothing to install). On Neon, use the **direct** connection string (`DATABASE_URL_UNPOOLED`):
+dumps can't go through the pooler.
 
-**Real restore:** create the branch from just before the problem, check it, then in Vercel point
-`DATABASE_URL` / `DATABASE_URL_UNPOOLED` at it (or restore the main branch in Neon) and redeploy.
-Payments taken since that point stay in Stripe: reconcile them with Staff → Paiements and the
-Stripe Dashboard.
+| Command                                                     | What it does                                                                                                                                                                                                          |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run db:verify`                                         | Integrity checks on `DATABASE_URL`: migrations, constraints, loyalty and gift card balances against their ledgers, refunds against payments, paid orders against money received, stock counts against their movements |
+| `npm run db:backup [-- --out <dir>]`                        | Dump of `BACKUP_DATABASE_URL` (or `DATABASE_URL`) to `backups/` with its manifest                                                                                                                                     |
+| `npm run db:restore -- <file.dump> --target <empty db url>` | Checks the file against its manifest, restores into an **empty** database (refuses a non-empty one and `DATABASE_URL`), then checks the copy                                                                          |
+| `npm run db:restore-drill [-- --target <url>] [--keep]`     | The drill in one step: dump → restore into a scratch database → integrity checks and row counts against the dump → timing report in `backups/` → scratch database dropped. The source is only read                    |
+
+**Drill (once before launch, then every quarter, and after any change to the schema tooling):**
+
+1. `BACKUP_DATABASE_URL=<production direct url> npm run db:restore-drill`. It creates
+   `<database>_restore_drill` next to the source and drops it afterwards (on Neon: in the same
+   branch; if the role can't create databases, create an empty one in the Neon console and pass it
+   with `--target`).
+2. It must end with `PASSED`. Keep the report (`backups/drill_*.json`: timings, row counts, checks;
+   no personal data) with the date.
+3. Neon history: Neon console → Branches → create a branch from a past point in time (e.g. one hour
+   ago), then `DATABASE_URL=<branch direct url> npm run db:verify` and look up a few known orders.
+   Write down how long it took and the point in time used. Delete the branch.
+
+**Drill results:**
+
+| Date       | Source                         | Size   | Rows | Backup | Restore + checks | Result |
+| ---------- | ------------------------------ | ------ | ---- | ------ | ---------------- | ------ |
+| 2026-10-28 | local E2E database (52 tables) | 182 KB | 372  | 1.7 s  | 1.8 s            | PASSED |
+
+Not yet run against Neon (no production data yet): do step 1 and 3 on the production project
+before launch.
+
+**Real restore:**
+
+- _From Neon's history:_ create the branch from just before the problem, run `db:verify` on it,
+  then in Vercel point `DATABASE_URL` / `DATABASE_URL_UNPOOLED` at it (or restore the main branch in
+  Neon) and redeploy.
+- _From a dump:_ create an empty database (or Neon project), `npm run db:restore -- <file> --target
+<its direct url>`, which must report every check `ok`, then point Vercel at it and redeploy. Run
+  `npm run db:migrate` if the dump is older than the code.
+- Either way, payments taken since that point stay in Stripe: reconcile them with Staff → Paiements
+  and the Stripe Dashboard, and gift cards sold since then with the Stripe Dashboard.
 
 ## 6. Load test
 
@@ -181,6 +219,7 @@ Platform:
 - [ ] `STORAGE_DRIVER=vercel-blob` with a public Blob store; `CRON_SECRET` and the three jobs
       scheduled; VAPID keys if push is wanted.
 - [ ] Uptime monitor on `/api/health` with alerts to the owner's phone.
-- [ ] Restore drill done once.
+- [ ] Restore drill done once against production (`npm run db:restore-drill`, local drill passed
+      2026-10-28), and Neon point-in-time branch checked with `db:verify`.
 - [ ] A test order end to end with a real card, refunded.
 - [ ] Staff trained (docs/23-staff-guide.md).
