@@ -3,3 +3,37 @@
 
 /* Scan the shared component package for class names. */
 @source "../../../../packages/ui/src";
+
+/* Stamp card: a fresh stamp is inked onto the card; an unlocked card flips to its back.
+   The theme's reduced-motion rule shortens both to an instant change. */
+@keyframes stamp-ink {
+  0% {
+    opacity: 0;
+    scale: 1.6;
+  }
+  60% {
+    opacity: 1;
+    scale: 0.92;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes stamp-flip {
+  from {
+    transform: perspective(900px) rotateY(-180deg);
+  }
+  to {
+    transform: perspective(900px) rotateY(0);
+  }
+}
+
+.stamp-ink {
+  animation: stamp-ink 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 400ms both;
+}
+
+.stamp-flip {
+  backface-visibility: hidden;
+  animation: stamp-flip 900ms cubic-bezier(0.3, 0.7, 0.2, 1) 300ms both;
+}
